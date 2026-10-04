@@ -5,7 +5,7 @@ import { getEntry } from './model/catalog.ts';
 import { levelsOf } from './model/storage.ts';
 import { appliancePanel, korpusLayout, type KorpusBuild } from './model/objects.ts';
 import { modelInstance } from './modelLoader';
-import { FIXED, mergeUV, slotMaterial, type UVExtent } from './materials';
+import { FIXED, isDarkOrMetal, mergeUV, slotMaterial, slotMaterialDef, type UVExtent } from './materials';
 import type { CountertopRun } from './model/geom.ts';
 
 /**
@@ -225,7 +225,12 @@ export function buildItem(item: Item, ctx: BuildContext): THREE.Group {
       }
       if (t.build.type === 'modell') {
         if (t.build.model.url) g.add(modelInstance(t.build.model.url, W, D, H));
-      } else buildKorpus(g, t.build, W, D, H, mat);
+      } else {
+        // Gerätefront: ohne eigene Farbe die festen Gerätematerialien (weiß, Blende hellgrau)
+        const ov = item.materials?.appliance;
+        const appliance: ApplianceLook = ov ? { body: mat('appliance'), dark: isDarkOrMetal(slotMaterialDef(p, 'appliance', ov)) } : { body: APPLIANCE.white, dark: false };
+        buildKorpus(g, t.build, W, D, H, mat, appliance);
+      }
       break;
     }
   }
@@ -237,7 +242,7 @@ export function buildItem(item: Item, ctx: BuildContext): THREE.Group {
  * (Schublade, Tür, Klappe, Kühl-/Gefrierfach) oder offene Böden. Die Aufteilung kommt aus korpusLayout – dieselbe wie
  * für die Fächer im Lager.
  */
-function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, Htotal: number, mat: Mats) {
+function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, Htotal: number, mat: Mats, appliance: ApplianceLook) {
   const cm = mat('carcass');
   // Arbeitsplatte oben (volle Breite, Überstand vorne); in einer Küchenzeile läuft ihre Textur über ctx.run weiter
   const ctT = (b.countertop?.thickness ?? 0) / 100;
@@ -280,7 +285,7 @@ function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, Htota
       const fy0 = ei === col.elements.length - 1 ? P : y0 - t / 2;
       const fy1 = ei === 0 ? H : y1 + t / 2;
       // Waschmaschine/Trockner: Gerätefront in Gerätefarben statt Möbelfront
-      if (el.kind === 'washer' || el.kind === 'dryer') return buildApplianceFront(g, el.kind, fx0, fx1, fy0, fy1, zF);
+      if (el.kind === 'washer' || el.kind === 'dryer') return buildApplianceFront(g, el.kind, fx0, fx1, fy0, fy1, zF, appliance);
       if (el.kind === 'drawer' || el.kind === 'flap' || el.kind === 'freezer') fronts.push({ x0: fx0, x1: fx1, y0: fy0, y1: fy1, handle: el.kind === 'flap' ? 'bottom' : 'top' });
       else if (el.kind === 'door' && fx1 - fx0 > 0.62) fronts.push(...doorFronts(fx0, fx1, fy0, fy1, false));
       else fronts.push({ x0: fx0, x1: fx1, y0: fy0, y1: fy1, handle: ci === cols.length - 1 && cols.length > 1 ? 'left' : 'right' });
@@ -300,20 +305,27 @@ const APPLIANCE = {
   drumDark: new THREE.MeshPhysicalMaterial({ color: '#3d4144', roughness: 0.5, metalness: 0.6 }),
 };
 
+/** Farbe der Gerätefront: Gehäuse und Waschmittelschublade; dunkel/metallisch → Schwarzglas-Blende, Chromring */
+interface ApplianceLook {
+  body: THREE.Material;
+  dark: boolean;
+}
+
 /** Front einer Waschmaschine bzw. eines Trockners über der Elementfläche (Meter, Frontebene z) */
-function buildApplianceFront(g: THREE.Group, kind: 'washer' | 'dryer', x0: number, x1: number, y0: number, y1: number, z: number) {
+function buildApplianceFront(g: THREE.Group, kind: 'washer' | 'dryer', x0: number, x1: number, y0: number, y1: number, z: number, look: ApplianceLook) {
+  const panelMat = look.dark ? FIXED.blackGlass : APPLIANCE.panel;
   const w = x1 - x0 - GAP;
   const cx = (x0 + x1) / 2;
   const panelH = appliancePanel((y1 - y0) * 100) / 100;
   const pTop = y1 - GAP / 2;
   const pY = pTop - panelH / 2;
   // Gehäusefront und Bedienblende
-  boxAt(g, cx - w / 2, cx + w / 2, y0 + GAP / 2, pTop - panelH - 0.002, z - 0.02, z, APPLIANCE.white, 0.004);
-  boxAt(g, cx - w / 2, cx + w / 2, pTop - panelH, pTop, z - 0.02, z + 0.004, APPLIANCE.panel, 0.004);
+  boxAt(g, cx - w / 2, cx + w / 2, y0 + GAP / 2, pTop - panelH - 0.002, z - 0.02, z, look.body, 0.004);
+  boxAt(g, cx - w / 2, cx + w / 2, pTop - panelH, pTop, z - 0.02, z + 0.004, panelMat, 0.004);
   // Blende: links Schublade (Waschmittel bzw. Kondenswasser), Mitte Display, rechts Drehknopf
   const dW = Math.min(0.17, w * 0.3);
   const dH = panelH * 0.62;
-  boxAt(g, cx - w / 2 + 0.012, cx - w / 2 + 0.012 + dW, pY - dH / 2, pY + dH / 2, z + 0.004, z + 0.008, APPLIANCE.white, 0.003);
+  boxAt(g, cx - w / 2 + 0.012, cx - w / 2 + 0.012 + dW, pY - dH / 2, pY + dH / 2, z + 0.004, z + 0.008, look.body, 0.003);
   boxAt(g, cx - w / 2 + 0.03, cx - w / 2 + 0.012 + dW - 0.018, pY - dH / 2 + 0.006, pY - dH / 2 + 0.012, z + 0.008, z + 0.01, APPLIANCE.seam);
   const dispW = Math.min(0.12, w * 0.22);
   boxAt(g, cx - dispW / 2 + w * 0.06, cx + dispW / 2 + w * 0.06, pY - panelH * 0.16, pY + panelH * 0.16, z + 0.004, z + 0.007, FIXED.blackGlass, 0.002);
@@ -322,7 +334,7 @@ function buildApplianceFront(g: THREE.Group, kind: 'washer' | 'dryer', x0: numbe
   knob.rotation.x = Math.PI / 2;
   knob.position.set(cx + w / 2 - kR - 0.03, pY, z + 0.013);
   g.add(knob);
-  const knobTop = mesh(new THREE.CylinderGeometry(kR * 0.8, kR * 0.8, 0.002, 40), APPLIANCE.panel);
+  const knobTop = mesh(new THREE.CylinderGeometry(kR * 0.8, kR * 0.8, 0.002, 40), panelMat);
   knobTop.rotation.x = Math.PI / 2;
   knobTop.position.set(knob.position.x, pY, z + 0.0225);
   g.add(knobTop);
@@ -331,7 +343,9 @@ function buildApplianceFront(g: THREE.Group, kind: 'washer' | 'dryer', x0: numbe
   const lowH = lowTop - y0;
   const R = Math.max(0.03, Math.min(w * 0.34, lowH * 0.36));
   const cy = y0 + lowH * 0.56;
-  const ring = mesh(new THREE.TorusGeometry(R, R * 0.13, 20, 72), kind === 'washer' ? FIXED.chrome : FIXED.anthraciteMetal);
+  // Türring: Waschmaschine Chrom; Trockner anthrazit, auf dunkler Front Chrom
+  const ringMat = kind === 'washer' || look.dark ? FIXED.chrome : FIXED.anthraciteMetal;
+  const ring = mesh(new THREE.TorusGeometry(R, R * 0.13, 20, 72), ringMat);
   ring.position.set(cx, cy, z + 0.012);
   g.add(ring);
   const disc = (r: number, d: number, zc: number, m: THREE.Material) => {
@@ -352,14 +366,14 @@ function buildApplianceFront(g: THREE.Group, kind: 'washer' | 'dryer', x0: numbe
   }
   disc(R * 0.95, 0.004, z + 0.01, APPLIANCE.glass);
   const hx = Math.min(cx + R * 1.12, cx + w / 2 - 0.02);
-  boxAt(g, hx - 0.012, hx + 0.012, cy - R * 0.32, cy + R * 0.32, z + 0.006, z + 0.024, kind === 'washer' ? FIXED.chrome : FIXED.anthraciteMetal, 0.006);
+  boxAt(g, hx - 0.012, hx + 0.012, cy - R * 0.32, cy + R * 0.32, z + 0.006, z + 0.024, ringMat, 0.006);
   // unten rechts Serviceklappe (Flusensieb/Pumpe); Trockner unten links Lüftungsgitter
   const fW = Math.min(0.13, w * 0.24);
   const fH = Math.min(0.09, (cy - R * 1.13 - y0) * 0.75);
   if (fH > 0.02) {
     const fy = y0 + 0.025;
     boxAt(g, cx + w / 2 - 0.03 - fW, cx + w / 2 - 0.03, fy, fy + fH, z, z + 0.002, APPLIANCE.seam, 0.002);
-    boxAt(g, cx + w / 2 - 0.03 - fW + 0.003, cx + w / 2 - 0.033, fy + 0.003, fy + fH - 0.003, z + 0.002, z + 0.003, APPLIANCE.white, 0.002);
+    boxAt(g, cx + w / 2 - 0.03 - fW + 0.003, cx + w / 2 - 0.033, fy + 0.003, fy + fH - 0.003, z + 0.002, z + 0.003, look.body, 0.002);
     if (kind === 'dryer') {
       const gx = cx - w / 2 + 0.03;
       for (let k = 0; k < 5; k++) {

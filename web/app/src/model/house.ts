@@ -2,7 +2,7 @@
 // Spaltenbuchstaben vergeben. Reine Logik – dieselbe Normalisierung läuft in der App (Anzeige) und auf dem Server
 // (verbindlich, beim Speichern).
 
-import type { Floor, FloorKind, House, Item, MaterialSlot, Project, Room, Vec2 } from './types.ts';
+import type { Floor, FloorKind, House, Item, HouseSlot, Project, Room, Vec2 } from './types.ts';
 import { compartments, colName } from './storage.ts';
 import { pointInPolygon, polygonCentroid, roomPolygon, wallFaces } from './rooms.ts';
 import { libraryObject, setHouseObjects } from './catalog.ts';
@@ -10,7 +10,7 @@ import { OBJ_PREFIX, validateObjectType, type ObjectType } from './objects.ts';
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
-export const DEFAULT_SLOTS: Record<MaterialSlot, string> = {
+export const DEFAULT_SLOTS: Record<HouseSlot, string> = {
   front: 'lack-sage',
   carcass: 'lack-white',
   countertop: 'stone-marble',

@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import type { ColorAdjust, MaterialDef, MaterialSlot, Project, UVSettings } from './model/types.ts';
 import { generate } from './procedural';
+import { isDarkSurface } from './model/objects.ts';
 
 export const SLOT_LABELS: Record<MaterialSlot, string> = {
   front: 'Fronten',
@@ -13,6 +14,7 @@ export const SLOT_LABELS: Record<MaterialSlot, string> = {
   floor: 'Boden',
   wall: 'Wände',
   ceiling: 'Decke',
+  appliance: 'Gerätefarbe',
 };
 
 export const CATEGORY_LABELS: Record<MaterialDef['category'], string> = {
@@ -31,6 +33,7 @@ const TEX = `${import.meta.env.BASE_URL}textures/`;
 
 export const LIBRARY: MaterialDef[] = [
   { id: 'lack-white', name: 'Weiß matt', category: 'lack', color: '#f1f0eb', roughness: 0.55, metalness: 0, tileSize: 100 },
+  { id: 'appliance-white', name: 'Gerät weiß', category: 'lack', color: '#f3f3f1', roughness: 0.32, metalness: 0, clearcoat: 0.6, tileSize: 100 },
   { id: 'lack-white-gloss', name: 'Weiß Hochglanz', category: 'lack', color: '#f6f6f4', roughness: 0.12, metalness: 0, clearcoat: 1, tileSize: 100 },
   { id: 'lack-cashmere', name: 'Kaschmir', category: 'lack', color: '#d8cdbd', roughness: 0.5, metalness: 0, tileSize: 100 },
   { id: 'lack-magnolia', name: 'Magnolie matt', category: 'lack', color: '#ebe4d4', roughness: 0.6, metalness: 0, tileSize: 100 },
@@ -89,6 +92,14 @@ export const LIBRARY: MaterialDef[] = [
 
 export function allMaterials(p: Project): MaterialDef[] {
   return [...LIBRARY, ...p.customMaterials];
+}
+
+/** Standard der Gerätefront (Waschmaschine/Trockner) */
+export const APPLIANCE_WHITE = 'appliance-white';
+
+/** Dunkle oder metallische Oberfläche (z. B. Gerätefront → Schwarzglas-Blende, Chromring) */
+export function isDarkOrMetal(def: MaterialDef) {
+  return isDarkSurface(adjustHex(def.color, def.adjust), def.metalness ?? 0);
 }
 
 export function findMaterial(p: Project, id: string): MaterialDef {
@@ -438,6 +449,8 @@ export const MATCH_FRONT = '@front';
 /** Ermittelt das Material eines Bereichs inkl. Element-Überschreibung und „wie Fronten“ */
 export function slotMaterialDef(p: Project, slot: MaterialSlot, override?: string, frontOverride?: string): MaterialDef {
   const id = override ?? p.slots[slot];
+  // Gerätefront ohne eigene Farbe: Gerät weiß (wie die festen Gerätematerialien)
+  if (!id) return findMaterial(p, APPLIANCE_WHITE);
   if (id === MATCH_FRONT) return findMaterial(p, frontOverride ?? p.slots.front);
   return findMaterial(p, id);
 }

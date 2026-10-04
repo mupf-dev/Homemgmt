@@ -301,6 +301,12 @@ try {
   await page.waitForTimeout(800);
   console.log('  Geräte:', await page.$$eval('#fa li', (l) => l.map((x) => x.textContent)));
   await page.locator('#pv').screenshot({ path: `${DIR}/07g3-waschmaschine-trockner.png` });
+  // Gerätefarbe: Auswahl erscheint bei Geräten; schwarz und Edelstahl
+  for (const [id, n] of [['lack-black', 'schwarz'], ['metal-steel', 'edelstahl']]) {
+    await page.selectOption('[data-m="appliance"]', id);
+    await page.waitForTimeout(600);
+    await page.locator('#pv').screenshot({ path: `${DIR}/07g4-geraete-${n}.png` });
+  }
   await page.goto(base + '/#/haus');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
 

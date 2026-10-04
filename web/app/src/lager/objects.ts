@@ -3,12 +3,13 @@
 
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls.js';
+import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment.js';
 import { ic } from '../icons';
 import { api, esc, type LagerCtx } from './core';
 import type { View } from './views';
 import { downloadObject, libraryRows, loadLibrary, objectIcon, type LibraryRow } from '../objectlib';
 import {
-  copyId, ELEMENT_KINDS, objectCompartments, TEMPLATES, validateObjectType,
+  copyId, ELEMENT_KINDS, hasAppliance, objectCompartments, TEMPLATES, validateObjectType,
   type ElementKind, type KorpusBuild, type ModelBuild, type ObjectType,
 } from '../model/objects.ts';
 import { PREVIEW_TYPE, setPreviewObject } from '../model/catalog.ts';
@@ -188,6 +189,7 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
       <section class="l-card"><h2>Materialien</h2>
         <div class="grid2"><label>Fronten<select data-m="front">${opt(materials, draft.materials?.front, 'wie im Haus')}</select></label>
         <label>Korpus<select data-m="carcass">${opt(materials, draft.materials?.carcass, 'wie im Haus')}</select></label>
+        ${hasAppliance(draft) ? `<label>Gerätefarbe<select data-m="appliance">${opt(materials, draft.materials?.appliance, 'Weiß (Standard)')}</select></label>` : ''}
         ${b.type === 'korpus' && b.countertop ? `<label>Arbeitsplatte<select data-m="countertop">${opt(materials, draft.materials?.countertop, 'wie in der Küche')}</select></label>` : ''}</div>
       </section>`;
   };
@@ -393,6 +395,11 @@ function createPreview(host: HTMLElement) {
   renderer.outputColorSpace = THREE.SRGBColorSpace;
   host.appendChild(renderer.domElement);
   const scene = new THREE.Scene();
+  // Umgebung zum Spiegeln: Metall (Edelstahl, Chromringe) sähe sonst schwarz aus – wie im Hausplan mit Himmel
+  const pmrem = new THREE.PMREMGenerator(renderer);
+  const envMap = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+  scene.environment = envMap;
+  scene.environmentIntensity = 0.6;
   const camera = new THREE.PerspectiveCamera(35, 1, 0.05, 50);
   const controls = new OrbitControls(camera, renderer.domElement);
   controls.enableDamping = true;
@@ -450,6 +457,8 @@ function createPreview(host: HTMLElement) {
     },
     dispose() {
       cancelAnimationFrame(raf);
+      envMap.dispose();
+      pmrem.dispose();
       renderer.dispose();
     },
   };
