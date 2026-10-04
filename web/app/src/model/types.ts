@@ -197,6 +197,8 @@ export interface Project {
     plinth: number;
     countertopThickness: number;
     timeOfDay: number;
+    /** Lage des Hauses: Koordinaten und Nordrichtung (Grad im Uhrzeigersinn ab „oben“ im Grundriss) – für Sonnenstand und Wetter */
+    location?: { lat: number; lon: number; north: number; label?: string };
     /** Lichtregler (1 = Standard) */
     sunIntensity?: number;
     skyIntensity?: number;

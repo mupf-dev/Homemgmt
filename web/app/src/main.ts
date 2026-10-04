@@ -23,7 +23,8 @@ import { clearFailures, failures, flush, QueuedError } from './lager/outbox';
 import { ic } from './icons';
 import { initShell } from './shell';
 import { onPrefs, prefs } from './prefs';
-import { idleNow, initIdle, terminal } from './terminal';
+import { idleNow, initIdle, setTermWeather, terminal } from './terminal';
+import { sunPosition } from './sun';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -92,6 +93,7 @@ app.innerHTML = `
     <div class="dropdown" id="fileMenu" hidden>
       <label class="dd-name plan-only">Name des Hauses<input id="projectName" type="text" /></label>
       <button id="showroomBtn">${ICON.sparkle}Showroom (3D im Vollbild)</button>
+      <button id="locationBtn" class="plan-only">${ic('sun')}Lage des Hauses …</button>
       <hr class="plan-only" />
       <button id="newBtn" class="plan-only">${ic('file')}Neues Haus …</button>
       <button id="openBtn" class="plan-only">${ICON.open}Aus Datei importieren (.json) …</button>
@@ -3186,6 +3188,126 @@ setPlanning(false);
 updatePlanButton();
 
 
+
+// ---------------------------------------------------------------------------
+// Lage des Hauses: Koordinaten und Nordrichtung – Sonne und Wetter wie draußen
+
+function openLocation() {
+  const cur = store.house.settings.location;
+  const m = modal('Lage des Hauses', `<form class="l-form loc-form">
+    <p class="hint">Mit der Lage stehen Sonne und Himmel im 3D so, wie es draußen gerade ist; das Wetter kommt vom Ort des Hauses.</p>
+    <label>Adresse, Ort oder Postleitzahl suchen<span class="loc-search"><input id="locQ" placeholder="z. B. Königstraße 1, Stuttgart" autocomplete="off" /><button type="button" class="btn" id="locGo">${ic('search')}Suchen</button></span></label>
+    <div class="loc-hits" id="locHits"></div>
+    <div class="grid2"><label>Breitengrad<input id="locLat" type="number" step="0.00001" min="-90" max="90" value="${cur?.lat ?? ''}" /></label>
+    <label>Längengrad<input id="locLon" type="number" step="0.00001" min="-180" max="180" value="${cur?.lon ?? ''}" /></label></div>
+    <label>Nordrichtung im Grundriss: <b id="locNV">${cur?.north ?? 0}°</b><span class="loc-north"><input id="locN" type="range" min="0" max="359" step="1" value="${cur?.north ?? 0}" />
+      <svg class="loc-compass" viewBox="-50 -50 100 100"><circle r="46" /><g id="locArrow"><path d="M0 -40 L9 0 L0 -6 L-9 0Z" /><text y="-28" text-anchor="middle">N</text></g></svg></span></label>
+    <p class="hint">Der Pfeil zeigt, wohin im Grundriss Norden liegt (0° = oben). Tipp: Ausrichtung aus einer Karte übernehmen – die Straßenseite des Hauses im Plan mit der Karte vergleichen.</p>
+    <p class="form-error" hidden></p>
+  </form>`, `${cur ? '<button class="btn danger" data-del>Lage entfernen</button><span class="spacer"></span>' : ''}<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Übernehmen</button>`);
+  const $m = <T extends HTMLElement>(s: string) => m.el.querySelector<T>(s)!;
+  let label = cur?.label ?? '';
+  const north = () => {
+    const v = Number($m<HTMLInputElement>('#locN').value);
+    $m('#locNV').textContent = `${v}°`;
+    $m('#locArrow').setAttribute('transform', `rotate(${v})`);
+  };
+  north();
+  $m('#locN').addEventListener('input', north);
+  const search = async () => {
+    const q = $m<HTMLInputElement>('#locQ').value.trim();
+    const hits = $m('#locHits');
+    hits.innerHTML = '<p class="hint">Suche …</p>';
+    try {
+      const list = await api<{ name: string; label: string; lat: number; lon: number }[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`);
+      hits.innerHTML = list.length ? list.map((h, i) => `<button type="button" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.label)}</small></button>`).join('') : '<p class="hint">Nichts gefunden.</p>';
+      hits.querySelectorAll<HTMLElement>('[data-i]').forEach((b) =>
+        b.addEventListener('click', () => {
+          const h = list[Number(b.dataset.i)];
+          $m<HTMLInputElement>('#locLat').value = h.lat.toFixed(5);
+          $m<HTMLInputElement>('#locLon').value = h.lon.toFixed(5);
+          label = h.name;
+          hits.innerHTML = `<p class="hint">Übernommen: ${esc(h.label)}</p>`;
+        }),
+      );
+    } catch (e) {
+      hits.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p>`;
+    }
+  };
+  $m('#locGo').addEventListener('click', search);
+  $m('#locQ').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      search();
+    }
+  });
+  m.el.querySelector('[data-ok]')!.addEventListener('click', () => {
+    const lat = Number($m<HTMLInputElement>('#locLat').value);
+    const lon = Number($m<HTMLInputElement>('#locLon').value);
+    const err = $m('.form-error');
+    if (!$m<HTMLInputElement>('#locLat').value || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
+      err.textContent = 'Bitte einen Ort suchen oder Breiten- und Längengrad eingeben.';
+      err.hidden = false;
+      return;
+    }
+    store.house.settings.location = { lat, lon, north: Number($m<HTMLInputElement>('#locN').value), ...(label ? { label } : {}) };
+    store.commit();
+    m.close();
+    plan.draw();
+    toast('Lage gespeichert – Sonne und Wetter folgen jetzt dem Ort.');
+    updateOutdoor(true);
+  });
+  m.el.querySelector('[data-del]')?.addEventListener('click', () => {
+    delete store.house.settings.location;
+    store.commit();
+    m.close();
+    plan.draw();
+    updateOutdoor(true);
+  });
+}
+$('#locationBtn').addEventListener('click', () => openLocation());
+plan.north = () => store.house.settings.location?.north ?? null;
+
+/** Draußen wie echt (Wandterminal): Sonne aus Ort und Uhrzeit, Bewölkung/Regen aus dem Wetter – jede Minute neu */
+let outdoorWeather: { at: number; data: any } | null = null;
+async function updateOutdoor(force = false) {
+  const t = terminal();
+  const loc = store.house.settings.location;
+  view.lawn = !!t;
+  if (!t) {
+    if (view.outdoor) view.setOutdoor(null);
+    return;
+  }
+  if (force || !outdoorWeather || Date.now() - outdoorWeather.at > 15 * 60000) {
+    const q = loc ? `?lat=${loc.lat}&lon=${loc.lon}&place=${encodeURIComponent(loc.label ?? '')}` : '';
+    const data = await fetch(`/api/weather${q}`, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+    outdoorWeather = { at: Date.now(), data };
+    setTermWeather(data ? `${data.temperature} °C · ${data.text}` : '');
+  }
+  const w = outdoorWeather.data;
+  if (loc) {
+    const sun = sunPosition(new Date(), loc.lat, loc.lon);
+    view.setOutdoor({ ...sun, north: loc.north, cloud: w?.cloud ?? 20, rain: (w?.precipitation ?? 0) > 0 });
+    // nachts brennen die Lampen
+    const lamps = sun.altitude < 0 ? 1.8 : 0.6;
+    if (store.house.settings.lampIntensity !== lamps) {
+      store.house.settings.lampIntensity = lamps;
+      view.build();
+    }
+  } else if (view.outdoor) view.setOutdoor(null);
+}
+window.setInterval(() => updateOutdoor(), 60000);
+document.addEventListener('zh-account-render', () => {
+  if (terminal()) {
+    view.lawn = true;
+    view.build();
+    updateOutdoor(true);
+  }
+});
+sync.onStorage(() => {
+  if (terminal()) updateOutdoor();
+});
+
 // ---------------------------------------------------------------------------
 // Wandterminal: ohne Bedienung zurück zum Haus, Ruhezustand mit gedimmtem Haus – Licht nach Tageszeit und Wetter
 
@@ -3222,9 +3344,12 @@ const frames = (n: number) => new Promise<void>((r) => { const f = () => (n-- <=
 /** Bild des Hauses neu rechnen: erst schnell, dann fotorealistisch (höchstens 30 s, danach ruht die Grafik) */
 async function paintRest() {
   if (rest.hidden) return;
-  const w = await fetch('/api/weather', { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-  rest.querySelector('.rest-weather')!.textContent = w ? `${w.place} · ${w.temperature} °C · ${w.text}` : '';
-  lightLikeOutside(w);
+  const loc = store.house.settings.location;
+  await updateOutdoor(true);
+  const w = outdoorWeather?.data ?? null;
+  rest.querySelector('.rest-weather')!.textContent = w ? `${w.place || loc?.label || ''}${w.place || loc?.label ? ' · ' : ''}${w.temperature} °C · ${w.text}` : '';
+  // ohne Lage: Licht aus der Tageszeit zwischen Auf- und Untergang
+  if (!loc) lightLikeOutside(w);
   setView('3d');
   await frames(4); // 3D-Bereich bekommt erst jetzt seine Größe
   view.mode = 'house';

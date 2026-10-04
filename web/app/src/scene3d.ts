@@ -50,6 +50,8 @@ export class Scene3D {
   private content = new THREE.Group();
   private sun = new THREE.DirectionalLight('#fff4e5', 3.2);
   private hemi = new THREE.HemisphereLight('#f4f7ff', '#8a7f72', 0.0);
+  /** Mond- und Himmelslicht in der Nacht (nur „draußen wie echt“) */
+  private moon = new THREE.HemisphereLight('#9fb4e6', '#1f2b1c', 0.0);
   private selectionBox = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#ff7a1a'));
   private sky: GradientEquirectTexture;
   private pathTracer: WebGLPathTracer | null = null;
@@ -61,6 +63,12 @@ export class Scene3D {
   private resizeObserver: ResizeObserver;
   private firstBuild = true;
   private ground: THREE.Mesh;
+  private groundPlain!: THREE.Material;
+  private groundLawn: THREE.Material | null = null;
+  /** Rasen statt grauer Fläche ums Haus (Wandterminal) */
+  lawn = false;
+  /** Draußen wie echt: Sonnenstand (Grad), Nordrichtung des Grundrisses, Bewölkung (%), Regen – sonst Tageszeit-Regler */
+  outdoor: { azimuth: number; altitude: number; north: number; cloud: number; rain: boolean } | null = null;
   onSamples?: (n: number) => void;
   onWalkChange?: (active: boolean) => void;
   /** Begehen: aktuelle Etage und Raum (für die Anzeige) */
@@ -111,13 +119,14 @@ export class Scene3D {
     this.sun.shadow.bias = -0.0002;
     this.sun.shadow.normalBias = 0.02;
     this.sun.shadow.radius = 4;
-    this.scene.add(this.sun, this.sun.target, this.hemi);
+    this.scene.add(this.sun, this.sun.target, this.hemi, this.moon);
     this.scene.add(this.content);
     this.selectionBox.visible = false;
     this.scene.add(this.selectionBox);
 
     // Außengelände
-    const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 64), new THREE.MeshPhysicalMaterial({ color: '#a7a296', roughness: 1 }));
+    this.groundPlain = new THREE.MeshPhysicalMaterial({ color: '#a7a296', roughness: 1 });
+    const ground = new THREE.Mesh(new THREE.CircleGeometry(60, 64), this.groundPlain);
     ground.rotation.x = -Math.PI / 2;
     ground.position.y = -0.02;
     ground.receiveShadow = true;
@@ -305,8 +314,9 @@ export class Scene3D {
       if (this.mode !== 'floor') this.addSlab(f, g);
       this.content.add(g);
     }
-    // Keller wären unter dem Gelände versteckt
-    this.ground.visible = this.mode === 'floor' || !floors.some((f) => f.elevation < -1);
+    // Keller wären unter dem Gelände versteckt; mit Rasen liegt der Keller (wie echt) darunter – außer man schaut auf ihn
+    this.ground.material = this.lawn ? this.lawnMaterial() : this.groundPlain;
+    this.ground.visible = this.mode === 'floor' || (this.lawn ? Math.max(...floors.map((f) => f.elevation)) >= -1 : !floors.some((f) => f.elevation < -1));
 
     const p = store.project;
     this.updateSun(p);
@@ -666,18 +676,34 @@ export class Scene3D {
       c.set((Math.min(...xs) + Math.max(...xs)) / 2, 0, (Math.min(...zs) + Math.max(...zs)) / 2);
       r = Math.max(Math.max(...xs) - Math.min(...xs), Math.max(...zs) - Math.min(...zs)) * 0.75 + 1;
     }
-    const time = p.settings.timeOfDay;
-    const az = ((time - 12) / 12) * Math.PI;
-    const elev = Math.max(0.12, Math.sin((Math.PI * (time - 5)) / 15) * 1.05);
-    const dir = new THREE.Vector3(Math.sin(az) * Math.cos(elev), Math.sin(elev), -Math.cos(az) * Math.cos(elev) * 0.6 + 0.4).normalize();
+    let dir: THREE.Vector3;
+    let elev: number;
+    let dim = 1;
+    const o = this.outdoor;
+    if (o) {
+      // echter Sonnenstand: Azimut ab Norden, Norden zeigt im Grundriss um „north“ Grad gedreht von oben
+      const th = ((o.azimuth + o.north) * Math.PI) / 180;
+      const alt = (o.altitude * Math.PI) / 180;
+      elev = Math.max(0.05, alt);
+      dir = new THREE.Vector3(Math.sin(th) * Math.cos(elev), Math.sin(elev), -Math.cos(th) * Math.cos(elev)).normalize();
+      dim = (alt <= 0 ? 0 : Math.min(1, alt / 0.1)) * (1 - 0.8 * Math.min(1, o.cloud / 100)) * (o.rain ? 0.4 : 1);
+      // Dämmerung und Nacht: schwaches, bläuliches Licht, damit das Haus erkennbar bleibt
+      this.moon.intensity = o.altitude >= 6 ? 0 : o.altitude >= -6 ? (0.6 * (6 - o.altitude)) / 12 : 0.6;
+    } else {
+      this.moon.intensity = 0;
+      const time = p.settings.timeOfDay;
+      const az = ((time - 12) / 12) * Math.PI;
+      elev = Math.max(0.12, Math.sin((Math.PI * (time - 5)) / 15) * 1.05);
+      dir = new THREE.Vector3(Math.sin(az) * Math.cos(elev), Math.sin(elev), -Math.cos(az) * Math.cos(elev) * 0.6 + 0.4).normalize();
+    }
     this.sun.position.copy(c).addScaledVector(dir, 20);
     this.sun.target.position.copy(c);
     const warm = 1 - Math.min(1, elev / 0.6);
     this.sun.color.setRGB(1, 0.93 - warm * 0.2, 0.84 - warm * 0.35);
-    this.sun.intensity = (1.2 + Math.min(1, elev / 0.6) * 2.4) * (p.settings.sunIntensity ?? 1);
-    this.sun.visible = (p.settings.sunIntensity ?? 1) > 0.001;
+    this.sun.intensity = (1.2 + Math.min(1, elev / 0.6) * 2.4) * (p.settings.sunIntensity ?? 1) * dim;
+    this.sun.visible = (p.settings.sunIntensity ?? 1) * dim > 0.001;
     // Himmel / Umgebungslicht
-    this.scene.environmentIntensity = p.settings.skyIntensity ?? 1;
+    this.scene.environmentIntensity = (p.settings.skyIntensity ?? 1) * (o ? this.updateSky(o) : this.updateSky(null));
     // weiche Schatten: größerer Filterradius, mehr Samples
     const soft = p.settings.softness ?? 0.6;
     this.sun.shadow.radius = 1 + soft * 14;
@@ -688,6 +714,84 @@ export class Scene3D {
     cam.near = 1;
     cam.far = 45;
     cam.updateProjectionMatrix();
+  }
+
+  /** Himmelsfarben nach Sonnenhöhe und Bewölkung; liefert den Faktor fürs Umgebungslicht */
+  private skyState = '';
+  private updateSky(o: Scene3D['outdoor']): number {
+    const mix = (a: string, b: string, t: number) => new THREE.Color(a).lerp(new THREE.Color(b), Math.max(0, Math.min(1, t)));
+    let top: THREE.Color;
+    let bottom: THREE.Color;
+    let light = 1;
+    if (!o) {
+      top = new THREE.Color('#bcd3ee');
+      bottom = new THREE.Color('#e9e4da');
+    } else {
+      const alt = o.altitude;
+      const cloud = Math.min(1, o.cloud / 100);
+      // Tag: blau → grau bei Bewölkung; Dämmerung: orange am Horizont; Nacht: dunkelblau
+      const dayTop = mix('#5e9be0', '#9aa4b0', cloud);
+      const dayBottom = mix('#d6e6f6', '#d0d3d8', cloud);
+      const duskTop = mix('#34467a', '#4a4f5c', cloud);
+      const duskBottom = mix('#f0a468', '#8a8580', cloud);
+      const nightTop = new THREE.Color('#0a1022');
+      const nightBottom = new THREE.Color('#1b2336');
+      if (alt >= 8) {
+        top = dayTop;
+        bottom = dayBottom;
+      } else if (alt >= -2) {
+        const t = (alt + 2) / 10;
+        top = duskTop.clone().lerp(dayTop, t);
+        bottom = duskBottom.clone().lerp(dayBottom, t);
+      } else {
+        const t = Math.min(1, (-2 - alt) / 8);
+        top = duskTop.clone().lerp(nightTop, t);
+        bottom = duskBottom.clone().lerp(nightBottom, t);
+      }
+      light = alt >= 8 ? 1 - cloud * 0.25 : alt >= -2 ? 0.45 + 0.055 * (alt + 2) : 0.32;
+      if (o.rain) light *= 0.75;
+    }
+    const key = top.getHexString() + bottom.getHexString();
+    if (key !== this.skyState) {
+      this.skyState = key;
+      this.sky.topColor.copy(top);
+      this.sky.bottomColor.copy(bottom);
+      this.sky.update();
+      if (this.pathTracer && this.ptActive) this.ptSceneDirty = true;
+    }
+    return light;
+  }
+
+  /** Draußen live setzen (Sonne, Himmel) ohne alles neu aufzubauen */
+  setOutdoor(o: Scene3D['outdoor']) {
+    this.outdoor = o;
+    this.updateSun(store.project);
+    this.dirty = true;
+    if (this.pathTracer && this.ptActive) this.pathTracer.reset();
+  }
+
+  /** Rasen: feine Grünfläche aus einer kleinen, gekachelten Textur (funktioniert auch im Pathtracer) */
+  private lawnMaterial() {
+    if (this.groundLawn) return this.groundLawn;
+    const c = document.createElement('canvas');
+    c.width = c.height = 256;
+    const g = c.getContext('2d')!;
+    g.fillStyle = '#4c7a2f';
+    g.fillRect(0, 0, 256, 256);
+    let seed = 7;
+    const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+    for (let i = 0; i < 9000; i++) {
+      const v = rnd();
+      g.fillStyle = v < 0.45 ? '#5d8f39' : v < 0.8 ? '#426b27' : v < 0.95 ? '#6fa043' : '#7a8f3a';
+      g.fillRect(rnd() * 256, rnd() * 256, 1 + rnd() * 2, 2 + rnd() * 4);
+    }
+    const tex = new THREE.CanvasTexture(c);
+    tex.colorSpace = THREE.SRGBColorSpace;
+    tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+    tex.repeat.set(48, 48);
+    tex.anisotropy = 8;
+    this.groundLawn = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 1, color: '#ffffff' });
+    return this.groundLawn;
   }
 
   updateSelection() {

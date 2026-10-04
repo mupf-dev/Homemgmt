@@ -956,39 +956,60 @@ const weatherCache = new Map();
 const geoCache = new Map();
 const WEATHER_TEXT = [[0, 'klar'], [1, 'heiter'], [2, 'wolkig'], [3, 'bedeckt'], [45, 'Nebel'], [51, 'Niesel'], [61, 'Regen'], [66, 'Eisregen'], [71, 'Schnee'], [80, 'Schauer'], [85, 'Schneeschauer'], [95, 'Gewitter']];
 const weatherText = (code) => [...WEATHER_TEXT].reverse().find(([c]) => code >= c)?.[1] ?? '';
-async function weatherFor(plz) {
-  const hit = weatherCache.get(plz);
+/** Ort suchen (Adresse, Ort oder Postleitzahl) über OpenStreetMap/Nominatim – ohne Schlüssel */
+async function geocode(q, { postal = false } = {}) {
+  const key = `${postal ? 'p' : 'q'}:${q}`;
+  if (geoCache.has(key)) return geoCache.get(key);
+  const url = postal
+    ? `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(q)}&country=de&format=json&limit=1&addressdetails=1`
+    : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1&accept-language=de`;
+  const list = await fetch(url, { headers: { 'User-Agent': 'Zuhause-Heimserver (Lage des Hauses, Wetter)' }, signal: AbortSignal.timeout(8000) }).then((r) => r.json());
+  const out = (Array.isArray(list) ? list : []).map((h) => {
+    const a = h.address ?? {};
+    return { name: a.city || a.town || a.village || a.suburb || h.name || q, label: h.display_name, lat: Number(h.lat), lon: Number(h.lon) };
+  });
+  geoCache.set(key, out);
+  return out;
+}
+async function weatherAt(lat, lon, place) {
+  const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
+  const hit = weatherCache.get(key);
   if (hit && Date.now() - hit.at < 15 * 60000) return hit.data;
-  // Ort zur Postleitzahl über OpenStreetMap (Nominatim, ohne Schlüssel; Ergebnis bleibt im Speicher)
-  let g = geoCache.get(plz);
-  if (!g) {
-    const geo = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(plz)}&country=de&format=json&limit=1&addressdetails=1`, {
-      headers: { 'User-Agent': 'Zuhause-Heimserver (Wandterminal-Wetter)' }, signal: AbortSignal.timeout(8000),
-    }).then((r) => r.json());
-    const hit = geo?.[0];
-    if (!hit) throw new HttpError(404, `Zur Postleitzahl ${plz} wurde kein Ort gefunden.`);
-    const a = hit.address ?? {};
-    g = { name: a.city || a.town || a.village || a.suburb || plz, latitude: Number(hit.lat), longitude: Number(hit.lon) };
-    geoCache.set(plz, g);
-  }
-  const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}&current=temperature_2m,weather_code,cloud_cover,is_day,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json());
+  const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,cloud_cover,is_day,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json());
   const c = w?.current;
   if (!c) throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
   const data = {
-    place: g.name, temperature: Math.round(c.temperature_2m), code: c.weather_code, text: weatherText(c.weather_code), cloud: c.cloud_cover,
+    place, temperature: Math.round(c.temperature_2m), code: c.weather_code, text: weatherText(c.weather_code), cloud: c.cloud_cover,
     precipitation: c.precipitation, is_day: !!c.is_day, sunrise: w.daily?.sunrise?.[0] ?? null, sunset: w.daily?.sunset?.[0] ?? null,
   };
-  weatherCache.set(plz, { at: Date.now(), data });
+  weatherCache.set(key, { at: Date.now(), data });
   return data;
 }
+// Wetter: an Koordinaten (Lage des Hauses) oder an der Postleitzahl des Terminals
 route('GET', '/api/weather', async (_p, _b, qs, ctx) => {
-  const plz = String(qs.get('plz') || (ctx.terminal ? readTerminalSettings(ctx.terminal.settings).plz : '') || '').trim();
-  if (!/^\d{4,5}$/.test(plz)) throw new HttpError(400, 'Keine Postleitzahl hinterlegt.');
   try {
-    return await weatherFor(plz);
+    const lat = Number(qs.get('lat'));
+    const lon = Number(qs.get('lon'));
+    if (qs.get('lat') && Number.isFinite(lat) && Number.isFinite(lon) && Math.abs(lat) <= 90 && Math.abs(lon) <= 180) {
+      return await weatherAt(lat, lon, String(qs.get('place') || '').slice(0, 60));
+    }
+    const plz = String(qs.get('plz') || (ctx.terminal ? readTerminalSettings(ctx.terminal.settings).plz : '') || '').trim();
+    if (!/^\d{4,5}$/.test(plz)) throw new HttpError(400, 'Keine Lage des Hauses und keine Postleitzahl hinterlegt.');
+    const g = (await geocode(plz, { postal: true }))[0];
+    if (!g) throw new HttpError(404, `Zur Postleitzahl ${plz} wurde kein Ort gefunden.`);
+    return await weatherAt(g.lat, g.lon, g.name);
   } catch (e) {
     if (e instanceof HttpError) throw e;
     throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
+  }
+});
+route('GET', '/api/geocode', async (_p, _b, qs) => {
+  const q = String(qs.get('q') || '').trim().slice(0, 120);
+  if (q.length < 3) throw new HttpError(400, 'Bitte mindestens 3 Zeichen eingeben.');
+  try {
+    return await geocode(q, { postal: /^\d{5}$/.test(q) });
+  } catch {
+    throw new HttpError(502, 'Ortssuche nicht erreichbar.');
   }
 });
 

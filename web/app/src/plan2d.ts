@@ -45,6 +45,8 @@ export class Plan2D {
   viewOnly = false;
   /** Füllstand je Möbel (0 leer, 1 teils, 2 voll; null = ohne Fächer) – färbt Möbel im Ansehen-Modus */
   fillOf?: (itemId: string) => 0 | 1 | 2 | null;
+  /** Nordrichtung in Grad (Lage des Hauses) für den Nordpfeil */
+  north?: () => number | null;
   /** hervorgehobene Möbel (Suchtreffer) */
   highlight = new Set<string>();
   /** Touch: aktive Finger und Zwei-Finger-Zoom */
@@ -997,6 +999,36 @@ export class Plan2D {
     ctx.font = '11px Inter, system-ui, sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText(barCm >= 100 ? `${barCm / 100} m` : `${barCm} cm`, 16, H - 30);
+
+    // Nordpfeil (wenn die Lage des Hauses gesetzt ist)
+    const north = this.north?.();
+    if (north !== null && north !== undefined) {
+      const W = this.container.clientWidth;
+      ctx.save();
+      ctx.translate(W - 44, H - 50);
+      ctx.fillStyle = col('--panel');
+      ctx.strokeStyle = col('--line');
+      ctx.beginPath();
+      ctx.arc(0, 0, 20, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+      const rad = (north * Math.PI) / 180;
+      ctx.fillStyle = col('--ink');
+      ctx.font = '700 10px Inter, system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText('N', Math.sin(rad) * 28, -Math.cos(rad) * 28);
+      ctx.rotate(rad);
+      ctx.fillStyle = col('--accent');
+      ctx.beginPath();
+      ctx.moveTo(0, -15);
+      ctx.lineTo(6, 3);
+      ctx.lineTo(0, -1);
+      ctx.lineTo(-6, 3);
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
   }
 
   private handle(p: Vec2, color: string, px: number) {

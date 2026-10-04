@@ -85,6 +85,13 @@ export async function pickWho(): Promise<number | null> {
 // Kopfzeile: Ort, wer gerade bucht, Uhrzeit
 
 let clockTimer = 0;
+let weather = '';
+/** Wetter in der Kopfzeile (z. B. „12 °C · wolkig“) */
+export function setTermWeather(text: string) {
+  weather = text;
+  const el = document.querySelector('#termHead .term-weather');
+  if (el) el.textContent = text;
+}
 function renderHead() {
   let el = document.getElementById('termHead');
   if (!info) return el?.remove();
@@ -97,7 +104,7 @@ function renderHead() {
   const active = who && Date.now() - who.at < WHO_MS;
   el.innerHTML = `<span class="term-place">${ic('home')}${esc(info.name)}</span>
     ${active ? `<button class="term-who" title="Andere Person wählen"><span class="avatar" style="background:${esc(who!.color)}">${esc(who!.name.slice(0, 1).toUpperCase())}</span>${esc(who!.name)}${ic('x')}</button>` : ''}
-    <b class="term-clock"></b>`;
+    <span class="term-weather">${esc(weather)}</span><b class="term-clock"></b>`;
   el.querySelector('.term-who')?.addEventListener('click', clearWho);
   const clock = () => {
     const c = el!.querySelector('.term-clock');

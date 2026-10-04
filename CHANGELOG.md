@@ -27,13 +27,19 @@ oder QR-Code. Navigation am linken Rand, große Touch-Flächen, **Hoch- oder Que
 nach Tageszeit und Wetter am Ort (Postleitzahl; OpenStreetMap + Open-Meteo, ohne Schlüssel), Uhr, Einkaufsliste,
 Ablaufendes.
 
+**Lage des Hauses** (Planen → ⋯): Adresse oder Postleitzahl suchen oder Koordinaten eingeben, Nordrichtung per Kompass;
+der Grundriss zeigt einen Nordpfeil. Am Wandterminal steht damit die **Sonne wie draußen** (Sonnenstand aus Ort und
+Uhrzeit), **Himmel und Licht laufen live mit** (Tag, Bewölkung, Regen, Dämmerung, Nacht mit Lampen und Mondlicht,
+jede Minute neu), das Wetter steht in der Kopfzeile, und ums Haus liegt **Rasen**. Beim Ansehen wechselt die Etagenwahl
+von „Haus“ auf „Bis hier“, das gewählte Möbel bleibt sichtbar, alles andere wird durchsichtig (am Terminal ohne Rahmen).
+
 **Kleinigkeiten:** ein Icon-Satz statt Emoji, Datum als TT.MM.JJJJ mit Schnellwahl (1 Woche … 1 Jahr), Vorschläge aus
 vorhandenen Gegenständen beim Einbuchen ins Fach, Farben für den Dunkelmodus, Knöpfe statt blauer Links, Anleitung
 aktualisiert.
 
 **Intern:** `shell.ts`, `prefs.ts`, `icons.ts`, `terminal.ts`, `lager/home.ts`, `lager/outbox.ts`; Spalten
 `persons.can_plan`, `persons.prefs`, Tabelle `terminals`; `GET /api/movements/recent`, `PATCH /api/auth/me/prefs`,
-`/api/terminals…`, `/api/weather`. Tests: `test/prefs.test.cjs`, `test/terminal.test.cjs`, Klicktest erweitert
+`/api/terminals…`, `/api/weather` (Koordinaten oder Postleitzahl), `/api/geocode`; `sun.ts` (Sonnenstand). Tests: `test/prefs.test.cjs`, `test/terminal.test.cjs`, Klicktest erweitert
 (Ansehen/Planen, Einstellungen, Rechte, Handy, offline, Terminal).
 
 ## 0.5.0 – 2026-10-03

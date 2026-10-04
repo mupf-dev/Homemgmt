@@ -89,3 +89,10 @@ test('Neuer Link ersetzt den alten, Löschen sperrt das Gerät aus', async () =>
   await admin.del(`/api/terminals/${term.id}`);
   assert.equal((await as(fresh)('GET', '/api/house')).status, 401);
 });
+
+test('Wetter und Ortssuche prüfen die Eingaben (ohne Netz)', async () => {
+  assert.equal((await admin.get('/api/weather')).status, 400, 'ohne Lage und Postleitzahl');
+  assert.equal((await admin.get('/api/weather?lat=999&lon=0&plz=')).status, 400, 'ungültige Koordinaten');
+  assert.equal((await admin.get('/api/geocode?q=ab')).status, 400, 'zu kurz');
+  assert.equal((await client(srv.base).get('/api/geocode?q=Stuttgart')).status, 401);
+});

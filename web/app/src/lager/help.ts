@@ -60,6 +60,7 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   {
     id: 'terminal', title: 'Wandterminal',
     html: `<p>Ein Tablet an der Wand zeigt das Haus zum Suchen und Ansehen – ohne persönliche Anmeldung. Wer etwas ein- oder ausbucht, tippt seine <b>Kachel</b> an; die Wahl gilt 90 Sekunden (oben zu sehen, antippen wechselt). Ohne Bedienung kehrt das Terminal zum Haus zurück und zeigt den <b>Ruhezustand</b>: das Haus gedimmt, im Licht von Tageszeit und Wetter am Ort, dazu Uhr, Einkaufsliste und was bald abläuft. Antippen weckt es.</p>
+      <p>Ist die <b>Lage des Hauses</b> gesetzt (Planen → Menü ⋯ → „Lage des Hauses“: Adresse suchen oder Koordinaten, Nordrichtung), steht die Sonne im 3D wie draußen; Himmel, Licht und Wetter laufen am Terminal live mit, ums Haus liegt Rasen.</p>
       <p>Einrichten (Admins): <b>Mehr → Verwaltung → Wandterminals</b> → anlegen (Name, Hoch- oder Querformat, 2D/3D, Rückkehr nach Minuten, Ruhezustand, Postleitzahl fürs Wetter) und den <b>Einrichtungslink</b> auf dem Tablet öffnen oder den QR-Code scannen.</p>`,
   },
   {

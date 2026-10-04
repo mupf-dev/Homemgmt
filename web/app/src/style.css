@@ -1026,3 +1026,19 @@ body.resting #shell, body.resting #rail { visibility: hidden; }
 /* im Ruhezustand rechnet die 3D-Ansicht bildschirmfüllend (hinter dem Bild) */
 body.resting #app { top: 0 !important; left: 0 !important; bottom: 0 !important; grid-template-rows: 0 minmax(0, 1fr) 0 !important; grid-template-columns: 0 minmax(0, 1fr) 0 !important; }
 body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
+.term-weather { color: var(--ink-soft); font-size: 15px; white-space: nowrap; }
+.term-weather:empty { display: none; }
+/* Lage des Hauses */
+.loc-search { display: flex; gap: 6px; }
+.loc-search input { flex: 1; }
+.loc-hits { display: flex; flex-direction: column; gap: 4px; }
+.loc-hits:empty { display: none; }
+.loc-hits button { display: flex; flex-direction: column; text-align: left; border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 7px 10px; cursor: pointer; color: var(--ink); font: inherit; }
+.loc-hits button:hover { border-color: var(--accent); }
+.loc-hits small { color: var(--ink-soft); }
+.loc-north { display: flex; align-items: center; gap: 14px; }
+.loc-north input { flex: 1; }
+.loc-compass { width: 72px; height: 72px; flex: none; }
+.loc-compass circle { fill: var(--panel-2); stroke: var(--line); stroke-width: 2; }
+.loc-compass path { fill: var(--accent); }
+.loc-compass text { fill: var(--ink); font-size: 12px; font-weight: 700; }
