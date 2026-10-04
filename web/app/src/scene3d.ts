@@ -693,7 +693,11 @@ export class Scene3D {
   updateSelection() {
     this.updateBox();
     this.applyFocus();
+    // Wandterminal: das Möbel hebt sich durch die Transparenz ab – kein Auswahlrahmen
+    if (this.hideSelectionBox && store.selection?.kind === 'item') this.selectionBox.visible = false;
   }
+  /** Auswahlrahmen für Möbel weglassen (Wandterminal) */
+  hideSelectionBox = false;
 
   /** Ansehen: das ausgewählte Möbel hervorheben, alles andere halbtransparent */
   focusMode = false;

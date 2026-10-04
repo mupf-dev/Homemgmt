@@ -3175,8 +3175,10 @@ document.addEventListener('zh-outbox-flush', () => flush().then((r) => document.
 // Konto geändert (Anmeldung per Kachel, E-Mail, Abmelden): Planen-Knopf anpassen
 document.addEventListener('zh-account-render', () => {
   updatePlanButton();
-  // Wandterminal: nur ansehen, nichts im Browser speichern
+  // Wandterminal: nur ansehen, nichts im Browser speichern; Möbel ohne orangen Auswahlrahmen
   if (terminal()) store.readonly = true;
+  view.hideSelectionBox = !!terminal();
+  view.updateSelection();
 });
 // Start: Ansehen in der Lieblingsansicht der Person
 setView(prefs().houseView);
