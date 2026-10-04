@@ -315,8 +315,12 @@ export class Scene3D {
       this.content.add(g);
     }
     // Keller wären unter dem Gelände versteckt; mit Rasen liegt der Keller (wie echt) darunter – außer man schaut auf ihn
-    this.ground.material = this.lawn ? this.lawnMaterial() : this.groundPlain;
-    this.ground.visible = this.mode === 'floor' || (this.lawn ? Math.max(...floors.map((f) => f.elevation)) >= -1 : !floors.some((f) => f.elevation < -1));
+    // Rasen liegt auf Geländehöhe – der Keller liegt darunter. Schaut man auf den Keller, wird der Rasen ausgeblendet
+    // (Etage „Keller“ allein: neutraler Boden statt Rasen).
+    const top = Math.max(...floors.map((f) => f.elevation));
+    const underground = top < -1;
+    this.ground.material = this.lawn && !underground ? this.lawnMaterial() : this.groundPlain;
+    this.ground.visible = this.mode === 'floor' || (this.lawn ? !underground : !floors.some((f) => f.elevation < -1));
 
     const p = store.project;
     this.updateSun(p);

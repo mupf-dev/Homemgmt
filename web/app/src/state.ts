@@ -62,6 +62,13 @@ export function makeItem(type: string, over: Partial<Item> = {}): Item {
   };
 }
 
+/** Etage, mit der die App startet: das Erdgeschoss (Etage auf Höhe ±0), nicht der Keller */
+function groundFloorId(h: House) {
+  const inner = h.floors.filter((f) => f.kind === 'floor');
+  const pick = (inner.length ? inner : h.floors).reduce((a, b) => (Math.abs(b.elevation) < Math.abs(a.elevation) ? b : a));
+  return pick.id;
+}
+
 class Store {
   house: House;
   floorId: string;
@@ -88,7 +95,7 @@ class Store {
       return h;
     })();
     normalizeHouse(this.house);
-    this.floorId = this.house.floors[0].id;
+    this.floorId = groundFloorId(this.house);
     this.view = floorView(
       () => this.house,
       () => this.floor,
@@ -166,7 +173,7 @@ class Store {
 
   private restore(snap: string) {
     this.house = JSON.parse(snap);
-    if (!this.house.floors.some((f) => f.id === this.floorId)) this.floorId = this.house.floors[0].id;
+    if (!this.house.floors.some((f) => f.id === this.floorId)) this.floorId = groundFloorId(this.house);
     this.validateSelection();
     this.floorListeners.forEach((l) => l());
     this.emit();
@@ -192,7 +199,7 @@ class Store {
     const keepFloor = this.floorId;
     this.house = migrateHouse(raw);
     this.normalize();
-    this.floorId = this.house.floors.some((f) => f.id === keepFloor) ? keepFloor : this.house.floors[0].id;
+    this.floorId = this.house.floors.some((f) => f.id === keepFloor) ? keepFloor : groundFloorId(this.house);
     this.selection = null;
     if (!keepUndo) {
       this.undoStack = [this.snapshot()];
@@ -264,7 +271,7 @@ class Store {
   removeFloor(id: string) {
     if (this.house.floors.length < 2) return;
     this.house.floors = this.house.floors.filter((f) => f.id !== id);
-    if (this.floorId === id) this.floorId = this.house.floors[0].id;
+    if (this.floorId === id) this.floorId = groundFloorId(this.house);
     this.selection = null;
     this.floorListeners.forEach((l) => l());
     this.commit();
