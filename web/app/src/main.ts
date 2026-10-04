@@ -295,6 +295,18 @@ view.onWalkWhere = (f, room) => {
   $('#walkWhere').textContent = `${f.name}${room ? ' · ' + room : ''}`;
 };
 view.onModeChange = (mode) => document.querySelectorAll('#houseMode [data-h]').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.h === mode));
+// 3D-Knopf „Haus“ beim Ansehen: Seitenleiste zeigt das ganze Haus, „Etage“/„Bis hier“ die Räume der Etage
+document.querySelectorAll<HTMLElement>('#houseMode [data-h]').forEach((b) =>
+  b.addEventListener('click', () => {
+    if (!document.body.classList.contains('haus-view')) return;
+    viewHouse = b.dataset.h === 'house';
+    if (viewHouse) {
+      viewFach = null;
+      store.select(null);
+    }
+    renderViewPanel();
+  }),
+);
 
 $('#exposure').addEventListener('input', (e) => view.setExposure(+(e.target as HTMLInputElement).value));
 
@@ -2333,6 +2345,7 @@ store.onSelection(() => {
   view.updateSelection();
   const s = store.selection;
   if (viewFach && (s?.kind !== 'item' || s.id !== viewFach.itemId)) viewFach = null;
+  if (s) viewHouse = false;
   renderViewPanel();
   // Handy: das Blatt deckt den unteren Teil ab – ausgewähltes Möbel in den sichtbaren Bereich holen
   if (s?.kind === 'item' && document.body.classList.contains('haus-view') && window.matchMedia('(max-width: 820px)').matches) {
@@ -2941,6 +2954,20 @@ document.addEventListener('click', (e) => {
 
 /** im Ansehen-Modus geöffnetes Fach (Seitenleiste) */
 let viewFach: { itemId: string; row: number } | null = null;
+/** Ansehen: oberste Ebene „Haus“ (alle Etagen) statt der Räume der aktuellen Etage */
+let viewHouse = false;
+function showHouse() {
+  viewHouse = true;
+  viewFach = null;
+  store.select(null);
+  if (view.mode !== 'house') {
+    view.mode = 'house';
+    view.build();
+    view.setView('perspective');
+    document.querySelectorAll('#houseMode [data-h]').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.h === 'house'));
+  }
+  renderViewPanel();
+}
 const mayPlan = () => !terminal() && (!account.user || !!account.user.canPlan);
 function updatePlanButton() {
   $('#planStart').hidden = !mayPlan();
@@ -3121,6 +3148,39 @@ function renderViewPanel() {
       return;
     }
   }
+  // Haus: alle Etagen mit Füllstand
+  if (viewHouse) {
+    const floors = [...store.house.floors].sort((a, b) => b.elevation - a.elevation).map((fl) => {
+      let all = 0;
+      let used = 0;
+      let count = 0;
+      for (const it of fl.items) {
+        if (!compartments(it, S).length) continue;
+        const x = itemFill(it);
+        all += x.all;
+        used += x.used;
+        count += x.count;
+      }
+      return { fl, all, used, count };
+    });
+    el.innerHTML = `<h2 class="vp-title">${esc(store.house.name || 'Haus')}</h2><p class="vp-sub">Etage antippen, um ihre Räume zu sehen.</p>
+      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(fl.name)}</b><small>${fl.rooms.length} Räume${all ? ` · ${count} Gegenstände` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
+      <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
+    el.querySelectorAll<HTMLElement>('[data-floor]').forEach((b) =>
+      b.addEventListener('click', () => {
+        viewHouse = false;
+        if (b.dataset.floor === store.floorId) {
+          // gleiche Etage: trotzdem auf „Bis hier“ wechseln
+          view.mode = 'stack';
+          view.build();
+          view.setView('perspective');
+          document.querySelectorAll('#houseMode [data-h]').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.h === 'stack'));
+          renderViewPanel();
+        } else store.setFloor(b.dataset.floor!);
+      }),
+    );
+    return;
+  }
   const rows = f.rooms.map((r, i) => {
     const list = roomItems(r.id);
     let all = 0;
@@ -3134,13 +3194,15 @@ function renderViewPanel() {
     }
     return { r, i, list, all, used, count };
   });
-  el.innerHTML = `<h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">Möbel antippen, um Fächer und Inhalt zu sehen.</p>
+  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}Haus</button></div><h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">Möbel antippen, um Fächer und Inhalt zu sehen.</p>
     ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${list.length} Möbel · ${count} Gegenstände` : 'keine Fächer'}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : '<p class="hint">Auf dieser Etage sind noch keine Räume festgelegt.</p>'}
     <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
   el.querySelectorAll<HTMLElement>('[data-room]').forEach((b) => b.addEventListener('click', () => store.select({ kind: 'room', id: b.dataset.room! })));
+  el.querySelector('[data-house]')?.addEventListener('click', showHouse);
 }
 store.onFloor(() => {
   viewFach = null;
+  viewHouse = false;
   renderViewPanel();
   // Ansehen: Etage gewählt, während das ganze Haus zu sehen ist → „Bis hier“ auf diese Etage
   if (document.body.classList.contains('haus-view') && !document.body.classList.contains('resting') && view.mode === 'house') {
@@ -3355,6 +3417,7 @@ async function paintRest() {
   view.mode = 'house';
   view.build();
   view.setView('perspective');
+  view.tiltCamera(18); // flacher Blick aufs Haus
   await frames(12);
   const img = rest.querySelector<HTMLImageElement>('.rest-img')!;
   img.src = view.screenshot();

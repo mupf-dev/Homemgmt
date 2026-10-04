@@ -866,6 +866,17 @@ export class Scene3D {
 
   // -------------------------------------------------------------------------
 
+  /** Kamera auf flacheren Blickwinkel absenken (Grad über der Horizontalen), Abstand bleibt – z. B. Ruhezustand */
+  tiltCamera(deg: number) {
+    const t = this.controls.target;
+    const off = this.camera.position.clone().sub(t);
+    const dist = off.length();
+    const h = new THREE.Vector3(off.x, 0, off.z).normalize();
+    const a = (deg * Math.PI) / 180;
+    this.camera.position.copy(t).addScaledVector(h, dist * Math.cos(a)).add(new THREE.Vector3(0, dist * Math.sin(a), 0));
+    this.cameraChanged();
+  }
+
   setView(kind: 'perspective' | 'top' | 'front' | 'corner') {
     const poly = this.mode === 'floor' ? floorPolygon(store.project) : this.visibleFloors().flatMap((f) => f.walls.flatMap((w) => [w.a, w.b]));
     if (!poly.length) return;
