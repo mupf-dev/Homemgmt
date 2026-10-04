@@ -8,11 +8,11 @@ Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – a
 
 [![Node.js ≥ 22.18](https://img.shields.io/badge/Node.js-%E2%89%A5%2022.18-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-bereit-2496ED?logo=docker&logoColor=white)](#mit-docker-empfohlen)
-[![MCP](https://img.shields.io/badge/MCP-Server-6B4FBB)](#ki-assistent-und-mcp-server)
+[![MCP](https://img.shields.io/badge/MCP-Server-6B4FBB)](#ki-assistent)
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/Website-mupf--dev.github.io-E8692E)](https://mupf-dev.github.io/Homemgmt/)
 
-[Funktionen](#funktionen) · [Ein echtes Haus](#ein-echtes-haus) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
+[Funktionen](#funktionen) · [Wandterminal](#wandterminal) · [Live-Wetter](#live-wetter) · [Ein echtes Haus](#ein-echtes-haus) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
 
 <img src="site/img/haus-3d.webp" alt="Das Erdgeschoss in 3D, Möbel nach Füllstand eingefärbt, im Dunkelmodus" width="900">
 
@@ -69,28 +69,88 @@ Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **ein
 - **Auswertung**, **Export/Import** als Excel, **automatische Backups**
 - **Offline-fest**: Buchungen bei schlechtem WLAN werden vorgemerkt und automatisch nachgebucht
 
-### 📱 Für den ganzen Haushalt
+### 📱 Am Handy
 
 <table>
 <tr>
-<td align="center" width="25%"><img src="site/img/handy-uebersicht.webp" alt="Startseite auf dem Handy" width="190"></td>
-<td align="center" width="25%"><img src="site/img/handy-blatt.webp" alt="Fach-Details auf dem Handy als Blatt von unten" width="190"></td>
-<td align="center" width="25%"><img src="site/img/terminal-wer-bucht.webp" alt="Wandterminal: Auswahl, wer bucht" width="190"></td>
-<td align="center" width="25%"><img src="site/img/terminal-ruhe.webp" alt="Wandterminal im Ruhezustand mit Uhr und Haus" width="190"></td>
+<td align="center" width="50%"><img src="site/img/handy-uebersicht.webp" alt="Startseite auf dem Handy" width="230"></td>
+<td align="center" width="50%"><img src="site/img/handy-blatt.webp" alt="Fach-Details auf dem Handy als Blatt von unten" width="230"></td>
 </tr>
 <tr>
-<td align="center">Handy: Übersicht</td>
-<td align="center">Handy: Fach</td>
-<td align="center">Wandterminal: „Wer bucht?“</td>
-<td align="center">Wandterminal: Ruhezustand</td>
+<td align="center">Übersicht: Schnellaktionen, Einkauf, Ablaufendes</td>
+<td align="center">Fach als Blatt von unten</td>
 </tr>
 </table>
 
+- **Als App installierbar** (PWA) mit Schnellzugriffen; am Handy Leiste unten, **Scannen** in der Mitte
+- **Übersicht** als Startseite: Schnellaktionen, Einkaufsliste zum Abhaken, was bald abläuft, Füllstand je Etage, zuletzt bewegt
+- **Schlechtes WLAN**: Buchungen werden vorgemerkt („2 Buchungen warten“) und automatisch nachgebucht – der Server bucht nie doppelt
 - **Mehrere Personen** mit Anmeldung per Kachel + PIN/Passwort oder E-Mail, Recht „Haus planen“ pro Person
-- **Als App installierbar** (PWA), am Handy mit Leiste unten und Scannen in der Mitte
-- **Wandterminals**: Tablet an der Wand ohne persönliche Anmeldung, Ruhezustand mit Uhr, Wetter und Einkaufsliste;
-  Wolken, Regen, Schnee und Nebel wie draußen, **Gewitter mit Blitzen in Echtzeit** (Blitzortung.org) samt Blitzkarte
-- **Einstellungen pro Person**: Startseite, 2D/3D, Hell/Dunkel, Schriftgröße
+- **Einstellungen pro Person**: Startseite, Haus zuerst in 2D oder 3D, Hell/Dunkel, Schriftgröße
+
+<a id="wandterminal"></a>
+
+### 🖥️ Wandterminal
+
+Ein Tablet an der Wand wird zur Schaltzentrale für alle im Haus – ohne persönliche Anmeldung.
+
+<table>
+<tr>
+<td width="50%"><img src="site/img/terminal-quer.webp" alt="Wandterminal im Querformat: Navigation links, Grundriss, Wetter und Uhr in der Kopfzeile"></td>
+<td width="25%"><img src="site/img/terminal-wer-bucht.webp" alt="Wandterminal im Hochformat: Auswahl „Wer bucht?“"></td>
+<td width="25%"><img src="site/img/terminal-ruhe.webp" alt="Wandterminal im Ruhezustand mit Uhr, Haus und Einkaufsliste"></td>
+</tr>
+<tr>
+<td>Querformat: Navigation am linken Rand, Wetter und Uhr oben</td>
+<td>„Wer bucht?“</td>
+<td>Ruhezustand</td>
+</tr>
+</table>
+
+- **Einrichten:** *Verwaltung → Wandterminals → Wandterminal anlegen*, den **Einrichtungslink** oder seinen **QR-Code**
+  am Tablet öffnen – kein Passwort am Gerät. Link jederzeit neu erzeugen oder Terminal entfernen.
+- **Je Gerät einstellbar:** Hoch- oder Querformat, Haus als Grundriss oder 3D, hell/dunkel, Schriftgröße bis „sehr groß“,
+  Minuten bis zurück zum Haus, Ruhezustand an/aus, Detailgrad (Entwurf 15 s, Normal 30 s, Hoch 90 s), Postleitzahl fürs Wetter.
+- **Buchen für alle:** Fach antippen, einbuchen oder entnehmen, dann auf die eigene **„Wer bucht?“**-Kachel tippen; die
+  Person bleibt 90 Sekunden gemerkt. Große Touch-Flächen; nur Haus, Suchen, Einkauf und Haltbarkeit – Planen ist gesperrt.
+- **Ruhezustand:** das Haus gedimmt und fotorealistisch mit Rasen, große Uhr, Datum, Wetter, Einkaufsliste und
+  Ablaufendes. Sparsam: rechnet nur neu, wenn sich Sonne oder Wetter ändern, pausiert bei verdecktem Bildschirm.
+
+<a id="live-wetter"></a>
+
+### 🌦️ Live-Wetter am Haus
+
+<table>
+<tr>
+<td width="20%"><img src="site/img/wetter-klar.webp" alt="Ruhezustand bei klarem Wetter"></td>
+<td width="20%"><img src="site/img/wetter-regen.webp" alt="Ruhezustand bei Regen mit nassem Rasen"></td>
+<td width="20%"><img src="site/img/wetter-gewitter.webp" alt="Ruhezustand bei Gewitter mit Regen"></td>
+<td width="20%"><img src="site/img/wetter-schnee.webp" alt="Ruhezustand bei Schnee, der Garten ist weiß"></td>
+<td width="20%"><img src="site/img/wetter-nebel.webp" alt="Ruhezustand bei Nebel"></td>
+</tr>
+<tr>
+<td align="center">Klar</td><td align="center">Regen</td><td align="center">Gewitter</td><td align="center">Schnee</td><td align="center">Nebel</td>
+</tr>
+</table>
+
+Mit der **Lage des Hauses** (*Planen → ⋯*: Adresse, Postleitzahl oder Koordinaten, Nordrichtung per Kompass) zeigt das
+Wandterminal das Haus so, wie es draußen aussieht – ohne Konto und ohne API-Schlüssel:
+
+- **Sonne wie draußen:** Sonnenstand aus Ort und Uhrzeit; Himmel und Licht laufen jede Minute mit – Tag, Dämmerung,
+  Nacht mit eingeschalteten Lampen und Mondlicht. Der Grundriss zeigt einen Nordpfeil.
+- **Wolken** nach echter Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im fotorealistischen Bild.
+- **Regen und Niesel** als dezente Animation nach echter Regenrate (mm/h), der Rasen wird nass; **Nebel und Dunst**
+  nach Sichtweite; Temperatur und Regenmenge in der Kopfzeile.
+- **Schnee** wächst als Fleck: erst auf und vor der Terrasse, ab ~10 cm der ganze Garten; das Dach wird angezuckert bis weiß.
+- **Gewitter in Echtzeit:** jeder Blitzeinschlag im Umkreis kommt sofort an ([Blitzortung.org](https://www.blitzortung.org),
+  per Server-Sent Events). Nahe Blitze (≤ 30 km) lassen den Bildschirm aufblitzen, ab 20 km warnt die Kopfzeile, im
+  Ruhezustand stehen der letzte Blitz (Entfernung, Richtung, Alter) und eine **Blitzkarte** (10/25/50 km).
+- **Testwetter** zum Ausprobieren: Terminal-Adresse mit `?testwetter=schnee` öffnen (auch `schnee-hauch`, `schneesturm`,
+  `niesel`, `regen`, `wolkenbruch`, `gewitter`, `nebel`, `wolkig`, `klar`) – die Bilder oben sind so entstanden.
+
+Daten: Ort über [OpenStreetMap](https://www.openstreetmap.org), Wetter über [Open-Meteo](https://open-meteo.com) (alle 15 Minuten).
+
+<a id="ki-assistent"></a>
 
 ### 🤖 KI-Assistent und MCP-Server
 

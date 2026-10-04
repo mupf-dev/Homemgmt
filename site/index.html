@@ -135,6 +135,30 @@ footer a { color: var(--muted); }
 .gallery figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
 .gallery figcaption { padding: 12px 16px; font-size: 14px; color: var(--muted); }
 .gallery figcaption b { color: var(--text); }
+.wx-strip { display: grid; gap: 12px; grid-template-columns: repeat(2, 1fr); margin: 8px 0 0; }
+@media (min-width: 760px) { .wx-strip { grid-template-columns: repeat(5, 1fr); } }
+.wx-strip figure { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+.wx-strip figcaption { padding: 8px 12px; font-size: 13px; font-weight: 600; }
+.cols { display: grid; gap: 28px; grid-template-columns: 1fr; margin-top: 44px; }
+@media (min-width: 900px) { .cols { grid-template-columns: repeat(3, 1fr); gap: 32px; } }
+.cols h4 { margin: 0 0 10px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.cols h4 svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.cols ul, .detail ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 7px; }
+.cols li, .detail li { font-size: 15px; color: var(--muted); padding-left: 16px; position: relative; }
+.cols li::before, .detail li::before { content: ""; position: absolute; left: 0; top: .62em; width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+.cols li b, .detail li b { color: var(--text); font-weight: 600; }
+.detail { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .detail { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 1040px) { .detail { grid-template-columns: repeat(3, 1fr); } }
+.detail > div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+.detail h4 { margin: 0 0 12px; font-size: 17px; display: flex; align-items: center; gap: 8px; }
+.detail h4 svg { width: 22px; height: 22px; color: var(--accent); flex: none; }
+.term-shots { display: grid; gap: 16px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 900px) { .term-shots { grid-template-columns: 2fr 1fr 1fr; } }
+.term-shots figure { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+.term-shots figcaption { padding: 10px 14px; font-size: 14px; color: var(--muted); }
+.term-shots figcaption b { color: var(--text); }
+.small { font-size: 14px; color: var(--muted); margin-top: 20px; }
 </style>
 </head>
 <body>
@@ -143,11 +167,11 @@ footer a { color: var(--muted); }
   <div class="wrap">
     <a class="brand" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>Zuhause</a>
     <nav class="links">
-      <a href="#so-gehts">So geht's</a>
       <a href="#funktionen">Funktionen</a>
+      <a href="#wandterminal">Wandterminal</a>
+      <a href="#live-wetter">Live-Wetter</a>
       <a href="#echtes-haus">Ein echtes Haus</a>
       <a href="#installation">Installation</a>
-      <a href="#anleitung">Anleitung</a>
     </nav>
     <a class="gh" href="https://github.com/mupf-dev/Homemgmt"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
   </div>
@@ -227,19 +251,107 @@ footer a { color: var(--muted); }
 
       <div class="feature flip">
         <div>
-          <h3>Am Handy und an der Wand</h3>
-          <p>Als App installierbar, mit Scannen in der Mitte der Leiste. Ein Tablet an der Wand wird zum Terminal für alle – mit „Wer bucht?“ und einem Ruhezustand, in dem die Sonne wie draußen steht.</p>
+          <h3>Am Handy</h3>
+          <p>Als App installierbar, mit derselben Navigation wie am PC – am Handy unten, Scannen in der Mitte. Die Übersicht zeigt, was heute zählt.</p>
           <ul>
-            <li>Mehrere Personen, Anmeldung per Kachel + PIN</li>
-            <li>Buchungen ohne WLAN werden nachgeholt</li>
-            <li>Ruhezustand mit Uhr, Wetter und Einkaufsliste</li>
+            <li>Übersicht: Schnellaktionen, Einkaufsliste zum Abhaken, was bald abläuft, Füllstand je Etage, zuletzt bewegt</li>
+            <li>Fächer öffnen sich als Blatt von unten, der Plan bleibt sichtbar</li>
+            <li>Schlechtes WLAN: Buchungen werden vorgemerkt und automatisch nachgebucht – nie doppelt</li>
           </ul>
         </div>
         <div class="phones">
           <figure><img src="img/handy-uebersicht.webp" width="390" height="844" alt="Startseite auf dem Handy mit Schnellaktionen, Einkaufsliste und Ablaufendem"></figure>
-          <figure><img src="img/terminal-ruhe.webp" width="744" height="1133" alt="Wandterminal im Ruhezustand: Haus auf Rasen, große Uhr, Einkaufsliste"></figure>
+          <figure><img src="img/handy-blatt.webp" width="390" height="844" alt="Ein Fach auf dem Handy als Blatt von unten mit Inhalt und Einbuchen"></figure>
         </div>
       </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="wandterminal" class="alt">
+    <div class="wrap">
+      <h2>Wandterminal</h2>
+      <p class="sub">Ein altes Tablet an der Wand wird zur Schaltzentrale für alle im Haus – ohne persönliche Anmeldung, mit großen Touch-Flächen und einem Ruhezustand, der das Haus wie draußen zeigt.</p>
+      <div class="term-shots">
+        <figure><img src="img/terminal-quer.webp" width="1366" height="1024" alt="Wandterminal im Querformat: Navigation links, Grundriss der Küche, Wetter und Uhr in der Kopfzeile"><figcaption><b>Querformat</b> · Navigation am linken Rand, Wetter und Uhr oben</figcaption></figure>
+        <figure><img src="img/terminal-wer-bucht.webp" width="744" height="1133" alt="Wandterminal im Hochformat: Auswahl „Wer bucht?“ mit Kacheln für Anna und Ben"><figcaption><b>„Wer bucht?“</b> · ein Tipp auf die eigene Kachel</figcaption></figure>
+        <figure><img src="img/terminal-ruhe.webp" width="744" height="1133" alt="Wandterminal im Ruhezustand: Haus auf Rasen, große Uhr, Einkaufsliste"><figcaption><b>Ruhezustand</b> · Haus, Uhr, Wetter, Einkaufsliste</figcaption></figure>
+      </div>
+      <div class="cols">
+        <div>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>Einrichten in einer Minute</h4>
+          <ul>
+            <li><b>Verwaltung → Wandterminals</b> → anlegen und nach dem Ort benennen („Diele“)</li>
+            <li>Den <b>Einrichtungslink</b> oder seinen <b>QR-Code</b> am Tablet öffnen – fertig, kein Passwort am Gerät</li>
+            <li>Je Gerät: <b>Hoch- oder Querformat</b>, Haus als Grundriss oder 3D, hell/dunkel, Schriftgröße bis „sehr groß“</li>
+            <li>Wartezeit bis zurück zum Haus, Ruhezustand an/aus, <b>Detailgrad</b> (Entwurf 15 s, Normal 30 s, Hoch 90 s) und Postleitzahl fürs Wetter</li>
+            <li>Nur die passenden Seiten: Haus, Suchen, Einkauf, Haltbarkeit – <b>Planen ist am Terminal gesperrt</b>; Link jederzeit neu erzeugen oder Terminal entfernen</li>
+          </ul>
+        </div>
+        <div>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Buchen für alle</h4>
+          <ul>
+            <li>Fach antippen, Inhalt sehen, <b>einbuchen</b> oder <b>− 1</b> entnehmen</li>
+            <li><b>„Wer bucht?“</b>-Kacheln mit allen Personen – der Verlauf zeigt, wer was genommen hat</li>
+            <li>Die gewählte Person bleibt <b>90 Sekunden</b> gemerkt, für mehrere Buchungen hintereinander</li>
+            <li>Große Touch-Flächen, Suche „Wo liegt …?“ mit Treffern im Haus</li>
+            <li>Ohne Bedienung springt das Terminal zurück zum Haus</li>
+          </ul>
+        </div>
+        <div>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>Ruhezustand</h4>
+          <ul>
+            <li>Das Haus <b>gedimmt und fotorealistisch</b>, mit flachem Blickwinkel und Rasen drumherum</li>
+            <li><b>Große Uhr</b>, Datum, Wetter, Einkaufsliste und was bald abläuft</li>
+            <li><b>Sonne, Himmel und Wetter wie draußen</b> – siehe Live-Wetter</li>
+            <li><b>Sparsam:</b> rechnet nur neu, wenn sich Sonne oder Wetter ändern; Pause bei verdecktem Bildschirm, letztes Bild gemerkt</li>
+            <li>Antippen weckt das Terminal sofort</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="live-wetter">
+    <div class="wrap">
+      <h2>Live-Wetter am Haus</h2>
+      <p class="sub">Trag die Lage deines Hauses ein – dann stehen am Wandterminal Sonne, Himmel und Wetter so, wie du es durchs Fenster siehst. Ohne Konto und ohne API-Schlüssel.</p>
+      <div class="wx-strip">
+        <figure><img src="img/wetter-klar.webp" width="560" height="806" alt="Ruhezustand bei klarem Wetter: grüner Rasen, Schatten der Sonne"><figcaption>Klar</figcaption></figure>
+        <figure><img src="img/wetter-regen.webp" width="560" height="806" alt="Ruhezustand bei Regen: dunkler, nasser Rasen und grauer Himmel"><figcaption>Regen</figcaption></figure>
+        <figure><img src="img/wetter-gewitter.webp" width="560" height="806" alt="Ruhezustand bei Gewitter: Regenschlieren über dem Haus"><figcaption>Gewitter</figcaption></figure>
+        <figure><img src="img/wetter-schnee.webp" width="560" height="806" alt="Ruhezustand bei Schnee: der Garten ist weiß"><figcaption>Schnee</figcaption></figure>
+        <figure><img src="img/wetter-nebel.webp" width="560" height="806" alt="Ruhezustand bei Nebel: das Haus verschwimmt im Dunst"><figcaption>Nebel</figcaption></figure>
+      </div>
+      <div class="cols">
+        <div>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Sonne und Himmel</h4>
+          <ul>
+            <li><b>Lage des Hauses</b> (Planen → ⋯): Adresse oder Postleitzahl suchen oder Koordinaten eingeben, Nordrichtung per Kompass – der Grundriss zeigt einen Nordpfeil</li>
+            <li><b>Sonnenstand</b> aus Ort und Uhrzeit: Die Schatten fallen wie draußen</li>
+            <li>Himmel und Licht laufen <b>jede Minute</b> mit: Tag, Dämmerung, Nacht mit eingeschalteten Lampen und Mondlicht</li>
+          </ul>
+        </div>
+        <div>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 17.5"/><path d="M8 21l1-2M12 21l1-2M16 21l1-2" /></svg>Wolken, Regen, Schnee</h4>
+          <ul>
+            <li><b>Wolken</b> nach echter Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im fotorealistischen Bild</li>
+            <li><b>Regen und Niesel</b> als dezente Animation, Stärke nach echter Regenrate (mm/h); der Rasen wird nass</li>
+            <li><b>Schnee</b> wächst als Fleck: erst auf und vor der Terrasse, ab ~10 cm der ganze Garten; das Dach wird angezuckert bis weiß</li>
+            <li><b>Nebel und Dunst</b> nach Sichtweite; Temperatur und Regenmenge in der Kopfzeile</li>
+          </ul>
+        </div>
+        <div>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Gewitter in Echtzeit</h4>
+          <ul>
+            <li>Jeder <b>Blitzeinschlag</b> in der Umgebung kommt sofort an (Blitzortung.org, per Server-Sent Events)</li>
+            <li>Nahe Blitze (≤ 30 km) lassen den <b>Bildschirm aufblitzen</b></li>
+            <li><b>Warnung</b> in der Kopfzeile ab 20 km Entfernung</li>
+            <li>Im Ruhezustand: letzter Blitz mit Entfernung, Richtung und Alter, Anzahl und eine <b>Blitzkarte</b> (10/25/50 km)</li>
+          </ul>
+        </div>
+      </div>
+      <p class="small">Daten: Ort über <a href="https://www.openstreetmap.org">OpenStreetMap</a>, Wetter über <a href="https://open-meteo.com">Open-Meteo</a> (alle 15 Minuten), Blitze über <a href="https://www.blitzortung.org">Blitzortung.org</a> – ohne Konto, für private Nutzung. Zum Ausprobieren gibt es Testwetter: Terminal-Adresse mit <code>?testwetter=schnee</code> öffnen (auch <code>regen</code>, <code>gewitter</code>, <code>nebel</code>, <code>schneesturm</code>, <code>wolkenbruch</code> …). Die Bilder oben sind damit entstanden.</p>
     </div>
   </section>
 
@@ -258,17 +370,20 @@ footer a { color: var(--muted); }
     </div>
   </section>
 
-  <section>
+  <section id="alle-funktionen">
     <div class="wrap">
-      <h2>Und außerdem</h2>
-      <p class="sub">Alles, was ein Haushalt zum Wiederfinden braucht.</p>
-      <div class="grid">
-        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg><h4>QR-Scan</h4><p>Fach-Code, dann Gegenstand = einbuchen. Gegenstand zweimal = ausbuchen. Auch per Handscanner.</p></div>
-        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg><h4>Etiketten & 3D-Druck</h4><p>Etiketten für Fächer und Dinge drucken – oder QR-Schilder als STL und mehrfarbiges 3MF.</p></div>
-        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg><h4>Einkaufsliste</h4><p>Verbrauchsmaterial landet beim Ausbuchen automatisch drauf. Teilen per WhatsApp.</p></div>
-        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/><path d="M10 10h.01M14 10h.01"/></svg><h4>KI-Assistent</h4><p>„3 Dosen Tomaten in den Keller, haltbar bis 05/2027“ – per Text, Sprache oder Foto. Jeder OpenAI-kompatible Anbieter.</p></div>
-        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M8 12h8M12 8v8"/></svg><h4>MCP-Server</h4><p>Claude und andere KI-Assistenten suchen und buchen direkt im Lager – mit eigenem API-Schlüssel.</p></div>
-        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><h4>Backups & Export</h4><p>Automatische Backups, Wiederherstellen per Klick, Export und Import als Excel-Datei.</p></div>
+      <h2>Alle Funktionen im Detail</h2>
+      <p class="sub">Was Zuhause sonst noch kann – vom Grundriss bis zur Datensicherung.</p>
+      <div class="detail">
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>Hausplaner</h4><ul><li><b>Etagen</b>: Keller, Wohnetagen, Dachgeschoss mit Satteldach und Kniestock, Außenbereich – mit Höhenlage und Raumhöhe</li><li><b>Wände</b> mit Fang und Maßen oder <b>Grundriss-Scan</b> als Vorlage mit Maßstab; die Etage darunter als Durchpause</li><li><b>Räume</b> per Klick erkennen – folgen beim Verschieben der Wände; eigener Bodenbelag</li><li>Türen, Fenster, <b>Treppen</b> mit Treppenloch, Durchgänge in Schrankoptik, Terrasse, Stellplatz, Carport</li><li>Objekte <b>sperren</b> (Taste <code>L</code>), Rückgängig/Wiederholen, automatisches Speichern mit Konfliktschutz</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg>3D und Möbel</h4><ul><li><b>Möbelkatalog</b>: Küchenschränke, Regale, Schwerlastregal, Vorrats- und Kleiderschrank, Sideboard, Kommode, Werkbank</li><li><b>3D-Bibliothek</b>: über 500 Modelle von Poly Haven (CC0) und Tausende von FurniMesh, auch deutsch durchsuchbar; eigene <code>.glb</code></li><li>Ansicht <b>Etage, „Bis hier“ oder ganzes Haus</b>; gewähltes Möbel hervorgehoben, Rest durchsichtig</li><li><b>Fotorealistisch</b> per GPU-Pathtracing, Tageslicht nach Uhrzeit, Lichtregler, Bild speichern</li><li><b>Begehen</b> wie im Spiel: Wände bremsen, Schwellen werden überstiegen, Treppen führen in andere Etagen</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Lager im Plan</h4><ul><li>Raum = Lager, Möbel = Spalte, <b>Fach = Lagerplatz</b> (<code>KU-B2</code>) – automatisch aus der Frontaufteilung</li><li><b>Einbuchen, entnehmen, umlagern</b>, jede Buchung mit Rückgängig und Verlauf je Gegenstand</li><li><b>Behälter</b>: Kiste in der Werkzeugkiste – wird sie umgelagert, wandert der Inhalt mit</li><li>Gegenstände mit <b>Foto</b>, Vorschläge beim Einbuchen, mehrere Lager (Garage, Keller …)</li><li><b>Auswertung</b> und Heatmap im Haus: Füllstand, Bewegung (90 Tage), lange unberührt</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 20h1v1"/></svg>Scannen und Etiketten</h4><ul><li><b>Kamera-Scan</b>: Fach-Code, dann Gegenstand = einbuchen; Gegenstand zweimal = ausbuchen</li><li>Unbekanntes, vorgedrucktes Etikett = neuer Gegenstand; <b>Behälter befüllen</b> per Scan</li><li>Auch Handscanner und Eingabe von Hand; QR-Links öffnen direkt Fach oder Gegenstand</li><li><b>Etiketten</b> für Fächer (nach Etage/Raum/Möbel), Gegenstände und leere Vorrats-Etiketten</li><li><b>3D-gedruckte QR-Schilder</b> als STL oder mehrfarbiges 3MF, auf Druckplatten verteilt</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Einkauf und Haltbarkeit</h4><ul><li><b>Verbrauchsmaterial</b> landet beim Ausbuchen automatisch auf der Einkaufsliste</li><li>Abhaken, <b>gekauft und gleich wieder einbuchen</b>, freie Einträge („Milch“)</li><li><b>Teilen</b> per WhatsApp, Teilen-Menü, Kopieren oder als Text; <b>Preisrecherche</b> für den Wohnort</li><li><b>Haltbarkeitsdatum</b> mit Schnellwahl (1 Woche … 1 Jahr), Warnungen vor und nach Ablauf</li><li>Liste „Läuft bald ab“: abgelaufen, 7 Tage, 30 Tage, 3 Monate, 1 Jahr</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Personen und Rechte</h4><ul><li>Anmeldung per <b>Kachel + PIN/Passwort</b> oder E-Mail; Ersteinrichtung direkt in der App</li><li>Rollen, Archiv, Personen zusammenführen, Registrierung mit Freigabe</li><li>Recht <b>„Haus planen“</b> pro Person – auch der Server prüft es</li><li><b>Einstellungen pro Person</b>: Startseite, Haus in 2D oder 3D, hell/dunkel, Schriftgröße</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Handy und Offline</h4><ul><li><b>Als App installierbar</b> mit Schnellzugriffen (Scannen, Einbuchen, Suchen, Einkauf, Haus)</li><li>Navigation unten, <b>Scannen in der Mitte</b>, Fächer als Blatt von unten</li><li><b>Schlechtes WLAN</b>: Buchungen werden vorgemerkt („2 Buchungen warten“) und nachgebucht – nie doppelt</li><li>Scannen von Fächern und Gegenständen klappt auch ohne Netz</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/></svg>KI-Assistent und MCP</h4><ul><li><b>Assistent</b> per Text, Sprache oder Foto: „3 Dosen Tomaten in den Keller, haltbar bis 05/2027“</li><li>Kennt <b>Fächer beim Namen</b> („Küche Kühlschrank oben“), liest QR-Etiketten auf Fotos, liest Antworten vor</li><li>Bucht selbst mit Rückgängig, fragt ab 4 Buchungen nach; jeder OpenAI-kompatible Anbieter</li><li><b>MCP-Server</b>: Claude und andere suchen, buchen und lesen die Einkaufsliste – mit API-Schlüssel, lesend oder schreibend</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Betrieb und Daten</h4><ul><li><b>Ein Prozess, eine SQLite-Datei</b> – Docker oder Node.js, auch auf NAS oder Raspberry Pi</li><li><b>Automatische Backups</b>, anlegen, herunterladen, hochladen und wiederherstellen per Klick</li><li><b>Export/Import</b> als Excel oder CSV mit Vorschau</li><li>REST-API und API-Schlüssel für eigene Erweiterungen; HTTPS direkt oder per Reverse Proxy</li></ul></div>
       </div>
     </div>
   </section>
