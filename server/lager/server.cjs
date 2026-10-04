@@ -1481,8 +1481,23 @@ function undoMovement(ctx, id) {
 }
 
 route('POST', '/api/movements/:id/undo', (p, _b, _qs, ctx) => undoMovement(ctx, p.id));
-route('POST', '/api/checkin', (_p, body, _qs, ctx) => checkin(ctx.person, body));
-route('POST', '/api/checkout', (_p, body, _qs, ctx) => checkout(ctx.person, body));
+// Wiederholte Buchungen (App bucht nach schlechtem WLAN nach, die erste Antwort ging evtl. verloren) erkennt der Server
+// an request_id und liefert das frühere Ergebnis, statt doppelt zu buchen. Gemerkt werden die letzten 24 Stunden.
+const doneRequests = new Map();
+function once(ctx, body, fn) {
+  const rid = typeof body?.request_id === 'string' ? body.request_id.slice(0, 80) : '';
+  if (!rid) return fn();
+  const key = `${ctx.person.id}:${rid}`;
+  const now = Date.now();
+  for (const [k, v] of doneRequests) if (now - v.at > 864e5) doneRequests.delete(k); else break;
+  const hit = doneRequests.get(key);
+  if (hit) return { ...hit.result, repeated: true };
+  const result = fn();
+  doneRequests.set(key, { at: now, result });
+  return result;
+}
+route('POST', '/api/checkin', (_p, body, _qs, ctx) => once(ctx, body, () => checkin(ctx.person, body)));
+route('POST', '/api/checkout', (_p, body, _qs, ctx) => once(ctx, body, () => checkout(ctx.person, body)));
 
 // Stammdaten ändern (Name, Beschreibung, Lagerplatz)
 function updateItem(id, body) {

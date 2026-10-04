@@ -6,6 +6,7 @@ import type { Floor, House, Item } from '../model/types.ts';
 import { compartments, itemName } from '../model/storage.ts';
 import { roomOf } from '../model/house.ts';
 import { ic } from '../icons';
+import { describe, enqueue, queueable, QueuedError, requestId } from './outbox';
 
 export interface LagerCtx {
   modal: (title: string, body: string, footer?: string) => { el: HTMLElement; close: () => void };
@@ -50,13 +51,31 @@ export type ApiItem = {
   shopping_added?: number;
 };
 
-export async function api<T = any>(method: string, url: string, body?: unknown): Promise<T> {
-  const r = await fetch(url, {
-    method,
-    headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
-    credentials: 'same-origin',
-  });
+/**
+ * Aufruf der Server-API. Buchungen (Ein-/Ausbuchen) ohne Verbindung werden vorgemerkt und später nachgebucht
+ * (outbox.ts); der Aufrufer bekommt dann einen QueuedError mit verständlicher Meldung. label: Name für diese Meldung.
+ */
+export async function api<T = any>(method: string, url: string, body?: unknown, label?: string): Promise<T> {
+  const queue = queueable(method, url) && !!body && typeof body === 'object';
+  if (queue && !(body as Record<string, unknown>).request_id) body = { ...(body as object), request_id: requestId() };
+  const offline = () => {
+    const text = describe(url, body as Record<string, unknown>, label);
+    enqueue(method, url, body as Record<string, unknown>, text);
+    return new QueuedError(`Keine Verbindung – „${text}“ ist vorgemerkt und wird automatisch nachgebucht.`);
+  };
+  let r: Response;
+  try {
+    r = await fetch(url, {
+      method,
+      headers: body !== undefined ? { 'content-type': 'application/json' } : undefined,
+      body: body !== undefined ? JSON.stringify(body) : undefined,
+      credentials: 'same-origin',
+    });
+  } catch {
+    if (queue) throw offline();
+    throw new Error('Keine Verbindung zum Server. Bitte WLAN prüfen und erneut versuchen.');
+  }
+  if (queue && r.status >= 502 && r.status <= 504) throw offline();
   const d = await r.json().catch(() => ({}));
   if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
   return d as T;
@@ -285,4 +304,20 @@ export function parseExpiry(raw: FormDataEntryValue | null): string | null {
   const d = new Date(y, Number(m[2]) - 1, Number(m[1]));
   if (d.getDate() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1) throw new Error(`Den ${v} gibt es nicht.`);
   return `${y}-${pad(Number(m[2]))}-${pad(Number(m[1]))}`;
+}
+
+/** Code ohne Server auflösen – aus dem zuletzt geladenen Fachinhalt des Hausplans (Scannen bei schlechtem WLAN) */
+export function resolveOffline(ctx: LagerCtx, key: string): any | null {
+  const places = [...ctx.sync.storage.values()];
+  const m = key.match(/^P-(?:([A-Z][A-Z0-9]{0,3})-)?([A-Z]{1,3})(\d{1,2})$/);
+  if (m) {
+    const pl = places.find((p) => (m[1] ? p.wh_code === m[1] : p.warehouse_id === 1) && p.col === m[2] && p.row === Number(m[3]));
+    return pl ? { type: 'place', place: { warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, name: pl.name, wh_code: pl.wh_code, items: pl.items } } : null;
+  }
+  const code = key.replace(/^O-/, '');
+  for (const p of places) {
+    const it = p.items.find((i) => i.code === code);
+    if (it) return { type: 'item', item: { ...it, warehouse_id: p.warehouse_id, col: p.col, row: p.row, wh_code: p.wh_code, contents: 0 } };
+  }
+  return null;
 }

@@ -2,6 +2,7 @@
 // mit Scannen und Konto; Handy: schmale Kopfzeile und Leiste unten mit Scannen in der Mitte (mit dem Daumen erreichbar).
 
 import { ic, type IconName } from './icons';
+import { onOutbox, pending } from './lager/outbox';
 
 type Key = 'start' | 'haus' | 'suche' | 'einkauf' | 'mehr' | 'scan';
 const NAV: [Key, string, string, IconName][] = [
@@ -31,6 +32,7 @@ export function initShell() {
     <a class="sh-brand" href="#/" title="Startseite">${ic('logo')}<span>Zuhause</span></a>
     <nav class="sh-nav" aria-label="Hauptnavigation">${NAV.map(([k, h, l, i]) => `<a href="${h}" data-k="${k}">${ic(i)}<span>${l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('')}</nav>
     <span class="spacer"></span>
+    <button class="btn sh-outbox" id="outboxPill" hidden title="Ohne Verbindung vorgemerkte Buchungen – antippen zum Nachbuchen">${ic('hourglass')}<span></span></button>
     <a class="btn sh-scan" href="#/scan" data-k="scan">${ic('scan')}Scannen</a>
     <a class="btn icon sh-find" href="#/suche" aria-label="Suchen">${ic('search')}</a>
     <div id="account" class="account"></div>`;
@@ -46,6 +48,17 @@ export function initShell() {
   ).join('');
   document.body.prepend(top);
   document.body.appendChild(tabs);
+
+  // vorgemerkte Buchungen (schlechtes WLAN)
+  const pill = top.querySelector<HTMLButtonElement>('#outboxPill')!;
+  const showPending = () => {
+    const n = pending().length;
+    pill.hidden = !n;
+    pill.querySelector('span')!.textContent = `${n} ${n === 1 ? 'Buchung wartet' : 'Buchungen warten'}`;
+  };
+  onOutbox(showPending);
+  showPending();
+  pill.addEventListener('click', () => document.dispatchEvent(new CustomEvent('zh-outbox-flush')));
 
   let badgeAt = 0;
   return {

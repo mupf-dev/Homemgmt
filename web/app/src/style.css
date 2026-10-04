@@ -933,3 +933,7 @@ a.btn.in { color: var(--ok); } a.btn.out { color: var(--bad); }
 .fach-in input { width: 100%; }
 .danger-zone { margin-top: 12px; color: var(--ink-soft); font-size: 12px; }
 .danger-zone summary { cursor: pointer; }
+.sh-outbox { color: var(--warn); border-color: var(--warn); background: var(--warn-soft); font-weight: 500; }
+.sh-outbox svg.i { animation: spin 2.4s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .sh-outbox svg.i { animation: none; } }

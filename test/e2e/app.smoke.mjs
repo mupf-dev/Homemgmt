@@ -35,7 +35,7 @@ const page = await browser.newPage({ viewport: { width: 1500, height: 900 }, acc
 const errors = [];
 page.on('pageerror', (e) => errors.push('pageerror: ' + e.message));
 // 401 ist erwartet (falsches Passwort im Test, Abfragen vor der Anmeldung)
-page.on('console', (m) => { if (m.type() === 'error' && !/status of 401/.test(m.text())) errors.push('console: ' + m.text()); });
+page.on('console', (m) => { if (m.type() === 'error' && !/status of 401|ERR_INTERNET_DISCONNECTED/.test(m.text())) errors.push('console: ' + m.text()); });
 const step = (s) => console.log('▶', s);
 const shot = (n) => page.screenshot({ path: `${DIR}/${n}.png` });
 
@@ -327,6 +327,28 @@ try {
   await p3.screenshot({ path: `${DIR}/11-handy-blatt.png` });
   console.log('  Blatt:', await p3.textContent('.view-panel .vp-title'));
   await ctx3.close();
+
+  step('Schlechtes WLAN: Entnehmen ohne Verbindung wird vorgemerkt und nachgebucht');
+  await page.goto(base + '/#/haus');
+  await page.waitForFunction(() => document.body.classList.contains('haus-view'));
+  const target = await page.evaluate(() => {
+    const z = window.__zuhause;
+    const pl = [...z.sync.storage.values()].find((p) => p.items.some((i) => i.name === 'Testgabel'));
+    return { item: pl.plan_item, row: pl.plan_slot, qty: pl.items.find((i) => i.name === 'Testgabel').quantity };
+  });
+  await page.goto(base + `/#/haus?fach=${encodeURIComponent(`${target.item}:${target.row}`)}`);
+  await page.waitForSelector('.view-panel .fach-item:has-text("Testgabel") [data-out]');
+  await page.context().setOffline(true);
+  await page.click('.view-panel .fach-item:has-text("Testgabel") [data-out]');
+  await page.waitForSelector('#outboxPill:not([hidden])');
+  console.log('  Anzeige:', (await page.textContent('#outboxPill')).trim());
+  await shot('12-offline');
+  await page.context().setOffline(false);
+  await page.evaluate(() => window.dispatchEvent(new Event('online')));
+  await page.waitForSelector('#outboxPill', { state: 'hidden', timeout: 15000 });
+  const after = await page.evaluate(async () => (await (await fetch('/api/items?q=Testgabel')).json())[0].quantity);
+  console.log('  Testgabel vorher', target.qty, '→ nachher', after);
+  if (after !== target.qty - 1) throw new Error('Nachbuchen fehlgeschlagen');
 } catch (e) {
   failed = true;
   console.log('FEHLER:', e.message);

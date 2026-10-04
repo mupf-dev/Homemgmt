@@ -1,7 +1,8 @@
 // Scannen mit der Kamera: Fach-Code (P-…) + Gegenstand (O-…) = einbuchen, Gegenstand zweimal = ausbuchen,
 // unbekanntes Etikett = neu anlegen. Erkennung über BarcodeDetector, sonst jsQR (aus der Lager-App, /vendor/jsQR.js).
 
-import { api, bookedToast, esc, placeInfo, thumb, type ApiItem } from './core';
+import { api, bookedToast, esc, placeInfo, resolveOffline, thumb, type ApiItem } from './core';
+import { QueuedError } from './outbox';
 import type { View } from './views';
 import { ic } from '../icons';
 
@@ -125,7 +126,7 @@ function beep(ok = true) {
 }
 
 export const viewScan: View = async (el, ctx, params) => {
-  const flow: { place: any | null; box: ApiItem | null; pending: ApiItem | null; pendingAt: number; log: { item: ApiItem; type: 'in' | 'out'; qty: number }[] } = { place: null, box: params.get('box') ? await api<ApiItem>('GET', `/api/items/${params.get('box')}`).catch(() => null) : null, pending: null, pendingAt: 0, log: [] };
+  const flow: { place: any | null; box: ApiItem | null; pending: ApiItem | null; pendingAt: number; log: { item: ApiItem; type: 'in' | 'out'; qty: number; queued?: boolean }[] } = { place: null, box: params.get('box') ? await api<ApiItem>('GET', `/api/items/${params.get('box')}`).catch(() => null) : null, pending: null, pendingAt: 0, log: [] };
   el.innerHTML = `<a class="l-back" href="#/lager">← Lager</a><h1>Scannen</h1>
     <div class="l-scan">
       <div><div class="l-video"><video id="video" muted playsinline></video><div class="frame"></div></div>
@@ -177,26 +178,36 @@ export const viewScan: View = async (el, ctx, params) => {
     }
   };
   const log = () => {
-    el.querySelector('#log')!.innerHTML = flow.log.length ? `<h2>In dieser Sitzung</h2><ul class="l-history">${flow.log.map((l) => `<li><span class="tag ${l.type}">${l.type === 'in' ? 'ein' : 'aus'}</span><span>${l.qty}× <a href="#/item/${l.item.id}">${esc(l.item.name)}</a> · jetzt ${l.item.quantity}</span></li>`).join('')}</ul>` : '';
+    el.querySelector('#log')!.innerHTML = flow.log.length ? `<h2>In dieser Sitzung</h2><ul class="l-history">${flow.log.map((l) => `<li><span class="tag ${l.type}">${l.type === 'in' ? 'ein' : 'aus'}</span><span>${l.qty}× <a href="#/item/${l.item.id}">${esc(l.item.name)}</a> · ${l.queued ? '<b>wartet auf Verbindung</b>' : `jetzt ${l.item.quantity}`}</span></li>`).join('')}</ul>` : '';
+  };
+  // ohne Verbindung vorgemerkt: positiv quittieren und in der Sitzungsliste als „wartet“ zeigen
+  const queued = (e: unknown, item: ApiItem, type: 'in' | 'out') => {
+    if (!(e instanceof QueuedError)) return false;
+    beep();
+    ctx.toast(e.message);
+    flow.log.unshift({ item, type, qty: qty(), queued: true });
+    log();
+    return true;
   };
   const checkin = async (item: ApiItem) => {
     try {
       const r = await api<ApiItem>('POST', '/api/checkin', flow.box
         ? { item_id: item.id, container_id: flow.box.id, quantity: qty() }
-        : { item_id: item.id, warehouse_id: flow.place.warehouse_id, col: flow.place.col, row: flow.place.row, container_id: null, quantity: qty() });
+        : { item_id: item.id, warehouse_id: flow.place.warehouse_id, col: flow.place.col, row: flow.place.row, container_id: null, quantity: qty() }, item.name);
       beep();
       bookedToast(ctx, `${r.name} ${flow.box ? `in ${flow.box.name}` : `in ${placeInfo(ctx, r).address}`} eingebucht (${r.quantity}).`, r.movement_id);
       flow.log.unshift({ item: r, type: 'in', qty: qty() });
       log();
       ctx.sync.loadStorage();
     } catch (e) {
+      if (queued(e, item, 'in')) return;
       beep(false);
       ctx.toast((e as Error).message);
     }
   };
   const checkout = async (item: ApiItem) => {
     try {
-      const r = await api<ApiItem>('POST', '/api/checkout', { item_id: item.id, quantity: qty() });
+      const r = await api<ApiItem>('POST', '/api/checkout', { item_id: item.id, quantity: qty() }, item.name);
       beep();
       bookedToast(ctx, `${r.name} ausgebucht – noch ${r.quantity}.${r.shopping_added ? ' Steht auf der Einkaufsliste.' : ''}`, r.movement_id);
       flow.log.unshift({ item: r, type: 'out', qty: qty() });
@@ -205,6 +216,11 @@ export const viewScan: View = async (el, ctx, params) => {
       render();
       ctx.sync.loadStorage();
     } catch (e) {
+      if (queued(e, item, 'out')) {
+        flow.pending = null;
+        render();
+        return;
+      }
       beep(false);
       ctx.toast((e as Error).message);
     }
@@ -219,7 +235,12 @@ export const viewScan: View = async (el, ctx, params) => {
     if (busy) return;
     busy = true;
     try {
-      const r = await api<any>('GET', `/api/resolve?code=${encodeURIComponent(parsed.key)}`);
+      // ohne Verbindung: Fächer und Gegenstände aus dem zuletzt geladenen Hausplan erkennen
+      const r = await api<any>('GET', `/api/resolve?code=${encodeURIComponent(parsed.key)}`).catch((e) => {
+        const off = resolveOffline(ctx, parsed.key);
+        if (off) return off;
+        throw navigator.onLine === false || /Verbindung/.test(e.message) ? new Error(parsed.type === 'item' ? 'Keine Verbindung – dieser Gegenstand ist ohne Netz nicht bekannt.' : 'Keine Verbindung – dieses Fach ist ohne Netz nicht bekannt.') : e;
+      });
       if (r.type === 'place') {
         flow.place = r.place;
         flow.box = null;

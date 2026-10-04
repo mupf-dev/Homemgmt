@@ -18,7 +18,8 @@ import { HouseSync } from './houseSync';
 import { modelSize } from './modelLoader';
 import type { HouseMode } from './scene3d';
 import { initLager } from './lager/index';
-import { bindExpiry, expiryField, parseExpiry } from './lager/core';
+import { api, bindExpiry, expiryField, parseExpiry } from './lager/core';
+import { clearFailures, failures, flush, QueuedError } from './lager/outbox';
 import { ic } from './icons';
 import { initShell } from './shell';
 import { onPrefs, prefs } from './prefs';
@@ -2720,12 +2721,8 @@ view.onFach = (itemId, row, floorId) => {
 };
 
 // --- Fach: Inhalt, einbuchen, entnehmen, umlagern ---
-async function lagerApi<T = any>(method: string, url: string, body?: unknown): Promise<T> {
-  const r = await fetch(url, { method, headers: body !== undefined ? { 'content-type': 'application/json' } : undefined, body: body !== undefined ? JSON.stringify(body) : undefined, credentials: 'same-origin' });
-  const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
-  return d as T;
-}
+/** Server-API (Buchungen ohne Verbindung werden vorgemerkt, siehe lager/outbox.ts) */
+const lagerApi = <T = any>(method: string, url: string, body?: unknown, label?: string) => api<T>(method, url, body, label);
 
 function expiryBadge(i: { expires_in: number | null; expires_on: string | null }) {
   if (i.expires_in === null || !i.expires_on) return '';
@@ -2794,6 +2791,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
         if (msg) toast(msg);
         draw();
       } catch (e) {
+        if (e instanceof QueuedError) return toast(e.message);
         err.textContent = (e as Error).message;
         err.hidden = false;
       }
@@ -2801,7 +2799,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
     body.querySelectorAll<HTMLElement>('.fach-item').forEach((row) =>
       row.querySelector('[data-out]')?.addEventListener('click', () => {
         const i = pl.items.find((x) => x.id === Number(row.dataset.id))!;
-        run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }), `1× ${i.name} entnommen.`);
+        run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }, i.name), `1× ${i.name} entnommen.`);
       }),
     );
     body.querySelector<HTMLFormElement>('.fach-in')!.addEventListener('submit', (e) => {
@@ -3120,6 +3118,20 @@ sync.onStorage(() => {
 onPrefs((p) => {
   if (!document.body.classList.contains('haus-plan') && !document.body.classList.contains('showroom')) setView(p.houseView);
 });
+// Nachgebuchte Buchungen (nach schlechtem WLAN): Ergebnis melden, Fehler einzeln zeigen
+document.addEventListener('zh-outbox-flushed', (e) => {
+  const { sent, failed } = (e as CustomEvent<{ sent: number; failed: number }>).detail;
+  if (sent) toast(`${sent} vorgemerkte Buchung${sent === 1 ? '' : 'en'} nachgebucht.`);
+  if (failed) {
+    const m = modal('Nicht nachgebucht', `<p>Diese Buchungen hat der Server abgelehnt – bitte von Hand prüfen:</p><ul>${failures().map((f) => `<li><b>${esc(f.label)}</b>: ${esc(f.error)}</li>`).join('')}</ul>`, '<button class="btn primary" data-ok>Verstanden</button>');
+    m.el.querySelector('[data-ok]')!.addEventListener('click', () => {
+      clearFailures();
+      m.close();
+    });
+  }
+  sync.loadStorage().catch(() => {});
+});
+document.addEventListener('zh-outbox-flush', () => flush().then((r) => document.dispatchEvent(new CustomEvent('zh-outbox-flushed', { detail: r }))));
 // Konto geändert (Anmeldung per Kachel, E-Mail, Abmelden): Planen-Knopf anpassen
 document.addEventListener('zh-account-render', updatePlanButton);
 // Start: Ansehen in der Lieblingsansicht der Person

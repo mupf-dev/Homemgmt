@@ -49,3 +49,20 @@ test('Letzte Buchungen über alle Lager', async () => {
   assert.equal(r.data[0].quantity, 2);
   assert.ok(r.data.length <= 3);
 });
+
+test('Nachgebuchte Buchung mit gleicher request_id wird nicht doppelt gebucht', async () => {
+  const wh = (await anna.get('/api/warehouses')).data[0];
+  const body = { name: 'Zucker', quantity: 3, warehouse_id: wh.id, col: 'A', row: 1, request_id: 'abc-123' };
+  const a = await anna.post('/api/checkin', body);
+  assert.equal(a.status, 200, JSON.stringify(a.data));
+  const b = await anna.post('/api/checkin', body);
+  assert.equal(b.status, 200);
+  assert.equal(b.data.repeated, true);
+  assert.equal(b.data.id, a.data.id);
+  const item = (await anna.get(`/api/items/${a.data.id}`)).data;
+  assert.equal(item.quantity, 3, 'nur einmal gebucht');
+  // ohne request_id: zweimal gebucht (wie bisher)
+  await anna.post('/api/checkin', { item_id: a.data.id, quantity: 1 });
+  await anna.post('/api/checkin', { item_id: a.data.id, quantity: 1 });
+  assert.equal((await anna.get(`/api/items/${a.data.id}`)).data.quantity, 5);
+});
