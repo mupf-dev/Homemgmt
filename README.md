@@ -68,6 +68,7 @@ Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **ein
 - **QR-Scan** mit der Handykamera: Fach-Code + Gegenstand = einbuchen, Gegenstand zweimal = ausbuchen
 - **Etiketten & QR-Schilder** zum Drucken – oder als 3D-Druckmodell (STL/3MF, auch mehrfarbig)
 - **Einkaufsliste**: Verbrauchsmaterial landet beim Ausbuchen automatisch drauf, teilen per WhatsApp
+- **Aufgaben** im Haushalt: wiederkehrend, Personen zugeordnet, an Fächern („Filter tauschen“), abhaken auch am Wandterminal
 - **Haltbarkeit** mit Warnungen, **Behälter** (Kiste in der Werkzeugkiste), **Fotos** je Gegenstand
 - **Auswertung**, **Export/Import** als Excel, **automatische Backups**
 - **Offline-fest**: Buchungen bei schlechtem WLAN werden vorgemerkt und automatisch nachgebucht

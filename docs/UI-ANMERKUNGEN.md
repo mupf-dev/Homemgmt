@@ -3,7 +3,7 @@
 Anmerkungen zum UI-Entwurf (https://claude.ai/artifact/DKwjHa7JYhiB8hRX2gPPXT).
 Werden gesammelt und erst auf Kommando abgearbeitet. Status: offen · erledigt · verworfen
 
-Umgesetzt in 0.6.0: A1–A5, A7–A9 (dazu Lage des Hauses, Wetter, Gewitter in Echtzeit). Offen: A6 (Aufgaben – Details klären), „Zuletzt bewegt“ für alle oder nur eigene.
+Umgesetzt in 0.6.0: A1–A5, A7–A9 (dazu Lage des Hauses, Wetter, Gewitter in Echtzeit). A6 Aufgaben umgesetzt (wiederkehrend, Personen, Wandterminal). Offen: „Zuletzt bewegt“ für alle oder nur eigene.
 
 ## Offene Fragen aus dem Entwurf
 
@@ -40,7 +40,7 @@ Umgesetzt in 0.6.0: A1–A5, A7–A9 (dazu Lage des Hauses, Wetter, Gewitter in 
 - [x] **A5 (Planen)** Linke Seitenleiste **ausklappbar** statt dauerhaft: Katalog/Möbel, Etage und Materialien als
   Schublade, die sich über ein Werkzeug öffnet und wieder einklappt. Rechts bleibt die Leiste für die Auswahl.
 
-- [ ] **A6 (Übersicht, neu: Aufgaben)** Auf der Übersicht fehlen **Aufgaben**. Neue Karte „Aufgaben“ mit
+- [x] **A6 (Übersicht, neu: Aufgaben)** Auf der Übersicht fehlen **Aufgaben**. Neue Karte „Aufgaben“ mit
   offenen Aufgaben des Haushalts. Braucht eine kleine Aufgabenfunktion (anlegen, erledigen, wem zugeordnet,
   fällig am; optional an Raum/Möbel/Fach hängen, z. B. „Filter Dunstabzug tauschen“ an KU). Details vor Umsetzung klären.
 

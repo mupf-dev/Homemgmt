@@ -3641,11 +3641,14 @@ async function paintRest(key: string) {
       rememberRest(img.src, key);
     }
     // was zu tun ist: Einkaufsliste, bald ablaufend
-    const [shop, exp] = await Promise.all([
+    const [shop, exp, tasks] = await Promise.all([
       fetch('/api/shopping', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ open: [] })),
       fetch('/api/expiring?days=7', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => []),
+      fetch('/api/tasks', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ open: [] })),
     ]);
+    const due = (tasks.open ?? []).filter((t: any) => t.overdue || t.due_today);
     rest.querySelector('.rest-notes')!.innerHTML = [
+      due.length ? `${ic('check')} ${due.length === 1 ? `Heute: ${esc(due[0].title)}` : `${due.length} Aufgaben fällig`}` : '',
       shop.open?.length ? `${ic('cart')} ${shop.open.length} auf der Einkaufsliste` : '',
       exp.length ? `${ic('clock')} ${exp.length} läuft in 7 Tagen ab` : '',
     ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');

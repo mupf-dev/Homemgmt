@@ -3,6 +3,7 @@
 
 import type { LagerCtx } from './core';
 import { viewObjectEditor, viewObjects } from './objects';
+import { viewTasks } from './tasks';
 import { esc } from './core';
 import { viewCheckin, viewCheckout, viewExpiry, viewItem, viewPlace, viewQuick, viewSearch, viewShopping, viewStats, type View } from './views';
 import { viewHome, viewMore, viewSettings } from './home';
@@ -31,6 +32,7 @@ const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][
   [/^#\/auswertung$/, viewStats, () => {}],
   [/^#\/etiketten$/, viewLabels, () => {}],
   [/^#\/hilfe$/, viewHelp, () => {}],
+  [/^#\/aufgaben$/, viewTasks, () => {}],
   [/^#\/objekte$/, viewObjects, () => {}],
   [/^#\/objekte\/bearbeiten$/, viewObjectEditor, () => {}],
   [/^#\/verwaltung$/, viewAdmin, () => {}],
