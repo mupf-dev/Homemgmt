@@ -8,6 +8,11 @@ einstellbar; mit „mit Küchenzeile verbinden“ wird sie Teil der Küchenzeile
 Unterschränke weiter. Die Platte ist kein Fach, die Höhe bleibt die Gesamthöhe. Das Format bleibt `zuhause-objekt/1`
 (neues optionales Feld `build.countertop`); bestehende Möbelarten und ihre Lageradressen bleiben unverändert.
 
+**Waschmaschine und Trockner als Element** (`washer`, `dryer`): realistische Gerätefront statt Schrankfront – Bedienblende
+mit Schublade, Display und Drehknopf, Bullauge mit Türring und Trommel, Serviceklappe, beim Trockner Lüftungsgitter; in
+Gerätefarben, unabhängig von Fronten und grifflos. Unter Arbeitsplatte, auf Podest oder als Säule. Jedes Gerät ergibt
+zwei Lagerplätze: Waschmittelfach bzw. Kondenswasserbehälter und die Trommel.
+
 ## 0.7.0 – 2026-10-04
 
 **Objektbibliothek** (Mehr → Objektbibliothek): Möbelarten wie Küchenschränke und Lagerregale als Daten statt im Code.

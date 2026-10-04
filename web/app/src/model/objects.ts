@@ -10,7 +10,7 @@ export const OBJECT_FORMAT = 'zuhause-objekt/1';
 /** Möbel aus der Bibliothek tragen als Typ „obj:<id>“ */
 export const OBJ_PREFIX = 'obj:';
 
-export type ElementKind = 'drawer' | 'door' | 'flap' | 'open' | 'cold' | 'freezer';
+export type ElementKind = 'drawer' | 'door' | 'flap' | 'open' | 'cold' | 'freezer' | 'washer' | 'dryer';
 export const ELEMENT_KINDS: Record<ElementKind, string> = {
   drawer: 'Schublade',
   door: 'Tür',
@@ -18,7 +18,13 @@ export const ELEMENT_KINDS: Record<ElementKind, string> = {
   open: 'Offenes Fach',
   cold: 'Kühlfach',
   freezer: 'Gefrierfach',
+  washer: 'Waschmaschine',
+  dryer: 'Trockner',
 };
+/** Geräte im Korpus: Gerätefront statt Möbelfront; zwei Fächer – oben in der Bedienblende, darunter die Trommel */
+export const APPLIANCE_KINDS: Partial<Record<ElementKind, string>> = { washer: 'Waschmittelfach', dryer: 'Kondenswasserbehälter' };
+/** Höhe der Bedienblende eines Geräts in cm (höchstens 30 % des Elements) */
+export const appliancePanel = (h: number) => Math.min(13, h * 0.3);
 
 export interface ObjElement {
   kind: ElementKind;
@@ -153,6 +159,7 @@ export function validateObjectType(raw: unknown): ObjectType {
             const where = `Spalte ${ci + 1}, Element ${ei + 1}`;
             if (!(e?.kind in ELEMENT_KINDS)) fail(`${where}: unbekannte Art „${e?.kind ?? ''}“.`);
             const el: ObjElement = { kind: e.kind, size: num(e.size, 0.05, 20, `${where}: Höhe`, 1) };
+            if (e.kind in APPLIANCE_KINDS && e.shelves != null) fail(`${where}: ${ELEMENT_KINDS[e.kind as ElementKind]} hat keine Böden.`);
             if ((e.kind === 'door' || e.kind === 'open') && e.shelves != null) el.shelves = Math.round(num(e.shelves, 1, 12, `${where}: Böden`));
             const label = str(e.label, 40, `${where}: Bezeichnung`);
             if (label) el.label = label;
@@ -259,6 +266,14 @@ export function objectCompartments(t: ObjectType, W: number, D: number, H: numbe
       const i = seen.get(el.kind) ?? 0;
       seen.set(el.kind, i + 1);
       const base = el.label || nth(ELEMENT_KINDS[el.kind], i, counts.get(el.kind)!);
+      const panelName = APPLIANCE_KINDS[el.kind];
+      if (panelName) {
+        // Gerät: Fach in der Bedienblende, darunter die Trommel (label benennt nur die Trommel)
+        const top = y1 - appliancePanel(y1 - y0);
+        out.push({ label: `${prefix}${nth(panelName, i, counts.get(el.kind)!)}`, kind: 'drawer', x0: col.x0, x1: col.x1, y0: top, y1, z0, z1 });
+        out.push({ label: `${prefix}${base}`, kind: 'door', x0: col.x0, x1: col.x1, y0, y1: top, z0, z1 });
+        continue;
+      }
       const kind = el.kind === 'drawer' ? 'drawer' : el.kind === 'open' ? 'open' : el.kind === 'cold' ? 'cold' : el.kind === 'freezer' ? 'freezer' : 'door';
       const n = el.kind === 'door' || el.kind === 'open' ? el.shelves ?? 1 : 1;
       const h = (y1 - y0) / n;

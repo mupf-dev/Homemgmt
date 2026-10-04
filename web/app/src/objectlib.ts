@@ -44,6 +44,10 @@ export function objectIcon(t: ObjectType, w = 60, h = 40) {
       const cx = (col.x0 + col.x1) / 2;
       if (el.kind === 'drawer' || el.kind === 'flap') d += `<path d="M${X(cx - 3)} ${Y(y1 - (y1 - y0) * 0.25)}h${(6 * k * 10) / 10}" ${s}/>`;
       if (el.kind === 'open') for (let i = 1; i < (el.shelves ?? 1); i++) d += `<path d="M${X(col.x0)} ${Y(y1 - ((y1 - y0) * i) / (el.shelves ?? 1))}H${X(col.x1)}" ${s} stroke-dasharray="2 1.5"/>`;
+      if (el.kind === 'washer' || el.kind === 'dryer') {
+        const r = Math.min((col.x1 - col.x0) * 0.32, (y1 - y0) * 0.3) * k;
+        d += `<circle cx="${X(cx)}" cy="${Y(y0 + (y1 - y0) * 0.42)}" r="${r.toFixed(1)}" ${s}/><path d="M${X(col.x0)} ${Y(y1 - (y1 - y0) * 0.2)}H${X(col.x1)}" ${s}/>`;
+      }
       if (el.kind === 'door' || el.kind === 'cold' || el.kind === 'freezer') d += `<path d="M${X(col.x1 - 4)} ${Y((y0 + y1) / 2 + 4)}v${(8 * k).toFixed(1)}" ${s}/>`;
     }
   }

@@ -287,6 +287,20 @@ try {
   await page.waitForSelector('.ob-row[data-id="eigene.speisekammer-regal"]');
   console.log('  Installiert:', await page.$$eval('.ob-row b', (b) => b.map((x) => x.textContent)));
   await shot('07f-objektbibliothek');
+  // Waschmaschine und Trockner unter Arbeitsplatte: Gerätefronten, je zwei Fächer
+  await page.goto(base + '/#/objekte/bearbeiten?vorlage=eigene.unterschrank');
+  await page.waitForSelector('.ob-preview canvas');
+  for (const [k, v] of [['width', '120'], ['depth', '65'], ['height', '90']]) await page.fill(`[data-s="${k}"]`, v);
+  await page.fill('[data-b="plinth"]', '0');
+  while (await page.locator('.ob-col[data-ci="0"] [data-el="del"]:not([disabled])').count()) await page.click('.ob-col[data-ci="0"] [data-el="del"]:not([disabled]) >> nth=0');
+  while (await page.locator('.ob-col').count() > 1) await page.click('.ob-col[data-ci="1"] [data-col="del"]');
+  await page.selectOption('.ob-col[data-ci="0"] [data-e="kind"]', 'washer');
+  await page.click('[data-col="add"]');
+  await page.selectOption('.ob-col[data-ci="1"] [data-e="kind"]', 'dryer');
+  if (!(await page.isChecked('[data-ct="on"]'))) await page.check('[data-ct="on"]');
+  await page.waitForTimeout(800);
+  console.log('  Geräte:', await page.$$eval('#fa li', (l) => l.map((x) => x.textContent)));
+  await page.locator('#pv').screenshot({ path: `${DIR}/07g3-waschmaschine-trockner.png` });
   await page.goto(base + '/#/haus');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
 
