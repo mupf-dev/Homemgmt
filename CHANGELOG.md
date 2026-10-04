@@ -1,5 +1,41 @@
 # Changelog
 
+## 0.6.0 – 2026-10-04
+
+**Eine App für den ganzen Haushalt:** dieselbe Navigation auf jeder Seite – Übersicht, Haus, Suchen, Einkauf, Mehr. Am
+Handy liegt sie unten, **Scannen** in der Mitte. Neue **Übersicht** als Startseite: Schnellaktionen, Einkaufsliste zum
+Abhaken, was bald abläuft, Füllstand je Etage, zuletzt bewegt. Seiten **Mehr** und **Einstellungen**.
+
+**Haus: Ansehen und Planen getrennt.** Ansehen ist der Normalfall: keine Werkzeuge, keine Maße; Möbel antippen zeigt die
+Fächer, ein Fach seinen Inhalt – in der Seitenleiste (Plan bleibt sichtbar) bzw. am Handy als Blatt von unten. Möbel im
+Grundriss nach Füllstand gefärbt, Suchtreffer leuchten auch im Grundriss, Etagen mit Treffern bekommen einen Punkt.
+**Planen** per Knopf (nur am PC): Werkzeuge in einer Leiste, „Möbel“, „Materialien“ und „Etage“ als ausklappbare Leiste,
+Seltenes im Menü ⋯, „Etage löschen“ nicht mehr ganz oben, Hinweise nur für das aktive Werkzeug.
+
+**Recht „Haus planen“ pro Person** (Verwaltung → Personen); Admins dürfen immer. Auch der Server lehnt Änderungen am
+Hausplan ohne das Recht ab.
+
+**Einstellungen pro Person:** Startseite (Übersicht oder Haus), Haus zuerst in 2D oder 3D, Hell/Dunkel, Schriftgröße.
+
+**Schlechtes WLAN:** Ein- und Ausbuchen ohne Verbindung wird vorgemerkt und automatisch nachgebucht („n Buchungen
+warten“); der Server erkennt Wiederholungen und bucht nicht doppelt. Scannen von Fächern und Gegenständen klappt auch
+ohne Netz.
+
+**Wandterminals** (Verwaltung → Wandterminals): Tablet an der Wand ohne persönliche Anmeldung, eingerichtet per Link
+oder QR-Code. Navigation am linken Rand, große Touch-Flächen, **Hoch- oder Querformat** je Gerät. Ein- und Ausbuchen mit
+**„Wer bucht?“**-Kacheln. Ohne Bedienung zurück zum Haus und **Ruhezustand**: das Haus gedimmt und fotorealistisch, Licht
+nach Tageszeit und Wetter am Ort (Postleitzahl; OpenStreetMap + Open-Meteo, ohne Schlüssel), Uhr, Einkaufsliste,
+Ablaufendes.
+
+**Kleinigkeiten:** ein Icon-Satz statt Emoji, Datum als TT.MM.JJJJ mit Schnellwahl (1 Woche … 1 Jahr), Vorschläge aus
+vorhandenen Gegenständen beim Einbuchen ins Fach, Farben für den Dunkelmodus, Knöpfe statt blauer Links, Anleitung
+aktualisiert.
+
+**Intern:** `shell.ts`, `prefs.ts`, `icons.ts`, `terminal.ts`, `lager/home.ts`, `lager/outbox.ts`; Spalten
+`persons.can_plan`, `persons.prefs`, Tabelle `terminals`; `GET /api/movements/recent`, `PATCH /api/auth/me/prefs`,
+`/api/terminals…`, `/api/weather`. Tests: `test/prefs.test.cjs`, `test/terminal.test.cjs`, Klicktest erweitert
+(Ansehen/Planen, Einstellungen, Rechte, Handy, offline, Terminal).
+
 ## 0.5.0 – 2026-10-03
 
 **Begehen wie im Spiel:** durch das ganze Haus laufen – Wände und Möbel bremsen, Türen und Durchgänge sind offen,

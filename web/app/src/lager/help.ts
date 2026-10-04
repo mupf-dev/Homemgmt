@@ -7,8 +7,10 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   {
     id: 'start', title: 'Erste Schritte',
     html: `<p><b>Zuhause</b> verbindet den Plan deines Hauses mit dem Lager: Jedes Fach eines geplanten Möbels – Schublade, Regalboden, Kühlschrankfach – ist ein Lagerplatz. So weißt du, <b>was wo liegt</b>, wie viel da ist und wer zuletzt etwas genommen hat.</p>
-      <ul><li><b>Haus</b> (<a href="#/haus">#/haus</a>): Etagen, Wände, Räume, Möbel in 2D und 3D planen – am besten am PC.</li>
-      <li><b>Lager</b> (<a href="#/lager">#/lager</a>): Scannen, Ein-/Ausbuchen, Suchen, Einkaufsliste – auch am Handy.</li></ul>
+      <ul><li><b>Übersicht</b>: Scannen, Ein-/Ausbuchen, Suchen, Einkaufsliste, was bald abläuft, was zuletzt bewegt wurde.</li>
+      <li><b>Haus</b>: der Plan zum <b>Ansehen</b> – Möbel antippen zeigt die Fächer, ein Fach seinen Inhalt. <b>Planen</b> (Wände, Möbel, Etagen) gibt es am PC für Personen mit dem Recht „Haus planen“.</li>
+      <li><b>Suchen</b>, <b>Einkauf</b> und unter <b>Mehr</b> Haltbarkeit, Assistent, Auswertung, Etiketten, Einstellungen und Verwaltung.</li></ul>
+      <p>Am Handy liegt die Navigation unten, <b>Scannen</b> in der Mitte.</p>
       <p><b>Anmelden:</b> eigene Kachel antippen und Passwort oder PIN eingeben (oder mit E-Mail). Die Anmeldung bleibt 30 Tage auf dem Gerät; jede Buchung gehört der angemeldeten Person.</p>`,
   },
   {
@@ -20,24 +22,24 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   },
   {
     id: 'plan', title: 'Haus planen',
-    html: `<ul><li><b>Etagen:</b> Reiter oben; „+“ legt Obergeschoss, Keller, Dachgeschoss oder Außenbereich an – auf Wunsch mit den Außenwänden der aktuellen Etage. Die Etage darunter erscheint gestrichelt als Hilfe.</li>
-      <li><b>Wände:</b> „Wand zeichnen“, Punkte setzen, Länge eintippen + Enter für exakte Maße. Oder „Wände aus Maßen“. Grundriss-Bild hochladen, Maßstab über eine bekannte Strecke setzen und nachzeichnen.</li>
+    html: `<p>Im Haus auf <b>„Planen“</b> tippen (nur am PC, nur mit dem Recht „Haus planen“ – Admins dürfen immer). Oben erscheinen die Werkzeuge; „Möbel“, „Materialien“ und „Etage“ klappen links eine Leiste auf. Seltenes (Datei, Showroom, Name des Hauses) steht im Menü <b>⋯</b>. <b>„Fertig“</b> führt zurück zum Ansehen.</p>
+      <ul><li><b>Etagen:</b> Reiter oben; „+“ legt Obergeschoss, Keller, Dachgeschoss oder Außenbereich an – auf Wunsch mit den Außenwänden der aktuellen Etage. Die Etage darunter erscheint gestrichelt als Hilfe.</li>
+      <li><b>Wände:</b> Werkzeug „Wand“, Punkte setzen, Länge eintippen + Enter für exakte Maße. Oder „Wände aus Maßen“. Grundriss-Bild hochladen, Maßstab über eine bekannte Strecke setzen und nachzeichnen.</li>
       <li><b>Türen, Fenster, Durchgänge:</b> Werkzeug wählen und auf eine Wand klicken; im Eigenschaftenfeld Breite, Höhe, Brüstung.</li>
-      <li><b>Räume:</b> „Raum festlegen“ und in eine von Wänden umschlossene Fläche klicken, Namen vergeben. Der Raum folgt, wenn Wände verschoben werden. Übernommene oder offene Räume haben einen festen Umriss („aus Wänden erkennen“ schaltet um).</li>
-      <li><b>Möbel:</b> im Reiter „Katalog“ wählen und setzen – Schränke docken an Wände und Nachbarn an. <kbd>R</kbd> dreht, <kbd>Entf</kbd> löscht, <kbd>Strg</kbd>+<kbd>D</kbd> dupliziert, <kbd>Strg</kbd>+<kbd>Z</kbd> macht rückgängig. Bei Regalen, Schränken und Kommoden ist die Zahl der Böden bzw. Schubladen einstellbar; ein eigener Name („Vorratsschrank“) erscheint im Lager.</li>
-      <li><b>Sperren:</b> Wände, Fenster/Türen, Möbel und Räume mit „Sperren“ oder <kbd>L</kbd> festsetzen – sie sind dann im Editor nicht mehr auswählbar, verschiebbar oder löschbar (Schloss-Symbol im Grundriss). Unter „Etage“ → „Gesperrt“ einzeln oder alle entsperren; dort auch „Alle Wände sperren“. Das Lager (Fächer anklicken, einbuchen) funktioniert weiter.</li>
-      <li><b>Möbel &amp; Deko:</b> im Katalog „Online-Bibliothek“ – Quelle <i>Poly Haven</i> (frei, echte Maße) oder <i>FurniMesh</i> (realistische Möbel, Größe wird auf typische Maße gesetzt, Laden dauert etwa 10 s). Suche auch auf Deutsch; eigene .glb-Dateien lassen sich hochladen.</li>
+      <li><b>Räume:</b> Werkzeug „Raum“ und in eine von Wänden umschlossene Fläche klicken, Namen vergeben. Der Raum folgt, wenn Wände verschoben werden. Übernommene oder offene Räume haben einen festen Umriss („aus Wänden erkennen“ schaltet um).</li>
+      <li><b>Möbel:</b> „Möbel“ öffnet den Katalog; wählen und setzen – Schränke docken an Wände und Nachbarn an. <kbd>R</kbd> dreht, <kbd>Entf</kbd> löscht, <kbd>Strg</kbd>+<kbd>D</kbd> dupliziert, <kbd>Strg</kbd>+<kbd>Z</kbd> macht rückgängig. Bei Regalen, Schränken und Kommoden ist die Zahl der Böden bzw. Schubladen einstellbar; ein eigener Name („Vorratsschrank“) erscheint im Lager.</li>
+      <li><b>Sperren:</b> Wände, Fenster/Türen, Möbel und Räume mit „Sperren“ oder <kbd>L</kbd> festsetzen – sie sind dann im Editor nicht mehr auswählbar, verschiebbar oder löschbar (Schloss-Symbol im Grundriss). In der Leiste „Etage“ → „Gesperrt“ einzeln oder alle entsperren; dort auch „Alle Wände sperren“. Das Lager (Fächer anklicken, einbuchen) funktioniert weiter.</li>
+      <li><b>Möbel &amp; Deko:</b> unter „Möbel“ die „Online-Bibliothek“ – Quelle <i>Poly Haven</i> (frei, echte Maße) oder <i>FurniMesh</i> (realistische Möbel, Größe wird auf typische Maße gesetzt, Laden dauert etwa 10 s). Suche auch auf Deutsch; eigene .glb-Dateien lassen sich hochladen.</li>
       <li><b>Materialien:</b> Fronten, Arbeitsplatte, Boden, Wände – aus der Bibliothek, eigene Farbe oder hochgeladene Textur; einzelne Elemente und Räume (Bodenbelag) können abweichen.</li>
       <li><b>3D:</b> „Etage“, „Bis hier“ (Blick von oben ins Haus) oder „Haus“ (alle Etagen mit Dach). „Fotorealistisch“ rendert mit Pathtracing, „Begehen“: wie im Spiel mit WASD und Maus durchs ganze Haus laufen, über die Treppen in andere Etagen (Esc beendet).</li></ul>
-      <p>Der Plan wird automatisch gespeichert und von allen geteilt (ändern dürfen nur Admins). Arbeiten zwei gleichzeitig daran, fragt die App, welcher Stand gilt.</p>`,
+      <p>Der Plan wird automatisch gespeichert und von allen geteilt (ändern dürfen nur Personen mit dem Recht „Haus planen“; vergeben unter Verwaltung → Personen). Arbeiten zwei gleichzeitig daran, fragt die App, welcher Stand gilt.</p>`,
   },
   {
     id: 'imhaus', title: 'Lager im Haus: Fächer, Suche, „Im Haus zeigen“',
-    html: `<ul><li>In 3D <b>„Lager“</b> einschalten: Fächer sind gefärbt – blau leer, grün belegt, orange läuft bald ab, rot abgelaufen. Fach anklicken zeigt den Inhalt; dort einbuchen, entnehmen oder etwas hierher umlagern.</li>
-      <li>Daneben lässt sich die Färbung umstellen: <b>Bewegung</b> (oft genutzt = rot) oder <b>lange unberührt</b>.</li>
-      <li><b>„Wo liegt …?“</b> oben im Planer sucht im ganzen Lager; Treffer leuchten gelb, ein Klick springt zur Etage und zum Fach.</li>
-      <li><b>„Im Haus zeigen“</b> gibt es bei Suchtreffern, Gegenständen, Plätzen, Haltbarkeit und Assistent-Antworten.</li>
-      <li>Im Eigenschaftenfeld eines Möbels stehen alle Fächer mit Adresse und Belegung.</li></ul>`,
+    html: `<ul><li>Beim Ansehen zeigt die Seitenleiste die <b>Räume</b> der Etage mit Füllstand; Raum → <b>Möbel</b> → <b>Fach</b> → Inhalt. Dort einbuchen (mit Vorschlägen aus vorhandenen Gegenständen), „−1“ entnehmen oder etwas hierher umlagern. Am Handy erscheint das als Blatt von unten.</li>
+      <li>Im Grundriss sind Möbel nach Füllstand gefärbt (leer, teils, voll). In 3D sind die Fächer gefärbt – blau leer, grün belegt, orange läuft bald ab, rot abgelaufen; die Färbung lässt sich auf <b>Bewegung</b> oder <b>lange unberührt</b> umstellen.</li>
+      <li><b>„Wo liegt …?“</b> sucht im ganzen Lager; Treffer leuchten blau, Etagen mit Treffern bekommen einen Punkt, ein Klick öffnet das Fach.</li>
+      <li><b>„Im Haus zeigen“</b> gibt es bei Suchtreffern, Gegenständen, Plätzen, Haltbarkeit und Assistent-Antworten.</li></ul>`,
   },
   {
     id: 'buchen', title: 'Einbuchen, Ausbuchen, Umlagern',
@@ -46,6 +48,19 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
       <li><b>Umlagern:</b> in der Detailansicht „Umlagern“ und ein neues Fach wählen.</li>
       <li><b>Rückgängig:</b> nach jeder Buchung im Hinweis unten, später an der obersten Buchung im Verlauf (nur die letzte Buchung eines Gegenstands; eigene, Admins alle).</li>
       <li><b>Foto:</b> in der Detailansicht auf das Foto-Feld tippen.</li></ul>`,
+  },
+  {
+    id: 'einstellungen', title: 'Einstellungen pro Person',
+    html: `<p>Unter <b>Mehr → Einstellungen</b> legt jede Person für sich fest: ob die App mit der <b>Übersicht</b> oder dem <b>Haus</b> startet, ob das Haus zuerst als <b>Grundriss (2D)</b> oder in <b>3D</b> erscheint, <b>Hell/Dunkel</b> und die <b>Schriftgröße</b>. Die Einstellungen gelten auf allen Geräten der Person.</p>`,
+  },
+  {
+    id: 'offline', title: 'Schlechtes WLAN (Keller, Garage)',
+    html: `<p>Erreicht eine Buchung den Server nicht, wird sie <b>vorgemerkt</b> und automatisch nachgebucht, sobald die Verbindung wieder da ist. Oben zeigt „n Buchungen warten“ den Stand – antippen versucht es sofort. Doppelt gebucht wird nichts, auch wenn nur die Antwort verloren ging. Fächer und Gegenstände aus dem Hausplan lassen sich auch ohne Netz scannen. Lehnt der Server eine nachgeholte Buchung ab (z. B. weil der Gegenstand inzwischen weg ist), meldet die App sie einzeln.</p>`,
+  },
+  {
+    id: 'terminal', title: 'Wandterminal',
+    html: `<p>Ein Tablet an der Wand zeigt das Haus zum Suchen und Ansehen – ohne persönliche Anmeldung. Wer etwas ein- oder ausbucht, tippt seine <b>Kachel</b> an; die Wahl gilt 90 Sekunden (oben zu sehen, antippen wechselt). Ohne Bedienung kehrt das Terminal zum Haus zurück und zeigt den <b>Ruhezustand</b>: das Haus gedimmt, im Licht von Tageszeit und Wetter am Ort, dazu Uhr, Einkaufsliste und was bald abläuft. Antippen weckt es.</p>
+      <p>Einrichten (Admins): <b>Mehr → Verwaltung → Wandterminals</b> → anlegen (Name, Hoch- oder Querformat, 2D/3D, Rückkehr nach Minuten, Ruhezustand, Postleitzahl fürs Wetter) und den <b>Einrichtungslink</b> auf dem Tablet öffnen oder den QR-Code scannen.</p>`,
   },
   {
     id: 'scan', title: 'Scannen mit QR-Codes',
@@ -80,7 +95,7 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   },
   {
     id: 'etiketten', title: 'Etiketten und QR-Schilder',
-    html: `<p>„Etiketten & QR-Schilder“ (Lager-Start, Detailansicht oder im Planer beim Möbel): Fächer nach Etage, Raum und Möbel, Gegenstände oder leere Etiketten zum Vordrucken. Ausgabe über den Druckdialog (groß ca. 7 × 3,6 cm, klein ca. 5 × 2,5 cm) oder als <b>3D-Schilder</b>: 3MF-Datei mit zwei Farben je Schild, auf Druckplatten verteilt (Breite, Stärke, QR-Höhe, Farben, Öse einstellbar).</p>`,
+    html: `<p>„Etiketten & QR-Schilder“ (Mehr, Detailansicht oder beim Planen am Möbel): Fächer nach Etage, Raum und Möbel, Gegenstände oder leere Etiketten zum Vordrucken. Ausgabe über den Druckdialog (groß ca. 7 × 3,6 cm, klein ca. 5 × 2,5 cm) oder als <b>3D-Schilder</b>: 3MF-Datei mit zwei Farben je Schild, auf Druckplatten verteilt (Breite, Stärke, QR-Höhe, Farben, Öse einstellbar).</p>`,
   },
   {
     id: 'handy', title: 'Am Handy',

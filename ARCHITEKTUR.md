@@ -84,6 +84,15 @@ MCP-Werkzeuge und Assistent sofort mit ihnen („leg die Batterien in die Bestec
 
 ## 5. Die App
 
+**Rahmen (0.6.0):** eine Navigation für alle Seiten (`shell.ts`: Übersicht, Haus, Suchen, Einkauf, Mehr; Handy: Leiste
+unten mit Scannen). Das Haus hat zwei Modi: **Ansehen** (Normalfall; `Plan2D.viewOnly`, Fächer und Inhalt in der
+Seitenleiste bzw. als Blatt von unten) und **Planen** (Werkzeugleiste, ausklappbare linke Leiste; nur mit `persons.can_plan`,
+Admins immer). Einstellungen pro Person (`persons.prefs`, `prefs.ts`): Startseite, 2D/3D, Hell/Dunkel, Schriftgröße.
+Ein Icon-Satz (`icons.ts`) statt Emoji. Buchungen ohne Verbindung merkt `lager/outbox.ts` vor (Server erkennt
+Wiederholungen an `request_id`). **Wandterminals** (`terminals`, `terminal.ts`): Geräte-Cookie über einen
+Einrichtungslink, Buchen nur mit gewählter Person, Hoch-/Querformat, Ruhezustand mit Licht nach Tageszeit und Wetter
+(`/api/weather`: Ort per OpenStreetMap, Wetter per Open-Meteo, beides ohne Schlüssel).
+
 | Bereich | Funktion |
 |---------|----------|
 | Etagen | Reiter in der Kopfzeile, Etage anlegen (darüber, Keller, Dachgeschoss, Außen; Außenwände übernehmen), Name/Art/Höhenlage/Raumhöhe; die Etage darunter erscheint im 2D-Plan gestrichelt |
@@ -92,7 +101,7 @@ MCP-Werkzeuge und Assistent sofort mit ihnen („leg die Batterien in die Bestec
 | 3D | Etage / bis hier / ganzes Haus (gestapelt, mit Geschossdecken), Möbel-Bibliothek (Poly Haven CC0 über deren API, FurniMesh über die öffentlichen Bibliotheksseiten – GLB wird serverseitig verkleinert und skaliert, `server/kueche/furnimesh.ts`), Pathtracing, Begehen mit Kollision und Etagenwechsel über Treppen (`walker.ts`), Showroom wie bisher |
 | Lager im Plan | „Lager“ färbt alle Fächer nach Füllstand (leer, belegt, läuft ab, abgelaufen); Fach anklicken → Inhalt, einbuchen, entnehmen, vorhandenen Gegenstand umlagern, im Lager öffnen |
 | Suche | „Wo liegt …?“ sucht im ganzen Lager, lässt Treffer im Haus leuchten, springt zu Etage, Möbel und Fach |
-| Speichern | automatisch auf dem Server (Admins), Konfliktdialog bei gleichzeitiger Bearbeitung, Entwurf zusätzlich im Browser; Benutzer sehen den Plan und buchen, ändern ihn aber nicht |
+| Speichern | automatisch auf dem Server (Recht „Haus planen“), Konfliktdialog bei gleichzeitiger Bearbeitung, Entwurf zusätzlich im Browser; Benutzer sehen den Plan und buchen, ändern ihn aber nicht |
 | Übernahme | erstes Anlegen aus dem Browser-Entwurf; gespeicherte Küchenplanungen „als Etage“ übernehmen; Datei-Import von Haus- und Planungsdateien |
 
 ## 6. Bewusste Zwischenstände
