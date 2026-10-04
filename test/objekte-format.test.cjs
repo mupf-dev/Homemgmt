@@ -171,3 +171,25 @@ test('Geräte: Säule und Grenze von 99 Fächern zählen zwei Fächer je Gerät'
   assert.equal(M.objectCompartmentCount(M.validateObjectType(viele(4))), 96);
   assert.throws(() => M.validateObjectType(viele(5)), /Zu viele Fächer \(höchstens 99\)/);
 });
+
+test('Gerätefarbe: Slot appliance wird angenommen, ohne Angabe bleibt alles wie bisher', async () => {
+  const t = M.validateObjectType({ ...geraete(), materials: { appliance: 'lack-black', front: 'lack-white', unbekannt: 'x' } });
+  assert.deepEqual(t.materials, { appliance: 'lack-black', front: 'lack-white' });
+  assert.equal(M.hasAppliance(t), true);
+  assert.equal(M.hasAppliance(M.validateObjectType(wama())), false);
+  // ohne appliance: keine Materialien hinzugedichtet, Fächer gleich
+  const ohne = M.validateObjectType(geraete());
+  assert.equal(ohne.materials, undefined);
+  assert.deepEqual(places(ohne), places(t));
+});
+
+test('Gerätefarbe: hell → hellgraue Blende, dunkel/metallisch → Schwarzglas und Chromring', () => {
+  // Farben wie in der Materialbibliothek (materials.ts)
+  assert.equal(M.isDarkSurface('#f3f3f1'), false); // Gerät weiß (Standard)
+  assert.equal(M.isDarkSurface('#f1f0eb'), false); // lack-white
+  assert.equal(M.isDarkSurface('#1b1b1c'), true); // lack-black
+  assert.equal(M.isDarkSurface('#38393b'), true); // lack-anthracite
+  assert.equal(M.isDarkSurface('#c9cacc', 1), true); // metal-steel (metallisch)
+  assert.equal(M.isDarkSurface('#c9cacc'), false);
+  assert.equal(M.isDarkSurface('kein-hex'), false);
+});

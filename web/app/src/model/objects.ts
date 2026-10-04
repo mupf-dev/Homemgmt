@@ -23,6 +23,17 @@ export const ELEMENT_KINDS: Record<ElementKind, string> = {
 };
 /** Geräte im Korpus: Gerätefront statt Möbelfront; zwei Fächer – oben in der Bedienblende, darunter die Trommel */
 export const APPLIANCE_KINDS: Partial<Record<ElementKind, string>> = { washer: 'Waschmittelfach', dryer: 'Kondenswasserbehälter' };
+/** Dunkle oder metallische Oberfläche (Farbe #rrggbb, Metallanteil 0…1): Gerätefront → Schwarzglas-Blende, Chromring */
+export function isDarkSurface(hex: string, metalness = 0) {
+  if (metalness >= 0.5) return true;
+  const m = /^#?([0-9a-f]{6})$/i.exec(hex.trim());
+  if (!m) return false;
+  const lin = (v: number) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
+  const [r, g, b] = [0, 2, 4].map((i) => lin(parseInt(m[1].slice(i, i + 2), 16) / 255));
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b < 0.18;
+}
+/** Hat die Möbelart Geräte (Waschmaschine/Trockner)? Dann gibt es die Gerätefarbe (materials.appliance). */
+export const hasAppliance = (t: ObjectType) => t.build.type === 'korpus' && t.build.columns.some((c) => c.elements.some((e) => e.kind in APPLIANCE_KINDS));
 /** Höhe der Bedienblende eines Geräts in cm (höchstens 30 % des Elements) */
 export const appliancePanel = (h: number) => Math.min(13, h * 0.3);
 
@@ -87,7 +98,7 @@ export interface ObjectType {
   build: KorpusBuild | ModelBuild;
 }
 
-const SLOTS: MaterialSlot[] = ['front', 'carcass', 'countertop', 'handle', 'channel', 'sink', 'backsplash', 'floor', 'wall', 'ceiling'];
+const SLOTS: MaterialSlot[] = ['front', 'carcass', 'countertop', 'handle', 'channel', 'sink', 'backsplash', 'floor', 'wall', 'ceiling', 'appliance'];
 const ID_RE = /^[a-z0-9]+(?:[.-][a-z0-9]+)*$/;
 const VERSION_RE = /^\d{1,4}(?:\.\d{1,4}){0,2}$/;
 /** Lageradressen haben höchstens zwei Ziffern je Fach */

@@ -3,7 +3,7 @@ import { store, uid } from './state';
 import { Plan2D, type Tool } from './plan2d';
 import { Scene3D } from './scene3d';
 import { CATALOG, getEntry, libraryEntries, libraryObject, type CatalogEntry } from './model/catalog.ts';
-import { compareVersions, objectCompartmentCount, OBJ_PREFIX } from './model/objects.ts';
+import { compareVersions, hasAppliance, objectCompartmentCount, OBJ_PREFIX } from './model/objects.ts';
 import { loadLibrary, objectIcon } from './objectlib';
 import {
   adjustCanvas, adjustHex, allMaterials, CATEGORY_LABELS, hasAdjust, isTextured, LIBRARY, MATCH_FRONT, materialAspect, readImageFile, SLOT_LABELS, slotMaterialDef, swatchStyle,
@@ -1028,6 +1028,7 @@ function openMaterialPicker(title: string, current: string | undefined, allowDef
     floor: ['boden', 'stein', 'holz'],
     wall: ['wand', 'fliese', 'lack'],
     ceiling: ['wand'],
+    appliance: ['lack', 'metall'],
   };
   const order = (slotHint && preferred[slotHint]) || [];
   const cats = [...new Set([...(p.customMaterials.length ? ['eigene' as const] : []), ...order, ...(Object.keys(CATEGORY_LABELS) as MaterialDef['category'][])])].filter(
@@ -2032,6 +2033,7 @@ function renderProps() {
     };
     const grip: MaterialSlot = p.settings.handleless ? 'channel' : 'handle';
     const slots: MaterialSlot[] = e.kind === 'model' ? [] : e.kind === 'rack' ? ['carcass'] : e.kind === 'heavyRack' ? [] : ['cupboard', 'wardrobe', 'sideboard', 'dresser'].includes(e.kind) ? ['front', grip, 'carcass'] : ['table', 'stool', 'shelf', 'workbench'].includes(e.kind) ? ['countertop'] : e.kind === 'pendant' || e.kind === 'fridgeFree' || e.kind === 'hood' ? [] : e.kind === 'sink' ? ['front', 'countertop', 'sink', grip, 'carcass'] : e.countertop || (e.object?.build.type === 'korpus' && e.object.build.countertop) ? ['front', 'countertop', grip, 'carcass'] : ['front', grip, 'carcass'];
+    if (e.object && hasAppliance(e.object)) slots.push('appliance');
     const comps = compartments(it, p.settings);
     const lv = LEVEL_KINDS[e.kind];
     const code = storageCode(store.floor, it);

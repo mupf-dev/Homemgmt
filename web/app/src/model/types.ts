@@ -104,7 +104,11 @@ export type MaterialSlot =
   | 'backsplash'
   | 'floor'
   | 'wall'
-  | 'ceiling';
+  | 'ceiling'
+  /** Gerätefront (Waschmaschine/Trockner) – nur je Möbel bzw. Möbelart, ohne hausweiten Standard */
+  | 'appliance';
+/** Bereiche mit hausweitem Standard (Project.slots) */
+export type HouseSlot = Exclude<MaterialSlot, 'appliance'>;
 
 export interface MaterialDef {
   id: string;
@@ -186,7 +190,7 @@ export interface Project {
   walls: Wall[];
   openings: Opening[];
   items: Item[];
-  slots: Record<MaterialSlot, string>;
+  slots: Record<HouseSlot, string> & { appliance?: string };
   customMaterials: MaterialDef[];
   /** Textur-Ausrichtung je Bereich für das ganze Projekt (Boden, Wände …; Elemente können abweichen) */
   uv?: Partial<Record<MaterialSlot, UVSettings>>;
@@ -278,7 +282,7 @@ export interface House {
   version: 2;
   name: string;
   floors: Floor[];
-  slots: Record<MaterialSlot, string>;
+  slots: Record<HouseSlot, string> & { appliance?: string };
   customMaterials: MaterialDef[];
   uv?: Partial<Record<MaterialSlot, UVSettings>>;
   settings: Project['settings'];

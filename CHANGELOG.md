@@ -13,6 +13,11 @@ mit Schublade, Display und Drehknopf, Bullauge mit Türring und Trommel, Service
 Gerätefarben, unabhängig von Fronten und grifflos. Unter Arbeitsplatte, auf Podest oder als Säule. Jedes Gerät ergibt
 zwei Lagerplätze: Waschmittelfach bzw. Kondenswasserbehälter und die Trommel.
 
+**Gerätefarbe** (Material-Bereich `appliance`): Waschmaschine und Trockner lassen sich einfärben – in der Möbelart
+(Editor: „Gerätefarbe“) und je Möbel im Hausplan. Auf dunklen und metallischen Fronten wird die Bedienblende zu
+Schwarzglas und der Türring zu Chrom. Ohne Angabe bleibt die Front weiß wie bisher. Die Editor-Vorschau spiegelt jetzt
+eine Umgebung, Metall und Chrom sehen dort echt aus.
+
 ## 0.7.0 – 2026-10-04
 
 **Objektbibliothek** (Mehr → Objektbibliothek): Möbelarten wie Küchenschränke und Lagerregale als Daten statt im Code.
