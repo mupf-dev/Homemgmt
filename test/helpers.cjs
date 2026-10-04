@@ -23,7 +23,7 @@ async function startServer(env = {}) {
     cwd: ROOT,
     env: {
       ...process.env, PORT: String(port), HTTPS_PORT: '0', MCP_PORT: String(mcpPort), MCP_HOST: '127.0.0.1',
-      DB_PATH: path.join(dir, 'zuhause.db'), CERT_DIR: path.join(dir, 'keine-zertifikate'), BACKUP_INTERVAL_HOURS: '0', ...env,
+      DB_PATH: path.join(dir, 'zuhause.db'), CERT_DIR: path.join(dir, 'keine-zertifikate'), BACKUP_INTERVAL_HOURS: '0', LIGHTNING: '0', ...env,
     },
     stdio: ['ignore', 'pipe', 'pipe'],
   });

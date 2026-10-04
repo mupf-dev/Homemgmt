@@ -96,3 +96,15 @@ test('Wetter und Ortssuche prüfen die Eingaben (ohne Netz)', async () => {
   assert.equal((await admin.get('/api/geocode?q=ab')).status, 400, 'zu kurz');
   assert.equal((await client(srv.base).get('/api/geocode?q=Stuttgart')).status, 401);
 });
+
+test('Blitze in Echtzeit: Stream nur angemeldet, liefert Ereignisstrom', async () => {
+  assert.equal((await fetch(srv.base + '/api/lightning/stream?lat=48.8&lon=9.1')).status, 401);
+  const ac = new AbortController();
+  const r = await fetch(srv.base + '/api/lightning/stream?lat=48.8&lon=9.1', { headers: { cookie: admin.cookie }, signal: ac.signal });
+  assert.equal(r.status, 200);
+  assert.match(r.headers.get('content-type'), /text\/event-stream/);
+  const first = await r.body.getReader().read();
+  assert.match(Buffer.from(first.value).toString(), /retry: 5000/);
+  ac.abort();
+  assert.equal((await admin.get('/api/lightning?lat=48.8&lon=9.1')).data.level, 0);
+});

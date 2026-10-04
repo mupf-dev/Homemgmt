@@ -87,6 +87,17 @@ export async function pickWho(): Promise<number | null> {
 
 let clockTimer = 0;
 let weather = '';
+let storm = { text: '', level: 0 };
+/** Gewitterwarnung in der Kopfzeile (leer = keine) */
+export function setTermStorm(text: string, level: number) {
+  storm = { text, level };
+  const el = document.querySelector<HTMLElement>('#termHead .term-storm');
+  if (el) {
+    el.hidden = !text;
+    el.dataset.level = String(level);
+    el.querySelector('span')!.textContent = text;
+  }
+}
 /** Wetter in der Kopfzeile (z. B. „12 °C · wolkig“) */
 export function setTermWeather(text: string) {
   weather = text;
@@ -105,6 +116,7 @@ function renderHead() {
   const active = who && Date.now() - who.at < WHO_MS;
   el.innerHTML = `<span class="term-place">${ic('home')}${esc(info.name)}</span>
     ${active ? `<button class="term-who" title="Andere Person wählen"><span class="avatar" style="background:${esc(who!.color)}">${esc(who!.name.slice(0, 1).toUpperCase())}</span>${esc(who!.name)}${ic('x')}</button>` : ''}
+    <span class="term-storm" data-level="${storm.level}" ${storm.text ? '' : 'hidden'}>${ic('warn')}<span>${esc(storm.text)}</span></span>
     <span class="term-weather">${esc(weather)}</span><b class="term-clock"></b>`;
   el.querySelector('.term-who')?.addEventListener('click', clearWho);
   const clock = () => {

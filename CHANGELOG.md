@@ -33,13 +33,24 @@ Uhrzeit), **Himmel und Licht laufen live mit** (Tag, Bewölkung, Regen, Dämmeru
 jede Minute neu), das Wetter steht in der Kopfzeile, und ums Haus liegt **Rasen**. Beim Ansehen wechselt die Etagenwahl
 von „Haus“ auf „Bis hier“, das gewählte Möbel bleibt sichtbar, alles andere wird durchsichtig (am Terminal ohne Rahmen).
 
+**Wetter am Wandterminal:** Wolken am Himmel (Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im
+fotorealistischen Bild, da der Himmel die Szene beleuchtet), Regen, Niesel und Schnee als Animation über dem Bild, Nebel
+und Dunst, nasser Rasen, Schnee auf Rasen und Dach. **Gewitter mit Blitzen in Echtzeit** (Blitzortung.org, die Daten
+hinter lightningmaps.org – ohne Konto, für private Nutzung): jeder Einschlag im Umkreis kommt per Server-Sent Events
+sofort an; nahe Blitze (≤ 30 km) lassen den Bildschirm aufblitzen. Hinweis in der Kopfzeile ab „in der Nähe“, im
+Ruhezustand Hinweis mit Entfernung, Richtung und Anzahl sowie eine Blitzkarte (10/25/50 km, Punkte nach Alter).
+Ruhezustand sparsamer: Detailgrad je Terminal, geringere Rechenauflösung, nur bei geänderter Sonne/Wetter neu, Pause
+bei verdecktem Bildschirm, letztes Bild gemerkt, Fortschrittsanzeige.
+
 **Kleinigkeiten:** ein Icon-Satz statt Emoji, Datum als TT.MM.JJJJ mit Schnellwahl (1 Woche … 1 Jahr), Vorschläge aus
 vorhandenen Gegenständen beim Einbuchen ins Fach, Farben für den Dunkelmodus, Knöpfe statt blauer Links, Anleitung
 aktualisiert.
 
 **Intern:** `shell.ts`, `prefs.ts`, `icons.ts`, `terminal.ts`, `lager/home.ts`, `lager/outbox.ts`; Spalten
 `persons.can_plan`, `persons.prefs`, Tabelle `terminals`; `GET /api/movements/recent`, `PATCH /api/auth/me/prefs`,
-`/api/terminals…`, `/api/weather` (Koordinaten oder Postleitzahl), `/api/geocode`; `sun.ts` (Sonnenstand). Tests: `test/prefs.test.cjs`, `test/terminal.test.cjs`, Klicktest erweitert
+`/api/terminals…`, `/api/weather` (Koordinaten oder Postleitzahl), `/api/geocode`, `/api/lightning`, `/api/lightning/stream` (SSE);
+`sun.ts` (Sonnenstand), `weatherfx.ts` (Regen, Schnee, Dunst, Blitze), `server/lager/lightning.cjs`. Tests:
+`test/lightning.test.cjs`. `LIGHTNING=0` schaltet die Blitzverbindung ab (Tests). Tests: `test/prefs.test.cjs`, `test/terminal.test.cjs`, Klicktest erweitert
 (Ansehen/Planen, Einstellungen, Rechte, Handy, offline, Terminal).
 
 ## 0.5.0 – 2026-10-03

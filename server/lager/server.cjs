@@ -957,6 +957,8 @@ route('DELETE', '/api/terminals/:id', (p) => {
 const weatherCache = new Map();
 const geoCache = new Map();
 const WEATHER_TEXT = [[0, 'klar'], [1, 'heiter'], [2, 'wolkig'], [3, 'bedeckt'], [45, 'Nebel'], [51, 'Niesel'], [61, 'Regen'], [66, 'Eisregen'], [71, 'Schnee'], [80, 'Schauer'], [85, 'Schneeschauer'], [95, 'Gewitter']];
+/** Wetterart für die Darstellung (WMO-Code) */
+const weatherKind = (code) => (code >= 95 ? 'thunder' : code >= 85 || (code >= 71 && code <= 77) ? 'snow' : code >= 61 || code >= 80 ? 'rain' : code >= 51 ? 'drizzle' : code >= 45 ? 'fog' : code >= 2 ? 'clouds' : 'clear');
 const weatherText = (code) => [...WEATHER_TEXT].reverse().find(([c]) => code >= c)?.[1] ?? '';
 /** Ort suchen (Adresse, Ort oder Postleitzahl) über OpenStreetMap/Nominatim – ohne Schlüssel */
 async function geocode(q, { postal = false } = {}) {
@@ -977,12 +979,14 @@ async function weatherAt(lat, lon, place) {
   const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
   const hit = weatherCache.get(key);
   if (hit && Date.now() - hit.at < 15 * 60000) return hit.data;
-  const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,cloud_cover,is_day,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json());
+  const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,cloud_cover,is_day,precipitation,snowfall,snow_depth,visibility,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json());
   const c = w?.current;
   if (!c) throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
   const data = {
     place, temperature: Math.round(c.temperature_2m), code: c.weather_code, text: weatherText(c.weather_code), cloud: c.cloud_cover,
     precipitation: c.precipitation, is_day: !!c.is_day, sunrise: w.daily?.sunrise?.[0] ?? null, sunset: w.daily?.sunset?.[0] ?? null,
+    kind: weatherKind(c.weather_code), snowfall: c.snowfall ?? 0, snow_depth: c.snow_depth ?? 0, visibility: c.visibility ?? null,
+    wind_speed: c.wind_speed_10m ?? 0, wind_direction: c.wind_direction_10m ?? 0,
   };
   weatherCache.set(key, { at: Date.now(), data });
   return data;
@@ -1004,6 +1008,15 @@ route('GET', '/api/weather', async (_p, _b, qs, ctx) => {
     if (e instanceof HttpError) throw e;
     throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
   }
+});
+// Blitze rund ums Haus in Echtzeit (Blitzortung.org) – für Hinweise und die Blitzkarte im Ruhezustand des Terminals
+const lightning = process.env.LIGHTNING === '0' ? null : require('./lightning.cjs').createLightning({ log: (m) => console.log(m) });
+route('GET', '/api/lightning', (_p, _b, qs) => {
+  const lat = Number(qs.get('lat'));
+  const lon = Number(qs.get('lon'));
+  if (!qs.get('lat') || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) throw new HttpError(400, 'Lage des Hauses fehlt.');
+  if (!lightning) return { connected: false, strikes: [], count15: 0, nearest: null, level: 0 };
+  return lightning.around(lat, lon, Math.max(10, Math.min(300, Number(qs.get('radius')) || 100)));
 });
 route('GET', '/api/geocode', async (_p, _b, qs) => {
   const q = String(qs.get('q') || '').trim().slice(0, 120);
@@ -2238,6 +2251,24 @@ async function handle(req, res) {
   if (url.pathname === '/healthz') {
     try { db.prepare('SELECT 1').get(); return sendJson(res, 200, { ok: true }); } catch { return sendJson(res, 503, { ok: false }); }
   }
+  // Blitze in Echtzeit (Server-Sent Events): jeder Einschlag im Umkreis sofort, solange die Verbindung offen ist
+  if (url.pathname === '/api/lightning/stream' && req.method === 'GET') {
+    const auth = keyAuth(bearer(req)) || sessionAuth(req) || terminalAuth(req);
+    const lat = Number(url.searchParams.get('lat'));
+    const lon = Number(url.searchParams.get('lon'));
+    if (!auth) return sendJson(res, 401, { error: 'Bitte anmelden.' });
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return sendJson(res, 400, { error: 'Lage des Hauses fehlt.' });
+    res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
+    res.write('retry: 5000\n\n');
+    const radius = Math.max(10, Math.min(300, Number(url.searchParams.get('radius')) || 100));
+    const off = lightning ? lightning.subscribe(lat, lon, radius, (s) => res.write(`event: strike\ndata: ${JSON.stringify(s)}\n\n`)) : () => {};
+    const ping = setInterval(() => res.write(': ping\n\n'), 25000);
+    req.on('close', () => {
+      clearInterval(ping);
+      off();
+    });
+    return;
+  }
   // Oberfläche liefert die Zuhause-App (server/index.ts); hier nur API, QR-Links und Healthcheck
   if (!url.pathname.startsWith('/api/')) return sendJson(res, 404, { error: 'Nicht gefunden.' });
   try {
@@ -2326,5 +2357,5 @@ module.exports = {
   handle, authenticate, onOpen, mcpHandler, HttpError, DB_PATH,
   get db() { return db; },
   siteOf, saveSite, authSettings, setAuthSetting, accountUser,
-  close() { try { db.close(); } catch { /* ignorieren */ } },
+  close() { lightning?.close(); try { db.close(); } catch { /* ignorieren */ } },
 };

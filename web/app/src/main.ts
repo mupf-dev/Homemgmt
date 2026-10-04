@@ -23,8 +23,9 @@ import { clearFailures, failures, flush, QueuedError } from './lager/outbox';
 import { ic } from './icons';
 import { initShell } from './shell';
 import { onPrefs, prefs } from './prefs';
-import { idleNow, initIdle, setTermWeather, terminal } from './terminal';
+import { idleNow, initIdle, setTermStorm, setTermWeather, terminal } from './terminal';
 import { sunPosition } from './sun';
+import { lookFromWeather, WeatherFx } from './weatherfx';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -3347,9 +3348,21 @@ async function updateOutdoor(force = false) {
     setTermWeather(data ? `${data.temperature} °C · ${data.text}` : '');
   }
   const w = outdoorWeather.data;
-  if (loc) {
-    const sun = sunPosition(new Date(), loc.lat, loc.lon);
-    view.setOutdoor({ ...sun, north: loc.north, cloud: w?.cloud ?? 20, rain: (w?.precipitation ?? 0) > 0 });
+  const sun = loc ? sunPosition(new Date(), loc.lat, loc.lon) : null;
+  const night = sun ? sun.altitude < -3 : (() => { const h = new Date().getHours(); return h < 7 || h >= 20; })();
+  // Wetter über dem Bild (Regen, Schnee, Dunst, Gewitter) – auch ohne Lage des Hauses (Wetter dann per Postleitzahl)
+  const look = lookFromWeather(w, night, loc?.north ?? 0);
+  weatherFx().forEach((fx) => fx.set(look));
+  if (loc && sun) {
+    const kind = String(w?.kind ?? '');
+    view.setOutdoor({
+      ...sun, north: loc.north, cloud: w?.cloud ?? 20, rain: (w?.precipitation ?? 0) > 0 || ['rain', 'drizzle', 'thunder'].includes(kind),
+      fog: look.fog,
+      wet: (w?.precipitation ?? 0) > 0 || ['rain', 'drizzle', 'thunder'].includes(kind) ? 1 : 0,
+      snow: (w?.snow_depth ?? 0) >= 0.02 || (kind === 'snow' && (w?.temperature ?? 5) <= 1) ? 1 : 0,
+      // Wolkenzug: langsam mit der Zeit, schneller bei Wind
+      drift: ((Date.now() / 60000) % 100000) * 0.004 * (0.3 + Math.min(2, (w?.wind_speed ?? 10) / 20)),
+    });
     // nachts brennen die Lampen
     const lamps = sun.altitude < 0 ? 1.8 : 0.6;
     if (store.house.settings.lampIntensity !== lamps) {
@@ -3357,6 +3370,16 @@ async function updateOutdoor(force = false) {
       view.build();
     }
   } else if (view.outdoor) view.setOutdoor(null);
+}
+/** Wetter-Animation über dem 3D und über dem Ruhezustand (nur Wandterminal) */
+let fxView: WeatherFx | null = null;
+let fxRest: WeatherFx | null = null;
+function weatherFx() {
+  if (!terminal()) return [];
+  fxView ??= new WeatherFx($('#view'));
+  const r = document.getElementById('rest');
+  if (r) fxRest ??= new WeatherFx(r);
+  return [fxView, fxRest].filter(Boolean) as WeatherFx[];
 }
 // jede Minute – nicht während das fotorealistische Bild gerechnet wird (würde es neu beginnen lassen)
 window.setInterval(() => !painting && updateOutdoor(), 60000);
@@ -3378,7 +3401,7 @@ const rest = document.createElement('div');
 rest.id = 'rest';
 rest.className = 'rest';
 rest.hidden = true;
-rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><p class="rest-hint">Zum Bedienen antippen</p>`;
+rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><div class="rest-storm" hidden><canvas class="rest-radar" width="360" height="360"></canvas><div><b class="storm-title"></b><span class="storm-text"></span><small class="storm-src">Blitzdaten: Blitzortung.org</small></div></div><p class="rest-hint">Zum Bedienen antippen</p>`;
 document.body.appendChild(rest);
 let restTimer = 0;
 let restClock = 0;
@@ -3424,7 +3447,7 @@ function restSceneKey() {
     const p = sunPosition(now, loc.lat, loc.lon);
     sun = p.altitude < -6 ? 'nacht' : `${Math.round(p.azimuth / 3)}:${Math.round(p.altitude / 3)}`;
   }
-  return `${store.house.floors.length}|${sun}|${w?.code ?? '-'}|${Math.round((w?.cloud ?? 0) / 25)}|${(w?.precipitation ?? 0) > 0}`;
+  return `${store.house.floors.length}|${sun}|${w?.code ?? '-'}|${Math.round((w?.cloud ?? 0) / 25)}|${(w?.precipitation ?? 0) > 0}|${(w?.snow_depth ?? 0) >= 0.02}|${Math.round((w?.visibility ?? 20000) / 2000)}`;
 }
 /** Bild klein (JPEG) merken – nach einem Neuladen ist der Ruhezustand sofort da */
 function rememberRest(dataUrl: string, key: string) {
@@ -3543,6 +3566,7 @@ function startRest() {
     /* egal */
   }
   checkRest();
+  updateLightning();
   restTimer = window.setInterval(checkRest, 2 * 60000);
 }
 function stopRest() {
@@ -3563,6 +3587,117 @@ function stopRest() {
 }
 initIdle(startRest, stopRest);
 
+// ---------------------------------------------------------------------------
+// Gewitter: Blitze in Echtzeit rund ums Haus (Blitzortung.org) – Hinweis, Blitzkarte, Aufblitzen bei nahen Einschlägen
+
+async function updateLightning() {
+  const loc = store.house.settings.location;
+  if (!terminal() || !loc || document.hidden) return;
+  const r = await fetch(`/api/lightning?lat=${loc.lat}&lon=${loc.lon}`, { credentials: 'same-origin' }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
+  if (r) showLightning(r);
+}
+function showLightning(r: { strikes: { km: number; bearing: number; age_s: number }[]; count15: number; level: number; nearest: { km: number; bearing: number; age_s: number; direction: string } | null }) {
+  const loc = store.house.settings.location;
+  if (!loc) return;
+  // ohne Echtzeit-Verbindung: neue nahe Blitze seit der letzten Abfrage → Bildschirm blitzt (je näher, desto heller)
+  const fresh = r.strikes.filter((s: any) => s.age_s < 25 && s.km <= 30);
+  if (fresh.length && strikeStream?.readyState !== EventSource.OPEN) {
+    const near = Math.min(...fresh.map((s: any) => s.km));
+    weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - near / 30)));
+  }
+  const ago = (sec: number) => (sec < 90 ? 'gerade eben' : `vor ${Math.round(sec / 60)} Min.`);
+  const n = r.nearest;
+  const title = r.level >= 3 ? 'Gewitter direkt über uns' : r.level === 2 ? 'Gewitter in der Nähe' : r.level === 1 ? 'Gewitter in der Region' : '';
+  const text = n ? `Nächster Blitz ${n.km.toLocaleString('de-DE')} km im ${n.direction}, ${ago(n.age_s)} · ${r.count15} Blitze in 15 Min. (bis 50 km)` : '';
+  // Kopfzeile des Terminals: Warnung ab „in der Nähe“
+  setTermStorm(r.level >= 2 && n ? `${title} · ${n.km.toLocaleString('de-DE')} km ${n.direction}` : '', r.level);
+  // Ruhezustand: Hinweis und Karte, sobald es in 100 km blitzt
+  const box = document.querySelector<HTMLElement>('#rest .rest-storm');
+  if (!box) return;
+  box.hidden = !r.strikes.length;
+  box.dataset.level = String(r.level);
+  box.querySelector('.storm-title')!.textContent = title || 'Blitze in der Ferne';
+  box.querySelector('.storm-text')!.textContent = text || `${r.strikes.length} Blitze in der letzten Stunde (bis 100 km)`;
+  drawRadar(box.querySelector('canvas')!, r.strikes, loc.north);
+}
+/** Blitzkarte: Haus in der Mitte, Norden oben, Ringe 10/25/50 km, Punkte nach Alter */
+function drawRadar(c: HTMLCanvasElement, strikes: { km: number; bearing: number; age_s: number }[], _north: number) {
+  const g = c.getContext('2d')!;
+  const S = c.width;
+  const R = S / 2 - 14;
+  const MAX = 50;
+  g.clearRect(0, 0, S, S);
+  g.save();
+  g.translate(S / 2, S / 2);
+  g.fillStyle = 'rgba(0,0,0,.35)';
+  g.beginPath();
+  g.arc(0, 0, R + 10, 0, Math.PI * 2);
+  g.fill();
+  g.strokeStyle = 'rgba(255,255,255,.25)';
+  g.lineWidth = 2;
+  g.fillStyle = 'rgba(255,255,255,.55)';
+  g.font = '600 18px Inter, system-ui, sans-serif';
+  g.textAlign = 'center';
+  for (const km of [10, 25, 50]) {
+    g.beginPath();
+    g.arc(0, 0, (km / MAX) * R, 0, Math.PI * 2);
+    g.stroke();
+    g.fillText(`${km}`, (km / MAX) * R * 0.71 + 14, -(km / MAX) * R * 0.71 + 2);
+  }
+  g.fillText('N', 0, -R + 22);
+  for (const s of [...strikes].reverse()) {
+    if (s.km > MAX) continue;
+    const a = (s.bearing * Math.PI) / 180;
+    const d = (s.km / MAX) * R;
+    const fresh = s.age_s < 300;
+    g.fillStyle = s.age_s < 60 ? '#fff36b' : fresh ? 'rgba(255,200,60,.95)' : s.age_s < 900 ? 'rgba(255,140,50,.75)' : 'rgba(200,200,210,.4)';
+    g.beginPath();
+    g.arc(Math.sin(a) * d, -Math.cos(a) * d, fresh ? 6 : 4, 0, Math.PI * 2);
+    g.fill();
+  }
+  // Haus
+  g.fillStyle = '#ffffff';
+  g.beginPath();
+  g.moveTo(0, -10);
+  g.lineTo(9, -2);
+  g.lineTo(6, -2);
+  g.lineTo(6, 8);
+  g.lineTo(-6, 8);
+  g.lineTo(-6, -2);
+  g.lineTo(-9, -2);
+  g.closePath();
+  g.fill();
+  g.restore();
+}
+// Echtzeit: der Server meldet jeden Blitz im Umkreis sofort (Server-Sent Events) – Aufblitzen ohne Verzögerung,
+// Hinweis und Karte werden kurz danach aktualisiert. Die Abfrage jede Minute bleibt als Rückfall.
+let strikeStream: EventSource | null = null;
+let streamKey = '';
+let strikeTimer = 0;
+function connectStrikes() {
+  const loc = store.house.settings.location;
+  const key = terminal() && loc ? `${loc.lat},${loc.lon}` : '';
+  if (key === streamKey) return;
+  strikeStream?.close();
+  strikeStream = null;
+  streamKey = key;
+  if (!loc || !key) return;
+  strikeStream = new EventSource(`/api/lightning/stream?lat=${loc.lat}&lon=${loc.lon}&radius=100`, { withCredentials: true });
+  strikeStream.addEventListener('strike', (e) => {
+    const st = JSON.parse((e as MessageEvent).data) as { km: number; direction: string };
+    if (st.km <= 30) weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - st.km / 30)));
+    clearTimeout(strikeTimer);
+    strikeTimer = window.setTimeout(updateLightning, 1500);
+  });
+}
+window.setInterval(() => updateLightning(), 60000);
+document.addEventListener('zh-account-render', () => {
+  connectStrikes();
+  if (terminal()) updateLightning();
+});
+store.subscribe(() => connectStrikes());
+
+
 // Projekt per URL laden, z. B. ?projekt=haus1-eg (Datei unter public/projekte/)
 const projectParam = new URLSearchParams(location.search).get('projekt');
 if (projectParam) {
@@ -3581,7 +3716,15 @@ if (projectParam) {
 
 // Nur in der Entwicklung: Zugriff für automatisierte Ansichtstests
 // Zugriff für automatisierte Ansichtstests (Klicktests)
-(window as any).__zuhause = { view, plan, store, sync, rest: () => idleNow() };
+(window as any).__zuhause = {
+  view, plan, store, sync, rest: () => idleNow(),
+  // für Klicktests: Wetter und Blitze vorgeben
+  weather: (w: any) => {
+    outdoorWeather = { at: Date.now(), data: w };
+    return updateOutdoor();
+  },
+  lightning: showLightning,
+};
 
 // Showroom direkt öffnen: per Link (?showroom) oder nach Neuladen, wenn er aktiv war
 {

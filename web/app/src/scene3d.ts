@@ -6,7 +6,7 @@ import { RenderPass } from 'three/examples/jsm/postprocessing/RenderPass.js';
 import { GTAOPass } from 'three/examples/jsm/postprocessing/GTAOPass.js';
 import { OutputPass } from 'three/examples/jsm/postprocessing/OutputPass.js';
 import { RectAreaLightUniformsLib } from 'three/examples/jsm/lights/RectAreaLightUniformsLib.js';
-import { GradientEquirectTexture, WebGLPathTracer } from 'three-gpu-pathtracer';
+import { ProceduralEquirectTexture, WebGLPathTracer } from 'three-gpu-pathtracer';
 import { store } from './state';
 import type { Floor, Project, Vec2, Wall } from './model/types.ts';
 import { box, buildItem, applyBoxUV } from './models';
@@ -30,6 +30,42 @@ export interface FachInfo {
 }
 
 const ROOF_MAT = new THREE.MeshPhysicalMaterial({ color: '#8e4535', roughness: 0.8, metalness: 0 });
+const SNOW_MAT = new THREE.MeshPhysicalMaterial({ color: '#f3f6fb', roughness: 0.85, metalness: 0 });
+
+// Wolken: Wertrauschen in mehreren Oktaven (reproduzierbar, ohne Bibliothek)
+const hash2 = (x: number, y: number) => {
+  const h = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return h - Math.floor(h);
+};
+function noise2(x: number, y: number) {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const a = hash2(xi, yi);
+  const b = hash2(xi + 1, yi);
+  const c = hash2(xi, yi + 1);
+  const d = hash2(xi + 1, yi + 1);
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+function fbm(x: number, y: number) {
+  let s = 0;
+  let amp = 0.5;
+  for (let i = 0; i < 5; i++) {
+    s += amp * noise2(x, y);
+    x = x * 2.03 + 17.1;
+    y = y * 2.01 + 9.2;
+    amp *= 0.5;
+  }
+  return s / 0.97;
+}
+const smooth = (a: number, b: number, x: number) => {
+  const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
+  return t * t * (3 - 2 * t);
+};
+const _skyDir = new THREE.Vector3();
 
 const FACH_COLORS = { empty: '#5b8def', full: '#2f9e6b', soon: '#e8912d', expired: '#d64545', hit: '#ffd400' };
 const fachMats = new Map<string, THREE.MeshBasicMaterial>();
@@ -53,7 +89,13 @@ export class Scene3D {
   /** Mond- und Himmelslicht in der Nacht (nur „draußen wie echt“) */
   private moon = new THREE.HemisphereLight('#9fb4e6', '#1f2b1c', 0.0);
   private selectionBox = new THREE.Box3Helper(new THREE.Box3(), new THREE.Color('#ff7a1a'));
-  private sky: GradientEquirectTexture;
+  private sky: ProceduralEquirectTexture;
+  /** Himmel: Verlauf, Wolken (Bedeckung 0…1, Farbe, Schatten), Sonnenschein am Himmel */
+  private skyLook = {
+    top: new THREE.Color('#bcd3ee'), bottom: new THREE.Color('#e9e4da'),
+    clouds: 0, cloudLight: new THREE.Color('#ffffff'), cloudDark: new THREE.Color('#9aa0a8'), drift: 0,
+    sun: new THREE.Vector3(0, 1, 0), glow: 0, glowColor: new THREE.Color('#fff4d8'),
+  };
   private pathTracer: WebGLPathTracer | null = null;
   private ptActive = false;
   private ptSceneDirty = false;
@@ -68,7 +110,14 @@ export class Scene3D {
   /** Rasen statt grauer Fläche ums Haus (Wandterminal) */
   lawn = false;
   /** Draußen wie echt: Sonnenstand (Grad), Nordrichtung des Grundrisses, Bewölkung (%), Regen – sonst Tageszeit-Regler */
-  outdoor: { azimuth: number; altitude: number; north: number; cloud: number; rain: boolean } | null = null;
+  outdoor: {
+    azimuth: number; altitude: number; north: number; cloud: number; rain: boolean;
+    /** Nebel 0…1, nasser Boden 0…1, Schneedecke 0…1, Wolkenzug (verschiebt die Wolken) */
+    fog?: number; wet?: number; snow?: number; drift?: number;
+  } | null = null;
+  private roofSnow = false;
+  private groundWet: THREE.Material | null = null;
+  private groundSnow: THREE.Material | null = null;
   onSamples?: (n: number) => void;
   onWalkChange?: (active: boolean) => void;
   /** Begehen: aktuelle Etage und Raum (für die Anzeige) */
@@ -105,10 +154,8 @@ export class Scene3D {
     setMaxAnisotropy(r.capabilities.getMaxAnisotropy());
 
     // Himmel als Umgebung (wird auch vom Pathtracer genutzt)
-    this.sky = new GradientEquirectTexture(256);
-    this.sky.topColor.set('#bcd3ee');
-    this.sky.bottomColor.set('#e9e4da');
-    this.sky.exponent = 0.6;
+    this.sky = new ProceduralEquirectTexture(512, 256);
+    this.sky.generationCallback = (polar, _uv, _coord, color) => this.skyPixel(polar, color);
     this.sky.update();
     this.scene.background = this.sky;
     this.scene.environment = this.sky;
@@ -319,7 +366,7 @@ export class Scene3D {
     // (Etage „Keller“ allein: neutraler Boden statt Rasen).
     const top = Math.max(...floors.map((f) => f.elevation));
     const underground = top < -1;
-    this.ground.material = this.lawn && !underground ? this.lawnMaterial() : this.groundPlain;
+    this.ground.material = this.lawn && !underground ? this.weatherGround() : this.groundPlain;
     this.ground.visible = this.mode === 'floor' || (this.lawn ? !underground : !floors.some((f) => f.elevation < -1));
 
     const p = store.project;
@@ -576,7 +623,7 @@ export class Scene3D {
     if (withRoof) {
       const slope = (span / 2 + ov) / Math.cos(Math.atan(tan));
       for (const sd of [-1, 1]) {
-        const plane = box(alongX ? length : slope, plate, alongX ? slope : length, ROOF_MAT);
+        const plane = box(alongX ? length : slope, plate, alongX ? slope : length, this.roofSnow ? SNOW_MAT : ROOF_MAT);
         const ang = Math.atan(tan);
         const off = (span / 2 + ov) / 2; // Mitte der Fläche, vom First nach außen
         const y = knee + rise - off * tan + lift;
@@ -724,51 +771,128 @@ export class Scene3D {
   private skyState = '';
   private updateSky(o: Scene3D['outdoor']): number {
     const mix = (a: string, b: string, t: number) => new THREE.Color(a).lerp(new THREE.Color(b), Math.max(0, Math.min(1, t)));
-    let top: THREE.Color;
-    let bottom: THREE.Color;
+    const L = this.skyLook;
     let light = 1;
     if (!o) {
-      top = new THREE.Color('#bcd3ee');
-      bottom = new THREE.Color('#e9e4da');
+      L.top.set('#bcd3ee');
+      L.bottom.set('#e9e4da');
+      L.clouds = 0;
+      L.glow = 0;
     } else {
       const alt = o.altitude;
       const cloud = Math.min(1, o.cloud / 100);
+      const fog = o.fog ?? 0;
       // Tag: blau → grau bei Bewölkung; Dämmerung: orange am Horizont; Nacht: dunkelblau
-      const dayTop = mix('#5e9be0', '#9aa4b0', cloud);
-      const dayBottom = mix('#d6e6f6', '#d0d3d8', cloud);
+      const dayTop = mix('#4f8fdc', '#9aa4b0', cloud * 0.8 + fog);
+      const dayBottom = mix('#cfe2f6', '#d0d3d8', cloud * 0.7 + fog);
       const duskTop = mix('#34467a', '#4a4f5c', cloud);
       const duskBottom = mix('#f0a468', '#8a8580', cloud);
       const nightTop = new THREE.Color('#0a1022');
       const nightBottom = new THREE.Color('#1b2336');
+      // Wolkenfarben: Tag weiß mit grauer Unterseite, Dämmerung rosa-orange, Nacht dunkelgrau
+      const dayLight = mix('#ffffff', '#c9cdd3', cloud);
+      const dayDark = mix('#a9b1bc', '#6e747c', cloud);
+      const duskLight = new THREE.Color('#f6b48a');
+      const duskDark = new THREE.Color('#6b5a6e');
+      const nightLight = new THREE.Color('#2a3142');
+      const nightDark = new THREE.Color('#141925');
       if (alt >= 8) {
-        top = dayTop;
-        bottom = dayBottom;
+        L.top.copy(dayTop);
+        L.bottom.copy(dayBottom);
+        L.cloudLight.copy(dayLight);
+        L.cloudDark.copy(dayDark);
       } else if (alt >= -2) {
         const t = (alt + 2) / 10;
-        top = duskTop.clone().lerp(dayTop, t);
-        bottom = duskBottom.clone().lerp(dayBottom, t);
+        L.top.copy(duskTop).lerp(dayTop, t);
+        L.bottom.copy(duskBottom).lerp(dayBottom, t);
+        L.cloudLight.copy(duskLight).lerp(dayLight, t);
+        L.cloudDark.copy(duskDark).lerp(dayDark, t);
       } else {
         const t = Math.min(1, (-2 - alt) / 8);
-        top = duskTop.clone().lerp(nightTop, t);
-        bottom = duskBottom.clone().lerp(nightBottom, t);
+        L.top.copy(duskTop).lerp(nightTop, t);
+        L.bottom.copy(duskBottom).lerp(nightBottom, t);
+        L.cloudLight.copy(duskLight).lerp(nightLight, t);
+        L.cloudDark.copy(duskDark).lerp(nightDark, t);
       }
+      L.clouds = Math.max(cloud, o.rain ? 0.85 : 0);
+      L.drift = o.drift ?? 0;
+      // Sonne am Himmel (nur ohne geschlossene Wolkendecke)
+      const th = ((o.azimuth + o.north) * Math.PI) / 180;
+      const a = Math.max(-0.05, (alt * Math.PI) / 180);
+      L.sun.set(Math.sin(th) * Math.cos(a), Math.sin(a), -Math.cos(th) * Math.cos(a)).normalize();
+      L.glow = alt > -3 ? (1 - Math.min(1, cloud * 1.1)) * (1 - fog) : 0;
+      L.glowColor.copy(alt > 10 ? new THREE.Color('#fff6dc') : new THREE.Color('#ffc48a'));
       light = alt >= 8 ? 1 - cloud * 0.25 : alt >= -2 ? 0.45 + 0.055 * (alt + 2) : 0.32;
       if (o.rain) light *= 0.75;
+      light *= 1 - fog * 0.3;
     }
-    const key = top.getHexString() + bottom.getHexString();
+    const r = (v: number) => Math.round(v * 40);
+    const key = [L.top.getHexString(), L.bottom.getHexString(), r(L.clouds), L.cloudLight.getHexString(), r(L.drift), r(L.sun.x), r(L.sun.y), r(L.sun.z), r(L.glow)].join();
     if (key !== this.skyState) {
       this.skyState = key;
-      this.sky.topColor.copy(top);
-      this.sky.bottomColor.copy(bottom);
       this.sky.update();
       if (this.pathTracer && this.ptActive) this.ptSceneDirty = true;
     }
     return light;
   }
 
+  /** Himmelsbild je Richtung: Verlauf, Sonne, Wolken (auch fürs fotorealistische Bild – der Himmel beleuchtet die Szene) */
+  private skyPixel(polar: THREE.Spherical, color: THREE.Color) {
+    const L = this.skyLook;
+    const d = _skyDir.setFromSpherical(polar);
+    const t = d.y * 0.5 + 0.5;
+    color.lerpColors(L.bottom, L.top, t ** 0.6);
+    if (L.glow > 0) {
+      const s = d.dot(L.sun);
+      if (s > 0.85) color.lerp(L.glowColor, Math.min(1, ((s - 0.85) / 0.15) ** 6 * 1.6) * L.glow);
+    }
+    if (L.clouds > 0.02 && d.y > 0) {
+      // Wolkenschicht als Ebene über dem Haus: zum Horizont hin enger und blasser
+      const k = 1 / (d.y + 0.08);
+      const n = fbm(d.x * k * 0.9 + L.drift, d.z * k * 0.9 + L.drift * 0.3);
+      const cov = L.clouds;
+      const c = smooth(1.02 - cov, 1.25 - cov * 0.6, n) * smooth(0, 0.18, d.y);
+      if (c > 0) {
+        const shade = smooth(0.35, 0.9, n);
+        const cc = new THREE.Color().lerpColors(L.cloudLight, L.cloudDark, cov * 0.5 + shade * 0.4);
+        color.lerp(cc, Math.min(1, c * (0.75 + cov * 0.25)));
+      }
+    }
+  }
+
+  /** Boden je nach Wetter: Rasen, nasser Rasen oder Schnee */
+  private weatherGround() {
+    const o = this.outdoor;
+    if ((o?.snow ?? 0) > 0.3) {
+      return (this.groundSnow ??= new THREE.MeshPhysicalMaterial({ color: '#eef2f7', roughness: 0.9 }));
+    }
+    const lawn = this.lawnMaterial() as THREE.MeshPhysicalMaterial;
+    if ((o?.wet ?? 0) > 0.3) {
+      if (!this.groundWet) {
+        const w = lawn.clone();
+        w.color.set('#8c968a');
+        w.roughness = 0.45;
+        w.clearcoat = 0.4;
+        w.clearcoatRoughness = 0.3;
+        this.groundWet = w;
+      }
+      return this.groundWet;
+    }
+    return lawn;
+  }
+
   /** Draußen live setzen (Sonne, Himmel) ohne alles neu aufzubauen */
   setOutdoor(o: Scene3D['outdoor']) {
     this.outdoor = o;
+    // Nebel (nur im normalen Bild; das fotorealistische bekommt Dunst über den Himmel)
+    const fog = o?.fog ?? 0;
+    this.scene.fog = fog > 0.05 ? new THREE.Fog(this.skyLook.bottom.clone(), 6, 140 - fog * 120) : null;
+    const snow = (o?.snow ?? 0) > 0.3;
+    const groundMat = this.lawn ? this.weatherGround() : null;
+    if (snow !== this.roofSnow) {
+      this.roofSnow = snow;
+      this.build();
+    } else if (groundMat && this.ground.material !== groundMat && this.ground.material !== this.groundPlain) this.ground.material = groundMat;
     this.updateSun(store.project);
     this.dirty = true;
     if (this.pathTracer && this.ptActive) this.pathTracer.reset();
