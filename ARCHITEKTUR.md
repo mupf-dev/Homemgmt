@@ -62,7 +62,9 @@ Höhenverhältnissen der Auszüge, Böden hinter Türen, Kühl- und Gefrierfäch
 **Objektbibliothek** (`model/objects.ts`): Möbelarten als Daten im Format `zuhause-objekt/1` – entweder ein **Korpus**
 (Sockel, Plattenstärke, Spalten mit Elementen: Schublade, Tür mit Böden, offen, Klappe, Kühl-/Gefrierfach) oder ein
 **3D-Modell** mit Fächern als Bereiche (0…1 je Achse). Aus derselben Beschreibung entstehen 3D-Möbel (`buildKorpus`),
-Fächer (`objectCompartments`) und Katalog-Symbol. Möbel tragen `type: "obj:<id>"`. Die Bibliothek liegt auf dem Server
+Fächer (`objectCompartments`) und Katalog-Symbol. Optional trägt ein Korpus eine Arbeitsplatte (`build.countertop`, kein
+Fach; `korpusLayout` rechnet den Korpus darunter); mit `join` ist das Möbel Teil einer Plattenzeile (`countertopRuns`) –
+jedes Möbel zeichnet seine Platte selbst, die Zeile sorgt nur für durchlaufende Textur. Möbel tragen `type: "obj:<id>"`. Die Bibliothek liegt auf dem Server
 (Tabelle `object_types`, Quelle eigene/importiert/community); das **Haus hält eine Kopie** jeder verwendeten Möbelart
 (`House.objectTypes`), damit Bibliotheksänderungen keine Adressen verschieben – neue Versionen nur auf Wunsch.
 Community-Katalog: eigenes Repo [`homemgmt-object-library`](https://github.com/mupf-dev/homemgmt-object-library) (eigene

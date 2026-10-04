@@ -42,8 +42,16 @@ export interface KorpusBuild {
   board: number;
   /** Rückwand */
   back: boolean;
+  /** Arbeitsplatte oben (kein Fach): Stärke und Überstand vorne in cm; join = Teil der Küchenzeile, geht in
+   *  angrenzende Unterschränke über. size.height ist die Gesamthöhe inklusive Platte. */
+  countertop?: KorpusCountertop;
   /** Spalten von links nach rechts, Elemente je Spalte von oben nach unten */
   columns: ObjColumn[];
+}
+export interface KorpusCountertop {
+  thickness: number;
+  overhang: number;
+  join?: boolean;
 }
 /** Fach eines 3D-Modells: Quader als Anteile 0 … 1 der Breite (x, links → rechts), Höhe (y, unten → oben), Tiefe (z, hinten → vorne) */
 export interface ModelCompartment {
@@ -94,6 +102,16 @@ const num = (v: unknown, min: number, max: number, what: string, dflt?: number) 
   return Math.round(n * 10) / 10;
 };
 
+function countertopOf(c: unknown): KorpusCountertop {
+  if (typeof c !== 'object' || !c) fail('Arbeitsplatte: Angaben als Objekt { thickness, overhang, join }.');
+  const o = c as Record<string, unknown>;
+  return {
+    thickness: num(o.thickness, 1, 10, 'Arbeitsplatte: Stärke', 4),
+    overhang: num(o.overhang, 0, 10, 'Arbeitsplatte: Überstand', 2),
+    ...(o.join === true ? { join: true } : {}),
+  };
+}
+
 /** Möbelart prüfen und vereinheitlichen – wirft eine verständliche Meldung bei Fehlern */
 export function validateObjectType(raw: unknown): ObjectType {
   if (!raw || typeof raw !== 'object') fail('Keine Möbelart (JSON-Objekt erwartet).');
@@ -125,6 +143,7 @@ export function validateObjectType(raw: unknown): ObjectType {
       plinth: num(b.plinth, 0, 40, 'Sockel', 0),
       board: num(b.board, 0.5, 6, 'Plattenstärke', 1.8),
       back: b.back !== false,
+      ...(b.countertop != null && b.countertop !== false ? { countertop: countertopOf(b.countertop) } : {}),
       columns: b.columns.map((c: any, ci: number) => {
         if (!Array.isArray(c?.elements) || !c.elements.length) fail(`Spalte ${ci + 1}: mindestens ein Element.`);
         if (c.elements.length > 20) fail(`Spalte ${ci + 1}: höchstens 20 Elemente.`);
@@ -142,6 +161,8 @@ export function validateObjectType(raw: unknown): ObjectType {
         };
       }),
     };
+    const ct = (build as KorpusBuild).countertop;
+    if (ct && size.height - ct.thickness - (build as KorpusBuild).plinth - 2 * (build as KorpusBuild).board < 5) fail('Höhe reicht nicht für Sockel, Korpus und Arbeitsplatte.');
   } else if (b.type === 'modell') {
     const m = b.model ?? {};
     const url = str(m.url, 200, 'Modell-Adresse');
@@ -192,7 +213,8 @@ export function korpusLayout(b: KorpusBuild, W: number, H: number) {
   const innerW = W - 2 * t - (b.columns.length - 1) * t;
   const totalC = b.columns.reduce((s, c) => s + c.size, 0);
   const y0 = b.plinth + t;
-  const y1 = H - t;
+  // mit Arbeitsplatte endet der Korpus unter der Platte
+  const y1 = H - (b.countertop?.thickness ?? 0) - t;
   let x = inner0;
   return b.columns.map((c) => {
     const w = (innerW * c.size) / totalC;

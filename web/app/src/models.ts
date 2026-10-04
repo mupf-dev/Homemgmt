@@ -237,8 +237,11 @@ export function buildItem(item: Item, ctx: BuildContext): THREE.Group {
  * (Schublade, Tür, Klappe, Kühl-/Gefrierfach) oder offene Böden. Die Aufteilung kommt aus korpusLayout – dieselbe wie
  * für die Fächer im Lager.
  */
-function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, H: number, mat: Mats) {
+function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, Htotal: number, mat: Mats) {
   const cm = mat('carcass');
+  // Arbeitsplatte oben (volle Breite, Überstand vorne); in einer Küchenzeile läuft ihre Textur über ctx.run weiter
+  const ctT = (b.countertop?.thickness ?? 0) / 100;
+  const H = Htotal - ctT;
   const t = b.board / 100;
   const P = b.plinth / 100;
   const zB = -D / 2;
@@ -251,7 +254,7 @@ function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, H: nu
   boxAt(g, -W / 2 + t, W / 2 - t, H - t, H, zB, zC, cm, 0.001);
   boxAt(g, -W / 2 + t, W / 2 - t, P, P + t, zB, zC, cm, 0.001);
   if (b.back) boxAt(g, -W / 2 + t, W / 2 - t, P + t, H - t, zB, zB + Math.min(t, 0.008), cm);
-  const cols = korpusLayout(b, W * 100, H * 100);
+  const cols = korpusLayout(b, W * 100, Htotal * 100);
   const fronts: FrontRect[] = [];
   cols.forEach((col, ci) => {
     const x0 = col.x0 / 100;
@@ -282,6 +285,7 @@ function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, H: nu
     });
   });
   addFronts(g, fronts, zF, mat);
+  if (b.countertop) boxAt(g, -W / 2, W / 2, H, Htotal, zB, zF + b.countertop.overhang / 100, mat('countertop'));
 }
 
 // ---------------------------------------------------------------------------

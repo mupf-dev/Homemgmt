@@ -187,12 +187,18 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
       </section>
       <section class="l-card"><h2>Materialien</h2>
         <div class="grid2"><label>Fronten<select data-m="front">${opt(materials, draft.materials?.front, 'wie im Haus')}</select></label>
-        <label>Korpus<select data-m="carcass">${opt(materials, draft.materials?.carcass, 'wie im Haus')}</select></label></div>
+        <label>Korpus<select data-m="carcass">${opt(materials, draft.materials?.carcass, 'wie im Haus')}</select></label>
+        ${b.type === 'korpus' && b.countertop ? `<label>Arbeitsplatte<select data-m="countertop">${opt(materials, draft.materials?.countertop, 'wie in der Küche')}</select></label>` : ''}</div>
       </section>`;
   };
   const korpusForm = (b: KorpusBuild) => `
     <div class="grid3"><label>Sockel (cm)<input data-b="plinth" inputmode="decimal" value="${b.plinth}" /></label><label>Plattenstärke (cm)<input data-b="board" inputmode="decimal" value="${b.board}" /></label>
     <label class="l-check" style="align-self:end"><input type="checkbox" data-b="back" ${b.back ? 'checked' : ''} /> Rückwand</label></div>
+    <div class="ob-ct">
+      <label class="l-check"><input type="checkbox" data-ct="on" ${b.countertop ? 'checked' : ''} /> Arbeitsplatte <small class="hint">(oben, kein Fach; die Höhe oben ist die Gesamthöhe mit Platte)</small></label>
+      ${b.countertop ? `<div class="grid3"><label>Stärke (cm)<input data-ct="thickness" inputmode="decimal" value="${b.countertop.thickness}" /></label><label>Überstand vorne (cm)<input data-ct="overhang" inputmode="decimal" value="${b.countertop.overhang}" /></label>
+        <label class="l-check" style="align-self:end" title="Die Platte geht in angrenzende Küchen-Unterschränke über (durchgehende Arbeitsplatte, Maserung läuft weiter)"><input type="checkbox" data-ct="join" ${b.countertop.join ? 'checked' : ''} /> mit Küchenzeile verbinden</label></div>` : ''}
+    </div>
     <div class="ob-cols">${b.columns.map((c, ci) => `<div class="ob-col" data-ci="${ci}">
       <div class="ob-col-h"><b>Spalte ${ci + 1}</b><label>Breite<input data-c="size" inputmode="decimal" value="${c.size}" title="relative Breite" /></label>
         <span class="spacer"></span><button type="button" class="btn mini" data-col="left" ${ci === 0 ? 'disabled' : ''} aria-label="nach links">←</button><button type="button" class="btn mini" data-col="right" ${ci === b.columns.length - 1 ? 'disabled' : ''} aria-label="nach rechts">→</button>
@@ -253,7 +259,22 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
     } else if (b.type === 'korpus') {
       const ci = Number(inp.closest<HTMLElement>('[data-ci]')?.dataset.ci);
       const ei = Number(inp.closest<HTMLElement>('[data-ei]')?.dataset.ei);
-      if (inp.dataset.b) (b as any)[inp.dataset.b] = inp.type === 'checkbox' ? inp.checked : num(inp.value);
+      if (inp.dataset.ct) {
+        const k = inp.dataset.ct;
+        if (k === 'on') {
+          if (inp.checked) b.countertop = { thickness: 4, overhang: 2 };
+          else {
+            delete b.countertop;
+            if (draft.materials) delete draft.materials.countertop;
+          }
+          return void (draw(), update());
+        }
+        if (!b.countertop) return;
+        if (k === 'join') {
+          if (inp.checked) b.countertop.join = true;
+          else delete b.countertop.join;
+        } else b.countertop[k as 'thickness' | 'overhang'] = num(inp.value);
+      } else if (inp.dataset.b) (b as any)[inp.dataset.b] = inp.type === 'checkbox' ? inp.checked : num(inp.value);
       else if (inp.dataset.c) b.columns[ci].size = num(inp.value);
       else if (inp.dataset.e) {
         const elx = b.columns[ci].elements[ei];
