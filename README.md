@@ -87,7 +87,8 @@ Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **ein
 
 - **Mehrere Personen** mit Anmeldung per Kachel + PIN/Passwort oder E-Mail, Recht „Haus planen“ pro Person
 - **Als App installierbar** (PWA), am Handy mit Leiste unten und Scannen in der Mitte
-- **Wandterminals**: Tablet an der Wand ohne persönliche Anmeldung, Ruhezustand mit Uhr, Wetter und Einkaufsliste
+- **Wandterminals**: Tablet an der Wand ohne persönliche Anmeldung, Ruhezustand mit Uhr, Wetter und Einkaufsliste;
+  Wolken, Regen, Schnee und Nebel wie draußen, **Gewitter mit Blitzen in Echtzeit** (Blitzortung.org) samt Blitzkarte
 - **Einstellungen pro Person**: Startseite, 2D/3D, Hell/Dunkel, Schriftgröße
 
 ### 🤖 KI-Assistent und MCP-Server
@@ -167,7 +168,9 @@ abhaken – oder gekauft und gleich wieder an den bisherigen Platz einbuchen. Mi
 
 *Verwaltung → Wandterminals → Wandterminal anlegen*: Hoch- oder Querformat wählen, dann den **Einrichtungslink** (oder seinen QR-Code) am Tablet öffnen. Das
 Terminal braucht keine persönliche Anmeldung; beim Buchen fragt es **„Wer bucht?“**. Ohne Bedienung wechselt es in den
-Ruhezustand – mit **Lage des Hauses** (*Planen → ⋯*) samt Sonne, Himmel und Wetter wie draußen.
+Ruhezustand – mit **Lage des Hauses** (*Planen → ⋯*) samt Sonne, Himmel und Wetter wie draußen. Blitzt es in der
+Nähe, zeigt das Terminal eine Warnung und eine Blitzkarte. Zum Ausprobieren: Adresse mit `?testwetter=schnee`
+(oder `regen`, `gewitter`, `nebel` …) öffnen.
 
 ### 6. KI-Assistent und MCP-Server
 
@@ -198,6 +201,7 @@ Das vollständige Handbuch für alle Lagerfunktionen steht in **[docs/LAGER.md](
 | `TRUST_PROXY` | – | `1` hinter einem Reverse Proxy (Secure-Cookie, echte Client-IP) |
 | `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatische Backups |
 | `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | KI-Assistent (sonst unter *Verwaltung → Assistent*) |
+| `LIGHTNING` | – | `0` schaltet die Live-Blitze (Blitzortung.org) für Wandterminals ab |
 
 Weitere Variablen (z. B. `MCP_ALLOWED_ORIGINS`, `PUBLIC_URL`) stehen in [docs/LAGER.md](docs/LAGER.md).
 

@@ -3,7 +3,7 @@
 Anmerkungen zum UI-Entwurf (https://claude.ai/artifact/DKwjHa7JYhiB8hRX2gPPXT).
 Werden gesammelt und erst auf Kommando abgearbeitet. Status: offen · erledigt · verworfen
 
-Umgesetzt in 0.6.0 (Branch `ui/phase-1-2`): A1–A5, A7–A9. Offen: A6 (Aufgaben – Details klären).
+Umgesetzt in 0.6.0: A1–A5, A7–A9 (dazu Lage des Hauses, Wetter, Gewitter in Echtzeit). Offen: A6 (Aufgaben – Details klären), „Zuletzt bewegt“ für alle oder nur eigene.
 
 ## Offene Fragen aus dem Entwurf
 

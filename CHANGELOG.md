@@ -34,13 +34,22 @@ jede Minute neu), das Wetter steht in der Kopfzeile, und ums Haus liegt **Rasen*
 von „Haus“ auf „Bis hier“, das gewählte Möbel bleibt sichtbar, alles andere wird durchsichtig (am Terminal ohne Rahmen).
 
 **Wetter am Wandterminal:** Wolken am Himmel (Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im
-fotorealistischen Bild, da der Himmel die Szene beleuchtet), Regen, Niesel und Schnee als Animation über dem Bild, Nebel
-und Dunst, nasser Rasen, Schnee auf Rasen und Dach. **Gewitter mit Blitzen in Echtzeit** (Blitzortung.org, die Daten
-hinter lightningmaps.org – ohne Konto, für private Nutzung): jeder Einschlag im Umkreis kommt per Server-Sent Events
-sofort an; nahe Blitze (≤ 30 km) lassen den Bildschirm aufblitzen. Hinweis in der Kopfzeile ab „in der Nähe“, im
-Ruhezustand Hinweis mit Entfernung, Richtung und Anzahl sowie eine Blitzkarte (10/25/50 km, Punkte nach Alter).
-Ruhezustand sparsamer: Detailgrad je Terminal, geringere Rechenauflösung, nur bei geänderter Sonne/Wetter neu, Pause
-bei verdecktem Bildschirm, letztes Bild gemerkt, Fortschrittsanzeige.
+fotorealistischen Bild, da der Himmel die Szene beleuchtet), Regen, Niesel und Schnee als dezente Animation über dem Bild
+– Stärke nach echter Regenrate (mm/h) bzw. Schneefall, Regenmenge in der Kopfzeile –, Nebel und Dunst, nasser Rasen
+(abgestuft nach Regenstärke). **Schnee** als wachsender Fleck auf und vor der Terrasse und auf den Dachflächen: bei einem
+Hauch etwa Terrassengröße, ab ~10 cm der ganze Garten; das Haus selbst bleibt frei. Rasen und Schnee sparen die
+Hausfläche aus (kein Rasen im Treppenloch). **Gewitter mit Blitzen in Echtzeit** (Blitzortung.org, die Daten hinter
+lightningmaps.org – ohne Konto, für private Nutzung): jeder Einschlag im Umkreis kommt per Server-Sent Events sofort an;
+nahe Blitze (≤ 30 km) lassen den Bildschirm aufblitzen. Warnung in der Kopfzeile ab 20 km, im Ruhezustand Hinweis mit
+dem letzten Blitz (Entfernung, Richtung, Alter), Anzahl und eine Blitzkarte (10/25/50 km, Punkte nach Alter) – nur,
+solange es bis 50 km blitzt. **Testwetter** zum Ausprobieren: `?testwetter=schnee` (auch `schnee-hauch`,
+`schnee-leicht`, `schneesturm`, `niesel`, `regen`, `wolkenbruch`, `gewitter`, `nebel`, `wolkig`, `klar`).
+**Ruhezustand sparsamer:** Detailgrad je Terminal (Entwurf/Normal/Hoch), geringere Rechenauflösung, Mindestqualität fürs
+fotorealistische Bild (sonst sauberes 3D-Bild), nur bei geänderter Sonne/Wetter neu, Pause bei verdecktem Bildschirm,
+letztes Bild gemerkt, Fortschrittsanzeige, flacher Blickwinkel.
+
+**Ansehen verfeinert:** Seitenleiste mit Ebene „Haus“ (alle Etagen mit Füllstand) über Etage → Raum → Möbel → Fach; die
+App startet im Erdgeschoss statt im Keller.
 
 **Kleinigkeiten:** ein Icon-Satz statt Emoji, Datum als TT.MM.JJJJ mit Schnellwahl (1 Woche … 1 Jahr), Vorschläge aus
 vorhandenen Gegenständen beim Einbuchen ins Fach, Farben für den Dunkelmodus, Knöpfe statt blauer Links, Anleitung
