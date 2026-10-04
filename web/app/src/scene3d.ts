@@ -418,6 +418,7 @@ export class Scene3D {
     const top = Math.max(...floors.map((f) => f.elevation));
     const underground = top < -1;
     this.ground.material = this.lawn && !underground ? this.weatherGround() : this.groundPlain;
+    this.updateGroundShape();
     this.ground.visible = this.mode === 'floor' || (this.lawn ? !underground : !floors.some((f) => f.elevation < -1));
     this.updateSnowPatch();
 
@@ -1016,6 +1017,48 @@ export class Scene3D {
    * Schnee: ein Fleck auf und vor der Terrasse (weg vom Haus), der mit der Schneehöhe wächst – wenig Schnee etwa
    * Terrassengröße, ab voller Stufe der ganze Garten. Unregelmäßiger Rand, außen ein halbdurchsichtiger Saum.
    */
+  /** Gelände ohne die Hausfläche – sonst läge Rasen unter dem Haus (z. B. sichtbar durchs Treppenloch) */
+  private groundKey = '';
+  private updateGroundShape() {
+    const inner = store.house.floors.filter((f) => f.kind !== 'outdoor').flatMap((f) => f.walls.flatMap((w) => [w.a, w.b]));
+    const key = inner.length ? JSON.stringify(hull(inner.map((q) => [Math.round(q.x), Math.round(q.y)] as P2))) : '';
+    if (key === this.groundKey) return;
+    this.groundKey = key;
+    const R = 60;
+    const seg = 96;
+    let geo: THREE.BufferGeometry;
+    if (!inner.length) {
+      geo = new THREE.CircleGeometry(R, 64);
+      geo.rotateX(-Math.PI / 2);
+    } else {
+      const cut = hull(inner.map((q) => [q.x * M, q.y * M] as P2));
+      const pos: number[] = [];
+      const uv: number[] = [];
+      for (let i = 0; i < seg; i++) {
+        const a0 = (i / seg) * Math.PI * 2;
+        const a1 = ((i + 1) / seg) * Math.PI * 2;
+        let tri: P2[] = [[0, 0], [Math.cos(a0) * R, Math.sin(a0) * R], [Math.cos(a1) * R, Math.sin(a1) * R]];
+        if (area2(tri) < 0) tri = [tri[0], tri[2], tri[1]];
+        for (const piece of diffConvex(tri, cut)) {
+          const poly = area2(piece) < 0 ? [...piece].reverse() : piece;
+          for (let k = 1; k < poly.length - 1; k++) {
+            for (const q of [poly[0], poly[k + 1], poly[k]]) {
+              pos.push(q[0], 0, q[1]);
+              uv.push(q[0] / (2 * R) + 0.5, 0.5 - q[1] / (2 * R));
+            }
+          }
+        }
+      }
+      geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.setAttribute('uv', new THREE.Float32BufferAttribute(uv, 2));
+      geo.computeVertexNormals();
+    }
+    this.ground.geometry.dispose();
+    this.ground.geometry = geo;
+    this.ground.rotation.set(0, 0, 0);
+  }
+
   private snowPatch: THREE.Group | null = null;
   private updateSnowPatch() {
     if (this.snowPatch) {
