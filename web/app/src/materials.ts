@@ -466,7 +466,10 @@ export function isTextured(def: MaterialDef) {
 
 // Feste Materialien für Geräte & Details
 export const FIXED = {
-  glass: new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0, metalness: 0, transmission: 1, ior: 1.5, thickness: 0.004, transparent: true, opacity: 0.25 }),
+  // Fensterglas als dünne Scheibe (thickness 0 = „thin film“ im Pathtracer): kein Glasvolumen – sonst bricht der
+  // Pathtracer Strahlen, die die halbtransparente Vorderseite übersprungen haben, an der Rückseite falsch herum,
+  // und Dinge hinter dem Fenster erscheinen ab und zu doppelt
+  glass: new THREE.MeshPhysicalMaterial({ color: '#ffffff', roughness: 0, metalness: 0, transmission: 1, ior: 1.5, thickness: 0, transparent: true, opacity: 0.25 }),
   blackGlass: new THREE.MeshPhysicalMaterial({ color: '#0b0b0c', roughness: 0.04, metalness: 0, clearcoat: 1, clearcoatRoughness: 0.02 }),
   steel: new THREE.MeshPhysicalMaterial({ color: '#c8c9cb', roughness: 0.28, metalness: 1 }),
   graniteSink: new THREE.MeshPhysicalMaterial({ color: '#2f3032', roughness: 0.55, metalness: 0 }),
