@@ -41,6 +41,16 @@ export class Plan2D {
   private underlaySrc = '';
   private spaceDown = false;
   moveUnderlay = false;
+  /** Nur ansehen: Antippen wählt Möbel/Räume, Ziehen verschiebt die Ansicht, nichts lässt sich verändern */
+  viewOnly = false;
+  /** Füllstand je Möbel (0 leer, 1 teils, 2 voll; null = ohne Fächer) – färbt Möbel im Ansehen-Modus */
+  fillOf?: (itemId: string) => 0 | 1 | 2 | null;
+  /** hervorgehobene Möbel (Suchtreffer) */
+  highlight = new Set<string>();
+  /** Touch: aktive Finger und Zwei-Finger-Zoom */
+  private touches = new Map<number, { x: number; y: number }>();
+  private pinch: { d: number; zoom: number; mx: number; my: number; ox: number; oy: number } | null = null;
+  private tap: { x: number; y: number; p: Vec2 } | null = null;
   onToolChange?: (t: Tool) => void;
   onCalibrated?: (pixels: number) => void;
   /** Klick mit dem Raum-Werkzeug in eine geschlossene Fläche ohne Raum */
@@ -49,6 +59,7 @@ export class Plan2D {
   constructor(private container: HTMLElement) {
     this.canvas = document.createElement('canvas');
     this.canvas.tabIndex = 0;
+    this.canvas.style.touchAction = 'none';
     container.appendChild(this.canvas);
     this.ctx = this.canvas.getContext('2d')!;
     new ResizeObserver(() => this.resize()).observe(container);
@@ -81,13 +92,14 @@ export class Plan2D {
   }
 
   /** Ansicht auf einen Punkt zentrieren (z. B. Suchtreffer), Zoom mindestens so, dass ~5 m sichtbar sind */
-  centerOn(p: Vec2) {
+  /** Punkt in die Mitte holen; visibleH: nur der obere Teil ist sichtbar (z. B. Blatt von unten auf dem Handy) */
+  centerOn(p: Vec2, visibleH?: number) {
     const w = this.container.clientWidth;
     const h = this.container.clientHeight;
     if (!w || !h) return;
     this.zoom = Math.max(this.zoom, Math.min(w, h) / 500);
     this.ox = w / 2 - p.x * this.zoom;
-    this.oy = h / 2 - p.y * this.zoom;
+    this.oy = Math.min(h, visibleH ?? h) / 2 - p.y * this.zoom;
     this.draw();
   }
 
@@ -151,6 +163,12 @@ export class Plan2D {
     c.addEventListener('pointerdown', (e) => this.down(e));
     c.addEventListener('pointermove', (e) => this.move(e));
     c.addEventListener('pointerup', (e) => this.up(e));
+    c.addEventListener('pointercancel', (e) => {
+      this.touches.delete(e.pointerId);
+      this.pinch = null;
+      this.tap = null;
+      this.drag = null;
+    });
     c.addEventListener('dblclick', () => {
       if (this.tool === 'wall') this.finishWall();
     });
@@ -164,6 +182,24 @@ export class Plan2D {
   private down(e: PointerEvent) {
     this.canvas.setPointerCapture(e.pointerId);
     const p = this.toWorld(e);
+    if (e.pointerType === 'touch') {
+      this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+      if (this.touches.size === 2) {
+        // zweiter Finger: Zoomen statt Ziehen
+        const [a, b] = [...this.touches.values()];
+        const r = this.canvas.getBoundingClientRect();
+        this.pinch = { d: Math.hypot(a.x - b.x, a.y - b.y) || 1, zoom: this.zoom, mx: (a.x + b.x) / 2 - r.left, my: (a.y + b.y) / 2 - r.top, ox: this.ox, oy: this.oy };
+        this.drag = null;
+        this.tap = null;
+        return;
+      }
+    }
+    if (this.viewOnly) {
+      // Auswahl erst beim Loslassen (wer zieht, will die Ansicht verschieben)
+      this.tap = { x: e.clientX, y: e.clientY, p };
+      this.drag = { kind: 'pan', start: { x: e.clientX, y: e.clientY }, ox: this.ox, oy: this.oy };
+      return;
+    }
     if (e.button === 1 || e.button === 2 || this.spaceDown) {
       if (this.tool === 'wall' && e.button === 2) {
         this.finishWall();
@@ -301,6 +337,14 @@ export class Plan2D {
     this.drag = { kind: 'pan', start: { x: e.clientX, y: e.clientY }, ox: this.ox, oy: this.oy };
   }
 
+  /** Ansehen: Möbel (auch gesperrte) oder Raum unter dem Finger auswählen */
+  private pickView(p: Vec2) {
+    const it = [...store.project.items].sort((a, b) => b.elevation - a.elevation).find((i) => pointInItem(i, p));
+    if (it) return store.select({ kind: 'item', id: it.id });
+    const room = this.roomAt(p, true);
+    store.select(room ? { kind: 'room', id: room.id } : null);
+  }
+
   private roomAt(p: Vec2, withLocked = false): Room | undefined {
     return store.floor.rooms.find((r) => (withLocked || !r.locked) && r.polygon && r.polygon.length >= 3 && pointInPolygon(p, r.polygon));
   }
@@ -312,8 +356,23 @@ export class Plan2D {
   }
 
   private move(e: PointerEvent) {
+    if (this.touches.has(e.pointerId)) this.touches.set(e.pointerId, { x: e.clientX, y: e.clientY });
+    if (this.pinch && this.touches.size >= 2) {
+      const [a, b] = [...this.touches.values()];
+      const r = this.canvas.getBoundingClientRect();
+      const pc = this.pinch;
+      const nz = Math.max(0.1, Math.min(20, (pc.zoom * Math.hypot(a.x - b.x, a.y - b.y)) / pc.d));
+      const mx = (a.x + b.x) / 2 - r.left;
+      const my = (a.y + b.y) / 2 - r.top;
+      this.zoom = nz;
+      this.ox = mx - ((pc.mx - pc.ox) / pc.zoom) * nz;
+      this.oy = my - ((pc.my - pc.oy) / pc.zoom) * nz;
+      this.draw();
+      return;
+    }
     const p = this.toWorld(e);
     this.cursor = p;
+    if (this.tap && Math.hypot(e.clientX - this.tap.x, e.clientY - this.tap.y) > 6) this.tap = null;
     const d = this.drag;
     if (d?.kind === 'pan') {
       this.ox = d.ox + e.clientX - d.start.x;
@@ -441,6 +500,10 @@ export class Plan2D {
   }
 
   private updateHoverCursor(p: Vec2) {
+    if (this.viewOnly) {
+      this.canvas.style.cursor = store.project.items.some((i) => pointInItem(i, p)) ? 'pointer' : 'grab';
+      return;
+    }
     const tol = 8 / this.zoom;
     const proj = store.project;
     let cur = 'default';
@@ -452,7 +515,11 @@ export class Plan2D {
     this.canvas.style.cursor = this.moveUnderlay ? 'move' : cur;
   }
 
-  private up(_e: PointerEvent) {
+  private up(e: PointerEvent) {
+    this.touches.delete(e.pointerId);
+    if (this.touches.size < 2) this.pinch = null;
+    if (this.tap && this.viewOnly) this.pickView(this.tap.p);
+    this.tap = null;
     const d = this.drag;
     this.drag = null;
     if (!d) return;
@@ -487,6 +554,7 @@ export class Plan2D {
   }
 
   private key(e: KeyboardEvent) {
+    if (this.viewOnly) return;
     const target = e.target as HTMLElement;
     if (target && (target.tagName === 'INPUT' || target.tagName === 'SELECT' || target.tagName === 'TEXTAREA')) return;
     if (!this.container.offsetParent) return; // 2D-Ansicht verborgen
@@ -795,13 +863,15 @@ export class Plan2D {
       this.drawItem(this.ghost, true, col, px);
       ctx.globalAlpha = 1;
     }
-    // Schloss an gesperrten Objekten
-    for (const w of proj.walls) if (w.locked) this.drawLock(add(mul(w.a, 0.7), mul(w.b, 0.3)), col, px); // neben dem Maß in der Mitte
-    for (const o of proj.openings) {
-      const w = o.locked && store.wall(o.wallId);
-      if (w) this.drawLock(openingCenter(w, o), col, px);
+    // Schloss an gesperrten Objekten (nur beim Planen)
+    if (!this.viewOnly) {
+      for (const w of proj.walls) if (w.locked) this.drawLock(add(mul(w.a, 0.7), mul(w.b, 0.3)), col, px); // neben dem Maß in der Mitte
+      for (const o of proj.openings) {
+        const w = o.locked && store.wall(o.wallId);
+        if (w) this.drawLock(openingCenter(w, o), col, px);
+      }
+      for (const it of proj.items) if (it.locked) this.drawLock({ x: it.x, y: it.y }, col, px);
     }
-    for (const it of proj.items) if (it.locked) this.drawLock({ x: it.x, y: it.y }, col, px);
 
     // Raumnamen mit Lager-Kürzel und Fläche
     for (const r of rooms) {
@@ -814,18 +884,18 @@ export class Plan2D {
       ctx.textBaseline = 'middle';
       ctx.font = `600 ${13 * px}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = col('--ink');
-      ctx.fillText(r.locked ? `🔒 ${r.name}` : r.name, 0, -8 * px);
+      ctx.fillText(r.locked && !this.viewOnly ? `${r.name} (gesperrt)` : r.name, 0, -8 * px);
       ctx.font = `${10.5 * px}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = col('--ink-soft');
-      ctx.fillText(`Lager ${r.code} · ${area.toFixed(1).replace('.', ',')} m²`, 0, 8 * px);
+      ctx.fillText(this.viewOnly ? r.code : `Lager ${r.code} · ${area.toFixed(1).replace('.', ',')} m²`, 0, 8 * px);
       ctx.restore();
     }
 
-    // Wandmaße
+    // Wandmaße (nur beim Planen)
     ctx.font = `${11 * px}px Inter, system-ui, sans-serif`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    for (const w of proj.walls) {
+    for (const w of this.viewOnly ? [] : proj.walls) {
       const L = wallLength(w);
       if (L * z < 40) continue;
       const m = mul(add(w.a, w.b), 0.5);
@@ -841,7 +911,7 @@ export class Plan2D {
     }
 
     // Breiten-Ziehpunkte am ausgewählten Element
-    if (sel?.kind === 'item' && this.tool === 'select') {
+    if (sel?.kind === 'item' && this.tool === 'select' && !this.viewOnly) {
       const it = store.item(sel.id);
       if (it) {
         for (const h of this.resizeHandles(it)) {
@@ -992,10 +1062,22 @@ export class Plan2D {
       ctx.beginPath();
       ctx.arc(it.x, it.y, it.width / 2, 0, Math.PI * 2);
     }
-    ctx.fillStyle = upper ? 'transparent' : selected ? col('--item-sel') : col('--item');
+    const lv = this.viewOnly ? this.fillOf?.(it.id) ?? null : null;
+    if (lv !== null) {
+      ctx.globalAlpha = upper ? 0.55 : 1;
+      ctx.fillStyle = col(`--lv${lv}`);
+    } else ctx.fillStyle = upper ? 'transparent' : selected ? col('--item-sel') : col('--item');
     ctx.fill();
+    ctx.globalAlpha = 1;
     ctx.strokeStyle = selected ? col('--accent') : col('--ink');
     ctx.lineWidth = (selected ? 2.2 : 1) * px;
+    if (this.highlight.has(it.id)) {
+      ctx.save();
+      ctx.strokeStyle = col('--hl');
+      ctx.lineWidth = 5 * px;
+      ctx.stroke();
+      ctx.restore();
+    }
     if (upper) ctx.setLineDash([5 * px, 4 * px]);
     ctx.stroke();
     ctx.setLineDash([]);
@@ -1090,8 +1172,8 @@ export class Plan2D {
       ctx.restore();
       return;
     }
-    // Beschriftung
-    if (W * this.zoom > 34 && e.kind !== 'pendant' && e.kind !== 'stool') {
+    // Beschriftung (Breite – nur beim Planen)
+    if (!this.viewOnly && W * this.zoom > 34 && e.kind !== 'pendant' && e.kind !== 'stool') {
       ctx.fillStyle = col('--ink-soft');
       ctx.font = `${10 * px}px Inter, system-ui, sans-serif`;
       ctx.textAlign = 'center';

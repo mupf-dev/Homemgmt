@@ -209,8 +209,10 @@ export function createHouse(core: Core) {
     if (!req.auth) return res.status(401).json({ error: 'Bitte anmelden.' });
     next();
   };
-  const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (req.auth?.via !== 'session' || req.auth.person.role !== 'admin') return res.status(403).json({ error: 'Den Hausplan dürfen nur Admins ändern.' });
+  // Planen: Admins immer, sonst nur mit dem Recht „Haus planen“ (persons.can_plan)
+  const canPlan = (req: Request) => req.auth?.via === 'session' && (req.auth.person.role === 'admin' || !!req.auth.person.can_plan);
+  const requirePlanner = (req: Request, res: Response, next: NextFunction) => {
+    if (!canPlan(req)) return res.status(403).json({ error: 'Den Hausplan dürfen nur Personen mit dem Recht „Haus planen“ ändern.' });
     next();
   };
 
@@ -224,14 +226,14 @@ export function createHouse(core: Core) {
       version: row?.version ?? 0,
       updated_at: row?.updated_at ?? null,
       updated_by: row?.updated_by_name ?? null,
-      can_edit: req.auth!.via === 'session' && req.auth!.person.role === 'admin',
+      can_edit: canPlan(req),
       // Kürzel der übrigen Lager – Räume dürfen sie nicht bekommen
       reserved: (db().prepare('SELECT code FROM warehouses WHERE plan_key IS NULL').all() as Row[]).map((w) => w.code),
     });
   });
 
   // Speichern {house, base_version}: base_version = zuletzt geladener Stand (sonst 409, damit nichts überschrieben wird)
-  router.put('/api/house', requireUser, requireAdmin, (req, res) => {
+  router.put('/api/house', requireUser, requirePlanner, (req, res) => {
     const body = req.body ?? {};
     if (!body.house || typeof body.house !== 'object') return res.status(400).json({ error: 'Kein Hausplan übergeben.' });
     try {

@@ -3,6 +3,7 @@
 
 import { api, esc, fmtDate, type LagerCtx } from './core';
 import type { View } from './views';
+import { ic, type IconName } from '../icons';
 
 declare global {
   interface Window {
@@ -27,15 +28,15 @@ async function run(ctx: LagerCtx, fn: () => Promise<unknown>, msg?: string) {
 
 export const viewAdmin: View = (el, ctx) => {
   if (ctx.user()?.role !== 'admin') return void (el.innerHTML = '<p>Nur für Admins.</p>');
-  const tile = (h: string, t: string, s: string) => `<a class="l-tile" href="${h}"><b>${t}</b><small>${s}</small></a>`;
-  el.innerHTML = `<a class="l-back" href="#/lager">← Lager</a><h1>Verwaltung</h1><div class="l-tiles">
-    ${tile('#/verwaltung/personen', '👥 Personen', 'Anmeldung, Rollen, Passwörter, Freigaben, Registrierung')}
-    ${tile('#/verwaltung/lager', '🗄 Lager', 'Lager und Kürzel (Räume kommen aus dem Hausplan)')}
-    ${tile('#/verwaltung/schluessel', '🔑 API-Schlüssel', 'Für KI-Assistenten (MCP) und eigene Skripte')}
-    ${tile('#/verwaltung/backups', '💾 Backups', 'Sichern, herunterladen, wiederherstellen')}
-    ${tile('#/verwaltung/assistent', '✨ Assistent', 'KI-Anbieter, Modell, Preisrecherche, Verbrauch')}
-    ${tile('#/verwaltung/transfer', '📤 Export & Import', 'Excel/CSV – z. B. für die Hausratversicherung')}
-    ${tile('#/haus', '🏠 Hausplan', 'Etagen, Räume, Möbel und Fächer')}
+  const tile = (h: string, i: IconName, t: string, s: string) => `<a class="ov-tile" href="${h}">${ic(i)}<b>${t}</b><small>${s}</small></a>`;
+  el.innerHTML = `<a class="l-back" href="#/mehr">${ic('back')}Mehr</a><h1>Verwaltung</h1><div class="ov-tiles">
+    ${tile('#/verwaltung/personen', 'users', 'Personen', 'Anmeldung, Rollen, Recht „Haus planen“, Freigaben')}
+    ${tile('#/verwaltung/lager', 'box', 'Lager', 'Lager und Kürzel (Räume kommen aus dem Hausplan)')}
+    ${tile('#/verwaltung/schluessel', 'key', 'API-Schlüssel', 'Für KI-Assistenten (MCP) und eigene Skripte')}
+    ${tile('#/verwaltung/backups', 'file', 'Sicherungen', 'Sichern, herunterladen, wiederherstellen')}
+    ${tile('#/verwaltung/assistent', 'spark', 'Assistent', 'KI-Anbieter, Modell, Preisrecherche, Verbrauch')}
+    ${tile('#/verwaltung/transfer', 'upload', 'Export & Import', 'Excel/CSV – z. B. für die Hausratversicherung')}
+    ${tile('#/haus', 'plan', 'Hausplan', 'Etagen, Räume, Möbel und Fächer')}
   </div>`;
 };
 
@@ -51,7 +52,7 @@ export const viewPersons: View = async (el, ctx) => {
     <div class="l-list">${persons.map((p) => {
       const u = byId.get(p.id);
       return `<div class="l-item ${p.archived ? 'muted' : ''}" data-id="${p.id}"><span class="avatar" style="background:${esc(p.color)}">${esc(p.name.slice(0, 1).toUpperCase())}</span>
-        <span class="l-main"><b>${esc(p.name)}${p.id === me.id ? ' <small>(du)</small>' : ''}</b><small>${p.role === 'admin' ? 'Admin' : 'Benutzer'}${u?.email ? ` · ${esc(u.email)}` : ''}${p.has_password ? '' : ' · ohne Passwort (kann sich nicht anmelden)'}${p.archived ? ' · archiviert' : ''}${u?.status === 'pending' ? ' · <b>wartet auf Freigabe</b>' : ''} · ${p.bookings} Buchungen</small></span>
+        <span class="l-main"><b>${esc(p.name)}${p.id === me.id ? ' <small>(du)</small>' : ''}</b><small>${p.role === 'admin' ? 'Admin' : p.can_plan ? 'Benutzer · darf planen' : 'Benutzer'}${u?.email ? ` · ${esc(u.email)}` : ''}${p.has_password ? '' : ' · ohne Passwort (kann sich nicht anmelden)'}${p.archived ? ' · archiviert' : ''}${u?.status === 'pending' ? ' · <b>wartet auf Freigabe</b>' : ''} · ${p.bookings} Buchungen</small></span>
         ${u?.status === 'pending' ? '<button class="btn primary mini" data-act="approve">Freigeben</button>' : ''}
         <button class="btn mini" data-act="edit">Bearbeiten</button></div>`;
     }).join('')}</div>
@@ -67,12 +68,20 @@ export const viewPersons: View = async (el, ctx) => {
       <label>Name<input name="name" value="${esc(p?.name ?? '')}" required maxlength="40" /></label>
       <label>Farbe<span class="colors">${COLORS.map((c) => `<label><input type="radio" name="color" value="${c}" ${(p?.color ?? COLORS[0]) === c ? 'checked' : ''} /><span style="background:${c}"></span></label>`).join('')}</span></label>
       <label>Rolle<select name="role"><option value="user">Benutzer (buchen)</option><option value="admin" ${p?.role === 'admin' ? 'selected' : ''}>Admin (verwalten)</option></select></label>
+      <label class="l-check" title="Admins dürfen immer planen"><input type="checkbox" name="can_plan" ${p?.can_plan || p?.role === 'admin' ? 'checked' : ''} ${p?.role === 'admin' ? 'disabled' : ''} /> Haus planen (Wände, Möbel, Etagen ändern)</label>
       <label>${p ? 'Neues Passwort (leer = unverändert)' : 'Passwort (leer = kann sich nicht anmelden)'}<input name="password" type="password" autocomplete="new-password" /></label>
       ${p && p.id !== ctx.user()!.id ? `<label class="l-check"><input type="checkbox" name="archived" ${p.archived ? 'checked' : ''} /> archiviert (kann nicht mehr buchen, Verlauf bleibt)</label>` : ''}
     </form>`, `${p && p.id !== ctx.user()!.id ? '<button class="btn danger" data-del>Löschen …</button><span class="spacer"></span>' : ''}<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Speichern</button>`);
+    // Admins dürfen immer planen: Haken fest gesetzt
+    const roleSel = m.el.querySelector<HTMLSelectElement>('select[name="role"]')!;
+    const planBox = m.el.querySelector<HTMLInputElement>('[name="can_plan"]')!;
+    roleSel.addEventListener('change', () => {
+      planBox.disabled = roleSel.value === 'admin';
+      if (planBox.disabled) planBox.checked = true;
+    });
     m.el.querySelector('[data-ok]')!.addEventListener('click', async () => {
       const fd = new FormData(m.el.querySelector('form')!);
-      const body: Record<string, unknown> = { name: fd.get('name'), color: fd.get('color'), role: fd.get('role') };
+      const body: Record<string, unknown> = { name: fd.get('name'), color: fd.get('color'), role: fd.get('role'), can_plan: planBox.checked };
       if (fd.get('password')) body.password = fd.get('password');
       if (p) body.archived = !!fd.get('archived');
       if (await run(ctx, () => (p ? api('PATCH', `/api/persons/${p.id}`, body) : api('POST', '/api/persons', body)))) {

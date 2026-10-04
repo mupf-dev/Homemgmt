@@ -72,7 +72,7 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   },
   {
     id: 'assistent', title: 'Assistent',
-    html: `<p>Aufträge per Text, Sprache (🎤) oder Foto: „3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“, „Wo ist der Akkuschrauber?“, Foto vom Gegenstand und vom Fach-Etikett: „das kommt hierhin“. Fächer versteht er beim Namen – „Küche Kühlschrank oben“, „Kellerregal Boden 2“. Ab 4 Buchungen auf einmal fragt er nach; jede Buchung lässt sich rückgängig machen. „Neues Gespräch“ löscht den Verlauf.</p>`,
+    html: `<p>Aufträge per Text, Sprache (Mikrofon) oder Foto: „3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“, „Wo ist der Akkuschrauber?“, Foto vom Gegenstand und vom Fach-Etikett: „das kommt hierhin“. Fächer versteht er beim Namen – „Küche Kühlschrank oben“, „Kellerregal Boden 2“. Ab 4 Buchungen auf einmal fragt er nach; jede Buchung lässt sich rückgängig machen. „Neues Gespräch“ löscht den Verlauf.</p>`,
   },
   {
     id: 'auswertung', title: 'Auswertung',

@@ -3,6 +3,7 @@
 
 import { api, bookedToast, esc, placeInfo, thumb, type ApiItem } from './core';
 import type { View } from './views';
+import { ic } from '../icons';
 
 declare global {
   interface Window {
@@ -140,7 +141,7 @@ export const viewScan: View = async (el, ctx, params) => {
     if (flow.box) {
       const b = flow.box;
       stateEl.className = 'l-card mode-in';
-      stateEl.innerHTML = `<b>📦 Einräumen in ${esc(b.name)}</b><p>liegt in ${esc(placeInfo(ctx, b).title)} <code>${esc(placeInfo(ctx, b).address)}</code></p><p>Jetzt die <b>Gegenstände</b> scannen – jeder kommt sofort in den Behälter.</p><button class="btn" id="leaveBox">Einräumen beenden</button>`;
+      stateEl.innerHTML = `<b>${ic('box')} Einräumen in ${esc(b.name)}</b><p>liegt in ${esc(placeInfo(ctx, b).title)} <code>${esc(placeInfo(ctx, b).address)}</code></p><p>Jetzt die <b>Gegenstände</b> scannen – jeder kommt sofort in den Behälter.</p><button class="btn" id="leaveBox">Einräumen beenden</button>`;
       stateEl.querySelector('#leaveBox')!.addEventListener('click', () => {
         flow.box = null;
         render();
@@ -159,7 +160,7 @@ export const viewScan: View = async (el, ctx, params) => {
       stateEl.className = 'l-card mode-out';
       stateEl.innerHTML = `<b>${thumb(it, 'thumb small')} ${esc(it.name)}</b><p>liegt in ${esc(p.title)} · ${esc(p.plan?.fach ?? '')} <code>${esc(p.address)}</code> · ${it.quantity} Stück</p>
         <p><b>Zum Ausbuchen erneut scannen.</b> Oder zuerst ein Fach scannen, um es dort einzubuchen.</p>
-        <div class="l-actions">${it.container ? `<button class="btn in" id="intoBox">📦 Einräumen (${it.contents ?? 0} drin)</button>` : ''}<button class="btn out" id="out" ${it.quantity ? '' : 'disabled'}>Jetzt ausbuchen</button><a class="btn" href="#/item/${it.id}">Details</a><button class="btn" id="cancel">Abbrechen</button></div>`;
+        <div class="l-actions">${it.container ? `<button class="btn in" id="intoBox">${ic('box')}Einräumen (${it.contents ?? 0} drin)</button>` : ''}<button class="btn out" id="out" ${it.quantity ? '' : 'disabled'}>Jetzt ausbuchen</button><a class="btn" href="#/item/${it.id}">Details</a><button class="btn" id="cancel">Abbrechen</button></div>`;
       stateEl.querySelector('#out')!.addEventListener('click', () => checkout(it));
       stateEl.querySelector('#intoBox')?.addEventListener('click', () => {
         flow.box = it;

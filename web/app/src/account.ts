@@ -1,6 +1,8 @@
 // Konto in der App: Anmelden (E-Mail – oder per Kachel im Lager, dieselbe Sitzung), Passwort, Benutzerverwaltung und
 // gespeicherte Planungen (frühere Küchenplanungen) als Etage ins Haus übernehmen. Das Haus selbst speichert HouseSync.
 import type { Project } from './model/types.ts';
+import { setPrefs, type Prefs } from './prefs';
+import { ic } from './icons';
 
 export interface User {
   id: number;
@@ -9,6 +11,9 @@ export interface User {
   role: 'user' | 'admin';
   status: 'active' | 'pending';
   createdAt: string;
+  /** darf den Hausplan ändern (Admins immer) */
+  canPlan: boolean;
+  prefs: Prefs;
 }
 
 interface ProjectMeta {
@@ -72,6 +77,7 @@ export class Account {
     try {
       const r = await api<{ user: User | null; firstUser: boolean; registrationEnabled: boolean; requireApproval: boolean }>('/auth/me');
       this.user = r.user;
+      if (r.user) setPrefs(r.user.prefs);
       this.firstUser = r.firstUser;
       this.registrationEnabled = r.registrationEnabled;
       this.requireApproval = r.requireApproval;
@@ -114,12 +120,11 @@ export class Account {
     }
     const u = this.user;
     this.root.innerHTML = `
-      <span class="acc-status" id="accStatus"></span>
       <div class="acc-menu">
-        <button class="btn" data-acc="menu"><span class="avatar">${esc(u.name.slice(0, 1).toUpperCase())}</span>${esc(u.name)}${this.pendingCount ? `<span class="badge" title="${this.pendingCount} Konto/Konten warten auf Freigabe">${this.pendingCount}</span>` : ''} ▾</button>
+        <button class="acc-btn" data-acc="menu" aria-label="Konto"><span class="avatar" style="background:${esc((u as User & { color?: string }).color ?? 'var(--accent)')}">${esc(u.name.slice(0, 1).toUpperCase())}</span><span class="acc-name">${esc(u.name)}</span>${this.pendingCount ? `<span class="badge" title="${this.pendingCount} Konto/Konten warten auf Freigabe">${this.pendingCount}</span>` : ''}</button>
         <div class="dropdown" hidden>
           <div class="dd-head"><b>${esc(u.name)}</b><small>${esc(u.email || 'ohne E-Mail')}${u.role === 'admin' ? ' · Administrator' : ''}</small></div>
-          <a class="dd-link" href="#/lager">Zum Lager (Scannen, Einkaufsliste …)</a>
+          <a class="dd-link" href="#/einstellungen">${ic('gear')}Einstellungen</a>
           ${u.role === 'admin' ? '<button data-acc="plans">Gespeicherte Planungen übernehmen …</button>' : ''}
           <button data-acc="password">Passwort ändern</button>
           ${u.role === 'admin' ? `<button data-acc="admin">Benutzerverwaltung${this.pendingCount ? ` <span class="badge">${this.pendingCount}</span>` : ''}</button>` : ''}
@@ -127,7 +132,7 @@ export class Account {
           <button data-acc="logout">Abmelden</button>
         </div>
       </div>`;
-    this.statusEl = this.root.querySelector('#accStatus');
+    this.statusEl = null;
     const on = (k: string, fn: () => void) =>
       this.root.querySelector(`[data-acc="${k}"]`)?.addEventListener('click', (e) => {
         e.stopPropagation();
@@ -155,6 +160,7 @@ export class Account {
       /* ignorieren */
     }
     this.user = null;
+    setPrefs(null);
     this.render();
     this.h.onUser(null);
     this.h.toast('Abgemeldet.');
@@ -224,6 +230,7 @@ export class Account {
           return;
         }
         this.user = r.user;
+        setPrefs(r.user.prefs);
         this.firstUser = false;
         m.close();
         this.render();

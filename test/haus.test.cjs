@@ -121,6 +121,26 @@ test('Gleichzeitig bearbeitet: veralteter Stand wird abgelehnt; Benutzer dürfen
   assert.equal((await client(srv.base).get('/api/house')).status, 401);
 });
 
+test('Recht „Haus planen“: vom Admin vergeben, darf Ben speichern; entzogen wieder nicht', async () => {
+  const ben = client(srv.base);
+  const benId = (await ben.get('/api/auth/status')).data.users.find((u) => u.name === 'Ben').id;
+  await ben.post('/api/auth/login', { person_id: benId, password: 'geheim2' });
+  assert.equal((await ben.get('/api/auth/me')).data.user.canPlan, false);
+  const grant = await admin.patch(`/api/persons/${benId}`, { can_plan: true });
+  assert.equal(grant.status, 200, JSON.stringify(grant.data));
+  assert.equal(grant.data.can_plan, 1);
+  assert.equal((await ben.get('/api/auth/me')).data.user.canPlan, true);
+  const got = await ben.get('/api/house');
+  assert.equal(got.data.can_edit, true);
+  const r = await ben.put('/api/house', { house: got.data.house, base_version: got.data.version });
+  assert.equal(r.status, 200, JSON.stringify(r.data));
+  version = r.data.version;
+  await admin.patch(`/api/persons/${benId}`, { can_plan: false });
+  assert.equal((await ben.put('/api/house', { house: got.data.house, base_version: version })).status, 403);
+  // Admins dürfen immer – unabhängig vom Haken
+  assert.equal((await admin.get('/api/auth/me')).data.user.canPlan, true);
+});
+
 test('Alte Planung (Version 1, eine Küche) wird beim Speichern zu einem Haus mit einer Etage', async () => {
   const v1 = { version: 1, name: 'Alte Küche', walls: [W('a', 0, 0, 300, 0)], openings: [], items: [cabinet(50, 36)], slots: {}, customMaterials: [], settings: {} };
   const r = await save(v1);

@@ -2,7 +2,8 @@
 // Orte werden überall über den Hausplan beschrieben und gewählt; „Im Haus zeigen“ fährt im Planer zum Fach.
 
 import { mountPrices } from './prices';
-import { api, bookedToast, esc, expiryTag, fmtDate, itemRow, pickPhoto, pickPlace, placeInfo, relDate, thumb, type ApiItem, type LagerCtx, type Target } from './core';
+import { api, bindExpiry, bookedToast, esc, expiryField, expiryTag, fmtDate, itemRow, parseExpiry, pickPhoto, pickPlace, placeInfo, relDate, thumb, type ApiItem, type LagerCtx, type Target } from './core';
+import { ic } from '../icons';
 
 export type View = (el: HTMLElement, ctx: LagerCtx, params: URLSearchParams) => Promise<void> | void;
 
@@ -24,7 +25,7 @@ function bindStepper(root: HTMLElement, max = 9999) {
 
 const showBtn = (ctx: LagerCtx, x: { warehouse_id: number; col: string; row: number }) => {
   const p = placeInfo(ctx, x);
-  return p.plan ? `<button class="btn" data-show="${p.plan.place.plan_item}:${p.plan.place.plan_slot}">🏠 Im Haus zeigen</button>` : '';
+  return p.plan ? `<button class="btn" data-show="${p.plan.place.plan_item}:${p.plan.place.plan_slot}">${ic('plan')}Im Haus zeigen</button>` : '';
 };
 function bindShow(el: HTMLElement, ctx: LagerCtx) {
   el.querySelectorAll<HTMLElement>('[data-show]').forEach((b) =>
@@ -56,47 +57,10 @@ function attachSearch(input: HTMLInputElement, list: HTMLElement, render: (items
 
 // ---------------------------------------------------------------------------
 
-export const viewStart: View = async (el, ctx) => {
-  const u = ctx.user()!;
-  el.innerHTML = `
-    <h1>Hallo ${esc(u.name)}, was möchtest du tun?</h1>
-    <div id="l-note"></div>
-    <div class="l-tiles">
-      <a class="l-tile scan" href="#/scan"><b>📷 Scannen</b><small>Fach-Code + Gegenstand = einbuchen · Gegenstand 2× = ausbuchen</small></a>
-      <a class="l-tile in" href="#/ein"><b>⬇ Einbuchen</b><small>Etwas in ein Fach legen</small></a>
-      <a class="l-tile out" href="#/aus"><b>⬆ Ausbuchen</b><small>Etwas herausnehmen</small></a>
-      <a class="l-tile search" href="#/suche"><b>🔍 Suchen</b><small>Wo liegt was? Wer hatte es zuletzt?</small></a>
-      <a class="l-tile shop" href="#/einkauf"><b>🛒 Einkaufsliste <span class="badge" id="l-shop" hidden></span></b><small>Verbrauchtes nachkaufen, Liste teilen</small></a>
-      <a class="l-tile house" href="#/haus"><b>🏠 Haus</b><small>Alle Fächer in 3D, Plan bearbeiten</small></a>
-    </div>
-    <div class="l-more">
-      <a class="btn" href="#/assistent">✨ Assistent</a>
-      <a class="btn" href="#/haltbarkeit">Haltbarkeit</a>
-      <a class="btn" href="#/auswertung">Auswertung</a>
-      <a class="btn" href="#/etiketten">Etiketten &amp; QR-Schilder</a>
-      <a class="btn" href="#/hilfe">Anleitung</a>
-      ${u.role === 'admin' ? '<a class="btn" href="#/verwaltung">Verwaltung</a>' : ''}
-    </div>`;
-  api<{ open: unknown[] }>('GET', '/api/shopping').then((r) => {
-    const b = el.querySelector<HTMLElement>('#l-shop');
-    if (b && r.open.length) {
-      b.textContent = String(r.open.length);
-      b.hidden = false;
-    }
-  }).catch(() => {});
-  api<ApiItem[]>('GET', '/api/expiring?days=7').then((list) => {
-    const n = el.querySelector('#l-note');
-    if (!n || !list.length) return;
-    const expired = list.filter((i) => (i.expires_in ?? 0) < 0).length;
-    const soon = list.length - expired;
-    n.innerHTML = `<a class="l-note ${expired ? 'bad' : 'warn'}" href="#/haltbarkeit">⏳ ${[expired && `${expired} abgelaufen`, soon && `${soon} laufen in 7 Tagen ab`].filter(Boolean).join(', ')} – anzeigen →</a>`;
-  }).catch(() => {});
-};
-
 export const viewSearch: View = (el, ctx, params) => {
   el.innerHTML = `<h1>Suchen</h1>
     <div class="l-searchbar"><input type="search" id="q" placeholder="Name, Code, Platz (KU-B2), Platzname …" value="${esc(params.get('q') ?? sessionStorage.getItem('zh.q') ?? '')}" autofocus />
-    <button class="btn" id="inHouse" hidden>🏠 Treffer im Haus zeigen</button></div>
+    <button class="btn" id="inHouse" hidden>${ic('plan')}Treffer im Haus zeigen</button></div>
     <div class="l-list" id="res"></div>`;
   const input = el.querySelector<HTMLInputElement>('#q')!;
   input.addEventListener('input', () => sessionStorage.setItem('zh.q', input.value));
@@ -122,7 +86,7 @@ export const viewItem: View = async (el, ctx, params) => {
   el.innerHTML = `
     <a class="l-back" href="javascript:history.back()">← Zurück</a>
     <div class="l-item-head">
-      <button class="l-photo" id="photo" title="Foto aufnehmen oder ändern">${it.photo_at ? `<img src="/api/items/${it.id}/photo?v=${encodeURIComponent(it.photo_at)}" alt="">` : '<span>📷<br>Foto</span>'}</button>
+      <button class="l-photo" id="photo" title="Foto aufnehmen oder ändern">${it.photo_at ? `<img src="/api/items/${it.id}/photo?v=${encodeURIComponent(it.photo_at)}" alt="">` : `<span>${ic('camera')}<br>Foto</span>`}</button>
       <div>
         <h1>${esc(it.name)} ${it.container ? '<span class="tag">Behälter</span>' : ''}${it.consumable ? '<span class="tag">Verbrauch</span>' : ''}</h1>
         <p class="l-qty"><b>${it.quantity}</b> Stück ${expiryTag(it, true)}</p>
@@ -130,20 +94,20 @@ export const viewItem: View = async (el, ctx, params) => {
       </div>
     </div>
     <div class="l-card l-where">
-      <div><small>Liegt in</small><b>${esc(p.title)}</b><span>${esc(p.sub)}</span>${it.parent_name ? `<span>im Behälter <a href="#/item/${it.parent_id}">📦 ${esc(it.parent_name)}</a></span>` : ''}</div>
+      <div><small>Liegt in</small><b>${esc(p.title)}</b><span>${esc(p.sub)}</span>${it.parent_name ? `<span>im Behälter <a class="link" href="#/item/${it.parent_id}">${ic('box')} ${esc(it.parent_name)}</a></span>` : ''}</div>
       <code>${esc(p.address)}</code>
     </div>
     <div class="l-actions">
-      <button class="btn out" id="take" ${it.quantity ? '' : 'disabled'}>⬆ Entnehmen</button>
-      <button class="btn in" id="add">⬇ Einbuchen</button>
+      <button class="btn out" id="take" ${it.quantity ? '' : 'disabled'}>${ic('out')}Entnehmen</button>
+      <button class="btn in" id="add">${ic('in')}Einbuchen</button>
       <button class="btn" id="move">↔ Umlagern</button>
       ${showBtn(ctx, it)}
-      <a class="btn" href="#/assistent?item=${it.id}">✨ Assistent</a>
-      <a class="btn" href="#/etiketten?obj=${it.id}">🏷 Etikett</a>
-      <button class="btn" id="shop">${it.on_list ? `🛒 ${it.on_list} auf der Liste` : '🛒 Auf Einkaufsliste'}</button>
+      <a class="btn" href="#/assistent?item=${it.id}">${ic('spark')}Assistent</a>
+      <a class="btn" href="#/etiketten?obj=${it.id}">${ic('tag')}Etikett</a>
+      <button class="btn" id="shop">${it.on_list ? `${ic('cart')}${it.on_list} auf der Liste` : `${ic('cart')}Auf Einkaufsliste`}</button>
       <button class="btn" id="edit">✎ Bearbeiten</button>
     </div>
-    ${it.container ? `<h2>📦 Inhalt</h2><div class="l-actions"><button class="btn primary" id="boxPut">Gegenstand hineinlegen</button><a class="btn in" href="#/ein?box=${it.id}&back=${encodeURIComponent(`#/item/${it.id}`)}">Neuen Gegenstand hinein einbuchen</a><a class="btn" href="#/scan?box=${it.id}">📷 Einräumen per Scan</a></div>
+    ${it.container ? `<h2>${ic('box')} Inhalt</h2><div class="l-actions"><button class="btn primary" id="boxPut">Gegenstand hineinlegen</button><a class="btn in" href="#/ein?box=${it.id}&back=${encodeURIComponent(`#/item/${it.id}`)}">Neuen Gegenstand hinein einbuchen</a><a class="btn" href="#/scan?box=${it.id}">📷 Einräumen per Scan</a></div>
       <div class="l-list">${it.items?.length ? it.items.map((c) => itemRow(ctx, c)).join('') : '<p class="hint">Der Behälter ist leer.</p>'}</div>` : ''}
     <h2>Verlauf</h2>
     <ul class="l-history">${it.history
@@ -235,14 +199,15 @@ export const viewItem: View = async (el, ctx, params) => {
     const m = ctx.modal(`${it.name} bearbeiten`, `<form class="l-form">
       <label>Bezeichnung<input name="name" value="${esc(it.name)}" required maxlength="100" /></label>
       <label>Beschreibung<input name="description" value="${esc(it.description)}" maxlength="200" /></label>
-      <label>Haltbar bis<input type="date" name="expires_on" value="${esc(it.expires_on ?? '')}" /></label>
+      <label>Haltbar bis${expiryField('expires_on', it.expires_on ?? '')}</label>
       <label class="l-check"><input type="checkbox" name="consumable" ${it.consumable ? 'checked' : ''} /> Verbrauchsmaterial (beim Entnehmen auf die Einkaufsliste)</label>
       <label class="l-check"><input type="checkbox" name="container" ${it.container ? 'checked' : ''} /> Behälter (Tasche, Box – andere Dinge liegen darin)</label>
     </form>`, '<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Speichern</button>');
+    bindExpiry(m.el);
     m.el.querySelector('[data-ok]')!.addEventListener('click', async () => {
       const fd = new FormData(m.el.querySelector('form')!);
       try {
-        await api('PATCH', `/api/items/${it.id}`, { name: fd.get('name'), description: fd.get('description'), expires_on: fd.get('expires_on') || null, consumable: !!fd.get('consumable'), container: !!fd.get('container') });
+        await api('PATCH', `/api/items/${it.id}`, { name: fd.get('name'), description: fd.get('description'), expires_on: parseExpiry(fd.get('expires_on')), consumable: !!fd.get('consumable'), container: !!fd.get('container') });
         m.close();
         reload();
       } catch (e) {
@@ -288,29 +253,30 @@ export const viewCheckin: View = async (el, ctx, params) => {
       <div class="l-suggest" id="sug"></div>
       <div id="picked"></div>
       <label>Wohin?</label>
-      <button type="button" class="btn l-target" id="where">🏠 Fach im Haus wählen …</button>
-      <button type="button" class="btn" id="inBox">📦 Oder in einen Behälter …</button>
+      <button type="button" class="btn l-target" id="where">${ic('plan')}Fach im Haus wählen …</button>
+      <button type="button" class="btn" id="inBox">${ic('box')}Oder in einen Behälter …</button>
       <label>Menge ${stepper(Number(params.get('qty')) || 1)}</label>
       <details id="more"><summary>Mehr: Haltbarkeit, Verbrauch, Code</summary>
-        <label>Haltbar bis<input type="date" name="expires_on" /></label>
+        <label>Haltbar bis${expiryField()}</label>
         <label class="l-check"><input type="checkbox" name="consumable" /> Verbrauchsmaterial</label>
         <label>Etikett-Code (vorgedruckt)<input name="code" value="${esc(params.get('code') ?? '')}" placeholder="optional, z. B. O-K7M2XQ" /></label>
       </details>
       <button class="btn primary big" type="submit">Einbuchen</button>
     </form>`;
   const getQty = bindStepper(el);
+  bindExpiry(el);
   const whereBtn = el.querySelector<HTMLButtonElement>('#where')!;
   const setTarget = (t: Target | null) => {
     target = t;
     if (t) box = null;
-    whereBtn.innerHTML = box ? `📦 in <b>${esc(box.name)}</b> <small>(${esc(placeInfo(ctx, box).address)}) ändern</small>` : t ? `<code>${esc(t.address)}</code> ${esc(t.label)} <small>ändern</small>` : '🏠 Fach im Haus wählen …';
+    whereBtn.innerHTML = box ? `${ic('box')} in <b>${esc(box.name)}</b> <small>(${esc(placeInfo(ctx, box).address)}) ändern</small>` : t ? `<code>${esc(t.address)}</code> ${esc(t.label)} <small>ändern</small>` : `${ic('plan')} Fach im Haus wählen …`;
     whereBtn.classList.toggle('set', !!t || !!box);
   };
   if (box) setTarget(null);
   el.querySelector('#inBox')!.addEventListener('click', async () => {
     const boxes = await api<ApiItem[]>('GET', '/api/containers');
     if (!boxes.length) return ctx.toast('Es gibt noch keine Behälter (Gegenstand bearbeiten → „Behälter“).');
-    const m = ctx.modal('In welchen Behälter?', `<div class="l-list">${boxes.map((b) => `<button class="l-item" data-b="${b.id}">${thumb(b)}<span class="l-main"><b>📦 ${esc(b.name)}</b><small>${esc(placeInfo(ctx, b).title)} · ${esc(placeInfo(ctx, b).address)}</small></span></button>`).join('')}</div>`);
+    const m = ctx.modal('In welchen Behälter?', `<div class="l-list">${boxes.map((b) => `<button class="l-item" data-b="${b.id}">${thumb(b)}<span class="l-main"><b>${ic('box')} ${esc(b.name)}</b><small>${esc(placeInfo(ctx, b).title)} · ${esc(placeInfo(ctx, b).address)}</small></span></button>`).join('')}</div>`);
     m.el.querySelectorAll<HTMLElement>('[data-b]').forEach((b) => b.addEventListener('click', () => {
       box = boxes.find((x) => x.id === Number(b.dataset.b))!;
       target = null;
@@ -360,7 +326,7 @@ export const viewCheckin: View = async (el, ctx, params) => {
       const r = await api<ApiItem>('POST', '/api/checkin', {
         ...(existing ? { item_id: existing.id } : { name: name.value.trim(), consumable: !!fd.get('consumable'), ...(fd.get('code') ? { code: String(fd.get('code')).replace(/^O-/i, '') } : {}) }),
         ...(box ? { container_id: box.id } : { warehouse_id: target!.warehouse_id, col: target!.col, row: target!.row, container_id: null }), quantity: q,
-        ...(fd.get('expires_on') ? { expires_on: fd.get('expires_on') } : {}),
+        ...(fd.get('expires_on') ? { expires_on: parseExpiry(fd.get('expires_on')) } : {}),
       });
       await ctx.sync.loadStorage();
       bookedToast(ctx, `${q}× ${r.name} liegt jetzt ${box ? `in ${box.name}` : `in ${target!.address}`}.`, r.movement_id);
@@ -410,7 +376,7 @@ export const viewPlace: View = async (el, ctx, params) => {
   const p = placeInfo(ctx, pl);
   el.innerHTML = `<a class="l-back" href="javascript:history.back()">← Zurück</a>
     <h1>${esc(p.title)}</h1><p class="hint">${esc(p.sub)} · <code>${esc(p.address)}</code></p>
-    <div class="l-actions"><a class="btn in" href="#/ein?wh=${wid}&col=${pl.col}&row=${pl.row}&back=${encodeURIComponent(location.hash)}">⬇ Hier einbuchen</a>${showBtn(ctx, pl)}</div>
+    <div class="l-actions"><a class="btn in" href="#/ein?wh=${wid}&col=${pl.col}&row=${pl.row}&back=${encodeURIComponent(location.hash)}">${ic('in')}Hier einbuchen</a>${showBtn(ctx, pl)}</div>
     <div class="l-list">${(pl.items as ApiItem[]).map((i) => itemRow(ctx, i)).join('') || '<p class="hint">Hier liegt nichts.</p>'}</div>`;
   bindShow(el, ctx);
 };
@@ -418,14 +384,14 @@ export const viewPlace: View = async (el, ctx, params) => {
 export const viewShopping: View = async (el, ctx, params) => {
   const r = await api<{ open: any[]; done: any[] }>('GET', '/api/shopping');
   const text = () => ['🛒 Einkaufsliste – ' + new Date().toLocaleDateString('de-DE'), '', ...r.open.map((e) => `• ${e.quantity}× ${e.name}${e.note ? ` (${e.note})` : ''}`)].join('\n');
-  el.innerHTML = `<a class="l-back" href="#/lager">← Lager</a><h1>Einkaufsliste</h1>
+  el.innerHTML = `<a class="l-back" href="#/lager">${ic('back')}Übersicht</a><h1>Einkaufsliste</h1>
     <form class="l-add" id="add"><input name="name" placeholder="Was fehlt? (z. B. Milch)" required maxlength="100" /><input name="qty" type="number" value="1" min="1" /><button class="btn primary">Hinzufügen</button></form>
     <div class="l-card price-card" id="price-card" hidden></div>
     <div class="l-list">${r.open.map((e) => `<div class="l-shop" data-id="${e.id}">
       <button class="l-tick" data-done title="Gekauft">○</button>
       <span class="l-main"><b>${esc(e.name)}</b><small>${e.note ? esc(e.note) + ' · ' : ''}${e.item_id ? `liegt sonst in <code>${esc(e.wh_code ?? '')}-${esc(e.col ?? '')}${e.row ?? ''}</code>` : 'noch kein Gegenstand'}</small><div class="price" data-price="${e.id}"></div></span>
       <span class="stepper small"><button data-q="-1">−</button><b>${e.quantity}</b><button data-q="1">+</button></span>
-      <button class="btn in mini" data-restock title="${e.item_id ? 'Gekauft und wieder an den bisherigen Platz' : 'Gekauft und in ein Fach einlagern'}">⬇ ${e.item_id ? 'einbuchen' : 'einlagern'}</button>
+      <button class="btn in mini" data-restock title="${e.item_id ? 'Gekauft und wieder an den bisherigen Platz' : 'Gekauft und in ein Fach einlagern'}">${ic('in')}${e.item_id ? 'einbuchen' : 'einlagern'}</button>
       <button class="btn mini" data-del title="Entfernen">✕</button>
     </div>`).join('') || '<p class="hint">Die Liste ist leer.</p>'}</div>
     ${r.open.length ? `<div class="l-actions"><a class="btn" href="https://wa.me/?text=${encodeURIComponent(text())}" target="_blank" rel="noopener">WhatsApp</a><button class="btn" id="copy">Kopieren</button>${'share' in navigator ? '<button class="btn" id="share">Teilen …</button>' : ''}</div>` : ''}
@@ -481,10 +447,10 @@ export const viewShopping: View = async (el, ctx, params) => {
 export const viewExpiry: View = async (el, ctx, params) => {
   const days = Number(params.get('tage') ?? 30);
   const list = await api<ApiItem[]>('GET', `/api/expiring?days=${days}`);
-  el.innerHTML = `<a class="l-back" href="#/lager">← Lager</a><h1>Haltbarkeit</h1>
+  el.innerHTML = `<a class="l-back" href="#/lager">${ic('back')}Übersicht</a><h1>Haltbarkeit</h1>
     <div class="seg">${[[7, '7 Tage'], [30, '30 Tage'], [90, '3 Monate'], [365, '1 Jahr']].map(([d, l]) => `<a href="#/haltbarkeit?tage=${d}" class="${d === days ? 'on' : ''}">${l}</a>`).join('')}</div>
     ${list.length ? `<div class="l-list">${list.map((i) => itemRow(ctx, i)).join('')}</div>
-      <div class="l-actions"><button class="btn" id="inHouse">🏠 Alle im Haus zeigen</button></div>` : '<p class="hint">Nichts läuft in diesem Zeitraum ab. 👍</p>'}`;
+      <div class="l-actions"><button class="btn" id="inHouse">${ic('plan')}Alle im Haus zeigen</button></div>` : '<p class="hint">Nichts läuft in diesem Zeitraum ab.</p>'}`;
   el.querySelector('#inHouse')?.addEventListener('click', () => {
     const plans = list.map((i) => placeInfo(ctx, i).plan).filter(Boolean);
     if (!plans.length) return ctx.toast('Keiner der Gegenstände liegt in einem Fach des Hausplans.');
@@ -503,14 +469,14 @@ export const viewStats: View = async (el, ctx, params) => {
     const p = placeInfo(ctx, { warehouse_id: x.warehouse_id ?? 0, col: x.col, row: x.row, wh_code: x.wh_code });
     return `<a class="l-item" href="#/item/${x.id}"><span class="l-main"><b>${esc(x.name)}</b><small>${esc(p.title)} · ${esc(p.plan?.fach ?? '')}</small></span><span class="l-side">${extra(x)}<code>${esc(x.wh_code)}-${esc(x.col)}${x.row}</code></span></a>`;
   }).join('');
-  el.innerHTML = `<a class="l-back" href="#/lager">← Lager</a><h1>Auswertung</h1>
+  el.innerHTML = `<a class="l-back" href="#/lager">${ic('back')}Übersicht</a><h1>Auswertung</h1>
     <div class="l-kpis">${tile(t.items, 'Gegenstände')}${tile(t.quantity, 'Stück')}${tile(t.places - t.empty_places, `von ${t.places} Plätzen belegt`)}${tile(t.movements_30d, 'Buchungen (30 Tage)')}${tile(t.on_list, 'auf der Einkaufsliste', '#/einkauf')}${tile(t.expired + t.expiring, 'abgelaufen / läuft ab', '#/haltbarkeit')}</div>
-    <div class="l-actions"><a class="btn" href="#/haus?heat=">🏠 Füllstand im Haus</a><a class="btn" href="#/haus?heat=moves">🏠 Bewegung im Haus</a><a class="btn" href="#/haus?heat=stale">🏠 Lange unberührt im Haus</a></div>
+    <div class="l-actions"><a class="btn" href="#/haus?heat=">${ic('plan')}Füllstand im Haus</a><a class="btn" href="#/haus?heat=moves">${ic('plan')}Bewegung im Haus</a><a class="btn" href="#/haus?heat=stale">${ic('plan')}Lange unberührt im Haus</a></div>
     <h2>Am häufigsten genutzt (90 Tage)</h2><div class="l-list">${rows(s.top_used ?? s.topUsed ?? [], (x) => `<b>${x.uses}×</b>`) || '<p class="hint">Keine Buchungen.</p>'}</div>
     <h2>Wer bucht (30 Tage)</h2><div class="l-list">${(s.by_person ?? s.byPerson ?? []).map((p: any) => `<div class="l-item"><span class="l-main"><b style="color:${esc(p.color)}">${esc(p.name)}</b><small>${p.ins} ein · ${p.outs} aus</small></span><span class="l-side"><b>${p.n}</b></span></div>`).join('') || '<p class="hint">Keine Buchungen.</p>'}</div>
     <h2>Lange nicht angefasst</h2>
     <div class="seg">${[[180, '6 Monate'], [365, '1 Jahr'], [730, '2 Jahre']].map(([d, l]) => `<a href="#/auswertung?tage=${d}" class="${d === stale ? 'on' : ''}">${l}</a>`).join('')}</div>
-    <div class="l-list">${rows(s.stale ?? [], (x) => `<small>${relDate(x.touched_at)}</small>`) || '<p class="hint">Alles wird genutzt. 👍</p>'}</div>
+    <div class="l-list">${rows(s.stale ?? [], (x) => `<small>${relDate(x.touched_at)}</small>`) || '<p class="hint">Alles wird genutzt.</p>'}</div>
     <h2>Ausverkauft</h2><div class="l-list">${(s.out_of_stock ?? s.outOfStock ?? []).map((i: ApiItem) => itemRow(ctx, i)).join('') || '<p class="hint">Nichts ausverkauft.</p>'}</div>`;
 };
 

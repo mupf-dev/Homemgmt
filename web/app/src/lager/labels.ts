@@ -6,6 +6,7 @@ import { api, esc, placeInfo, type ApiItem, type LagerCtx } from './core';
 import { compartments, itemName } from '../model/storage.ts';
 import { roomOf } from '../model/house.ts';
 import type { View } from './views';
+import { ic } from '../icons';
 
 declare global {
   interface Window {
@@ -93,7 +94,7 @@ export const viewLabels: View = async (el, ctx, params) => {
       <div class="l-actions"><button class="btn" id="allF">Alle</button><button class="btn primary" id="showF">Etiketten anzeigen</button></div></div>
     <form id="t-item" class="l-card" hidden><label>Filter (leer = alle)<input name="q" value="${esc(params.get('obj') ? '' : '')}" placeholder="Name, Platz …" /></label><button class="btn primary">Etiketten anzeigen</button></form>
     <form id="t-blank" class="l-card" hidden><label>Anzahl <input type="number" name="n" value="24" min="1" max="200" /></label><p class="hint">Vorab gedruckte Etiketten für neue Gegenstände: aufkleben, scannen, Name und Fach eingeben.</p><button class="btn primary">Etiketten erzeugen</button></form>
-    <div class="l-actions"><button class="btn primary" id="print" disabled>🖨 Drucken</button><button class="btn" id="p3d" disabled>🧊 3D-Schilder (3MF)</button>
+    <div class="l-actions"><button class="btn primary" id="print" disabled>${ic('print')}Drucken</button><button class="btn" id="p3d" disabled>${ic('cube')}3D-Schilder (3MF)</button>
       <label class="l-check"><input type="checkbox" id="small" /> kleine Etiketten</label><span class="hint" id="count"></span></div>
     <details class="l-card" id="opt3d"><summary>Einstellungen 3D-Schilder</summary><div class="lab-3d">
       <label>Breite (mm)<input type="number" name="width" value="${P3D.width}" min="20" max="120" /></label>

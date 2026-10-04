@@ -39,7 +39,7 @@ const STATUS_TEXT: Record<Status, [string, string, boolean]> = {
   pending: ['Änderungen …', 'Wird gleich gespeichert.', false],
   error: ['Nicht gespeichert', 'Speichern fehlgeschlagen – wird bei der nächsten Änderung erneut versucht.', true],
   conflict: ['Konflikt', 'Jemand anderes hat den Hausplan geändert.', true],
-  readonly: ['Nur ansehen', 'Den Hausplan ändern nur Admins. Änderungen hier werden nicht gespeichert.', true],
+  readonly: ['Nur ansehen', 'Den Hausplan ändern nur Personen mit dem Recht „Haus planen“. Änderungen hier werden nicht gespeichert.', true],
 };
 
 interface Helpers {

@@ -5,6 +5,7 @@ import type { HouseSync, StoragePlace } from '../houseSync';
 import type { Floor, House, Item } from '../model/types.ts';
 import { compartments, itemName } from '../model/storage.ts';
 import { roomOf } from '../model/house.ts';
+import { ic } from '../icons';
 
 export interface LagerCtx {
   modal: (title: string, body: string, footer?: string) => { el: HTMLElement; close: () => void };
@@ -12,10 +13,10 @@ export interface LagerCtx {
   esc: (s: string) => string;
   sync: HouseSync;
   house: () => House;
-  user: () => { id: number; name: string; role: string } | null;
+  user: () => { id: number; name: string; role: string; canPlan?: boolean } | null;
   login: () => void;
   /** Anmeldung erneut prüfen (z. B. in einem anderen Tab per Kachel angemeldet) */
-  ensureUser: () => Promise<{ id: number; name: string; role: string } | null>;
+  ensureUser: () => Promise<{ id: number; name: string; role: string; canPlan?: boolean } | null>;
   /** Planer öffnen und auf ein Fach fahren */
   showInHouse: (planItem: string, row: number) => void;
 }
@@ -112,7 +113,7 @@ export function placeInfo(ctx: LagerCtx, x: { warehouse_id: number; col: string;
 export function thumb(i: { id: number; photo_at: string | null; container?: number }, cls = 'thumb') {
   return i.photo_at
     ? `<img class="${cls}" src="/api/items/${i.id}/photo?size=thumb&v=${encodeURIComponent(i.photo_at)}" alt="" loading="lazy">`
-    : `<span class="${cls} ph">${i.container ? '📦' : '•'}</span>`;
+    : `<span class="${cls} ph">${ic(i.container ? 'box' : 'tag')}</span>`;
 }
 
 /** Listenzeile eines Gegenstands mit Ort aus dem Haus */
@@ -243,4 +244,45 @@ export function pickPlace(ctx: LagerCtx, title = 'Wohin?', current?: { warehouse
     };
     draw();
   });
+}
+
+// ---------------------------------------------------------------------------
+// Haltbarkeitsdatum: deutsches Format (TT.MM.JJJJ) mit Schnellwahl statt des Datumsfelds des Browsers, das je nach
+// Spracheinstellung mm/dd/yyyy zeigt und auf Touch-Geräten umständlich ist.
+
+const pad = (n: number) => String(n).padStart(2, '0');
+const isoToDe = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.split('-').reverse().join('.') : iso);
+
+/** Eingabefeld + Schnellwahl (1 Woche … 1 Jahr) */
+export function expiryField(name = 'expires_on', iso = '') {
+  return `<span class="exp-field"><input type="text" name="${name}" value="${esc(isoToDe(iso))}" placeholder="TT.MM.JJJJ" inputmode="numeric" autocomplete="off" maxlength="10" title="Haltbar bis (optional)" />
+    <span class="exp-chips">${[[7, '1 Woche'], [30, '1 Monat'], [90, '3 Monate'], [365, '1 Jahr']].map(([d, l]) => `<button type="button" data-exp="${d}">${l}</button>`).join('')}</span></span>`;
+}
+
+/** Schnellwahl-Knöpfe in einem Bereich aktivieren */
+export function bindExpiry(root: ParentNode) {
+  root.querySelectorAll<HTMLElement>('.exp-field').forEach((f) => {
+    const inp = f.querySelector('input')!;
+    f.querySelectorAll<HTMLElement>('[data-exp]').forEach((b) =>
+      b.addEventListener('click', () => {
+        const d = new Date();
+        d.setDate(d.getDate() + Number(b.dataset.exp));
+        inp.value = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+        inp.dispatchEvent(new Event('input', { bubbles: true }));
+      }),
+    );
+  });
+}
+
+/** Eingabe → ISO-Datum; leer → null. Versteht 1.2.27, 01.02.2027 und 2027-02-01. */
+export function parseExpiry(raw: FormDataEntryValue | null): string | null {
+  const v = String(raw ?? '').trim();
+  if (!v) return null;
+  if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
+  const m = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/);
+  if (!m) throw new Error(`„${v}“ ist kein Datum – bitte als TT.MM.JJJJ eingeben.`);
+  const y = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
+  const d = new Date(y, Number(m[2]) - 1, Number(m[1]));
+  if (d.getDate() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1) throw new Error(`Den ${v} gibt es nicht.`);
+  return `${y}-${pad(Number(m[2]))}-${pad(Number(m[1]))}`;
 }

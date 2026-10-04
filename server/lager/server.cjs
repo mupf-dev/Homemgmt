@@ -144,6 +144,9 @@ function openDatabase() {
     const has = (col) => db.prepare('PRAGMA table_info(persons)').all().some((c) => c.name === col);
     if (!has('password_hash')) db.exec('ALTER TABLE persons ADD COLUMN password_hash TEXT');
     if (!has('role')) db.exec("ALTER TABLE persons ADD COLUMN role TEXT NOT NULL DEFAULT 'user'");
+    // Recht „Haus planen“ (Admins dürfen immer) und persönliche Einstellungen der App (JSON, siehe PREFS)
+    if (!has('can_plan')) db.exec('ALTER TABLE persons ADD COLUMN can_plan INTEGER NOT NULL DEFAULT 0');
+    if (!has('prefs')) db.exec("ALTER TABLE persons ADD COLUMN prefs TEXT NOT NULL DEFAULT '{}'");
     db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY,
@@ -361,7 +364,7 @@ function readCookie(req, name) {
 }
 
 // Öffentliche Felder einer Person (nie den Passwort-Hash herausgeben)
-const PERSON_COLS = 'p.id, p.name, p.color, p.role, p.archived, p.created_at, (p.password_hash IS NOT NULL) AS has_password';
+const PERSON_COLS = 'p.id, p.name, p.color, p.role, p.can_plan, p.archived, p.created_at, (p.password_hash IS NOT NULL) AS has_password';
 const publicPerson = (p) => p && { id: p.id, name: p.name, color: p.color, role: p.role, email: p.email ?? null };
 
 // Angemeldete Person über Sitzungs-Cookie
@@ -655,7 +658,7 @@ route('GET', '/api/persons', (_p, _b, qs, ctx) => {
   return personWithStats().all();
 });
 
-// Anlegen: {name, color?, role?, password?} – ohne Passwort kann sich die Person (noch) nicht anmelden
+// Anlegen: {name, color?, role?, can_plan?, password?} – ohne Passwort kann sich die Person (noch) nicht anmelden
 route('POST', '/api/persons', async (_p, body) => {
   const name = personName(body.name);
   const count = db.prepare('SELECT COUNT(*) AS n FROM persons').get().n;
@@ -663,11 +666,11 @@ route('POST', '/api/persons', async (_p, body) => {
   const role = ROLES.includes(body.role) ? body.role : 'user';
   const hash = body.password ? await hashPassword(checkNewPassword(body.password)) : null;
   const { lastInsertRowid } = uniqueName(() =>
-    db.prepare('INSERT INTO persons (name, color, role, password_hash) VALUES (?, ?, ?, ?)').run(name, color, role, hash));
+    db.prepare('INSERT INTO persons (name, color, role, can_plan, password_hash) VALUES (?, ?, ?, ?, ?)').run(name, color, role, body.can_plan ? 1 : 0, hash));
   return personWithStats('WHERE p.id = ?').get(lastInsertRowid);
 }, { auth: 'admin' });
 
-// Ändern: {name?, color?, archived?, role?, password?}
+// Ändern: {name?, color?, archived?, role?, can_plan?, password?}
 route('PATCH', '/api/persons/:id', async (p, body, _qs, ctx) => {
   const person = db.prepare('SELECT * FROM persons WHERE id = ?').get(p.id);
   if (!person) throw new HttpError(404, 'Person nicht gefunden.');
@@ -678,13 +681,14 @@ route('PATCH', '/api/persons/:id', async (p, body, _qs, ctx) => {
   if (body.role !== undefined && !ROLES.includes(body.role)) throw new HttpError(400, 'Ungültige Rolle.');
   const role = body.role ?? person.role;
   const hash = body.password ? await hashPassword(checkNewPassword(body.password)) : person.password_hash;
+  const canPlan = body.can_plan !== undefined ? (body.can_plan ? 1 : 0) : person.can_plan;
   const self = person.id === ctx.person.id;
   if (self && (archived || role !== 'admin')) throw new HttpError(409, 'Du kannst dich nicht selbst archivieren oder dir die Admin-Rechte nehmen.');
   if (person.role === 'admin' && (archived || role !== 'admin') && activeAdmins(person.id) === 0) {
     throw new HttpError(409, 'Es muss mindestens einen Admin geben.');
   }
-  uniqueName(() => db.prepare('UPDATE persons SET name = ?, color = ?, archived = ?, role = ?, password_hash = ? WHERE id = ?')
-    .run(name, color, archived, role, hash, person.id));
+  uniqueName(() => db.prepare('UPDATE persons SET name = ?, color = ?, archived = ?, role = ?, can_plan = ?, password_hash = ? WHERE id = ?')
+    .run(name, color, archived, role, canPlan, hash, person.id));
   // neues Passwort oder archiviert → bestehende Anmeldungen beenden (die eigene bleibt)
   if (archived || body.password) dropSessions(person.id, self ? ctx.sessionHash : '');
   return personWithStats('WHERE p.id = ?').get(person.id);
@@ -798,7 +802,24 @@ function setAuthSetting(name, value) {
     .run(AUTH_SETTINGS[name], value ? '1' : '0');
 }
 // Konto in der Form, die das Küchenplaner-Frontend erwartet
-const accountUser = (p) => p && { id: p.id, email: p.email ?? '', name: p.name, role: p.role, status: p.status, createdAt: p.created_at, color: p.color };
+const accountUser = (p) => p && {
+  id: p.id, email: p.email ?? '', name: p.name, role: p.role, status: p.status, createdAt: p.created_at, color: p.color,
+  canPlan: p.role === 'admin' || !!p.can_plan, prefs: readPrefs(p.prefs),
+};
+// Persönliche Einstellungen der App: Startseite, Ansicht im Haus, Darstellung
+const PREFS = {
+  start: ['overview', 'house'],
+  houseView: ['2d', '3d'],
+  theme: ['auto', 'light', 'dark'],
+  fontSize: ['normal', 'large', 'xlarge'],
+};
+function readPrefs(raw) {
+  let o = {};
+  try { o = JSON.parse(raw || '{}') || {}; } catch { /* leer */ }
+  const out = {};
+  for (const [k, vals] of Object.entries(PREFS)) out[k] = vals.includes(o[k]) ? o[k] : vals[0];
+  return out;
+}
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 route('GET', '/api/auth/me', (_p, _b, _qs, ctx) => {
@@ -811,6 +832,19 @@ route('GET', '/api/auth/me', (_p, _b, _qs, ctx) => {
     requireApproval: !first && st.requireApproval,
   };
 }, { auth: 'public' });
+
+// Eigene Einstellungen ändern {start?, houseView?, theme?, fontSize?}
+route('PATCH', '/api/auth/me/prefs', (_p, body, _qs, ctx) => {
+  if (ctx.via !== 'session') throw new HttpError(403, 'Nur mit Anmeldung.');
+  const prefs = readPrefs(ctx.person.prefs);
+  for (const [k, vals] of Object.entries(PREFS)) {
+    if (body[k] === undefined) continue;
+    if (!vals.includes(body[k])) throw new HttpError(400, `Ungültiger Wert für ${k}.`);
+    prefs[k] = body[k];
+  }
+  db.prepare('UPDATE persons SET prefs = ? WHERE id = ?').run(JSON.stringify(prefs), ctx.person.id);
+  return prefs;
+});
 
 // Registrieren {email, name?, password}. Gibt es schon eine Person mit diesem Namen ohne E-Mail und Passwort
 // (z. B. im Lager angelegt), wird sie übernommen statt doppelt angelegt.
@@ -1594,6 +1628,8 @@ function recentMovements(wid = null, limit = 30) {
     LEFT JOIN warehouses w ON w.id = m.warehouse_id
     ${wid ? 'WHERE m.warehouse_id = ?' : ''} ORDER BY m.id DESC LIMIT ?`).all(...(wid ? [wid] : []), limit);
 }
+// Letzte Buchungen aller Lager (Übersicht der App)
+route('GET', '/api/movements/recent', (_p, _b, qs) => recentMovements(null, Math.max(1, Math.min(50, Number(qs.get('limit')) || 8))));
 route('GET', '/api/overview', (_p, _b, qs) => {
   const w = whFrom(qs.get('wh'));
   return {

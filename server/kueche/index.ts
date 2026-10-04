@@ -12,6 +12,8 @@ export interface Person {
   name: string;
   role: 'user' | 'admin';
   status: string;
+  /** darf den Hausplan ändern (Admins immer) */
+  can_plan?: number;
 }
 export interface Auth {
   person: Person;

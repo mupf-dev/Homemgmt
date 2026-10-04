@@ -1,9 +1,12 @@
-// Lager in der App: Seitenhülle und Router. #/haus (oder leer) zeigt den Hausplaner, alle anderen Adressen eine
-// Lager-Seite (handytauglich). Die Seiten teilen sich Anmeldung, Hausplan und Fach-Inhalte mit dem Planer.
+// Lager in der App: Seiten und Router. #/haus zeigt das Haus (Ansehen/Planen), alle anderen Adressen eine Seite
+// (handytauglich). Ohne Adresse entscheidet die Einstellung der Person: Übersicht oder Haus. Navigation: shell.ts.
 
 import type { LagerCtx } from './core';
 import { esc } from './core';
-import { viewCheckin, viewCheckout, viewExpiry, viewItem, viewPlace, viewQuick, viewSearch, viewShopping, viewStart, viewStats, type View } from './views';
+import { viewCheckin, viewCheckout, viewExpiry, viewItem, viewPlace, viewQuick, viewSearch, viewShopping, viewStats, type View } from './views';
+import { viewHome, viewMore, viewSettings } from './home';
+import { prefs } from '../prefs';
+import type { Shell } from '../shell';
 import { viewAssistant } from './assistant';
 import { viewLabels } from './labels';
 import { viewHelp } from './help';
@@ -11,7 +14,9 @@ import { viewAdmin, viewAiSettings, viewBackups, viewKeys, viewPersons, viewTran
 import { stopScanner, viewScan } from './scan';
 
 const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][] = [
-  [/^#\/lager$/, viewStart, () => {}],
+  [/^#\/lager$/, viewHome, () => {}],
+  [/^#\/mehr$/, viewMore, () => {}],
+  [/^#\/einstellungen$/, viewSettings, () => {}],
   [/^#\/suche$/, viewSearch, () => {}],
   [/^#\/item\/(\d+)$/, viewItem, (m, p) => p.set('id', m[1])],
   [/^#\/ein$/, viewCheckin, () => {}],
@@ -34,38 +39,25 @@ const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][
   [/^#\/q\/(.+)$/, viewQuick, (m, p) => p.set('code', decodeURIComponent(m[1]))],
 ];
 
-const NAV: [string, string][] = [
-  ['#/lager', 'Start'],
-  ['#/suche', 'Suchen'],
-  ['#/scan', 'Scannen'],
-  ['#/einkauf', 'Einkauf'],
-  ['#/haltbarkeit', 'Haltbarkeit'],
-  ['#/assistent', 'Assistent'],
-  ['#/auswertung', 'Auswertung'],
-  ['#/verwaltung', 'Verwaltung'],
-];
-
-export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => void) {
+export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => void, shell: Shell) {
   const root = document.createElement('div');
   root.id = 'lager';
   root.hidden = true;
-  root.innerHTML = `
-    <header class="l-top">
-      <a class="l-brand" href="#/lager"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"><path d="M3 11 12 4l9 7"/><path d="M5 10v10h14V10"/><path d="M9 20v-6h6v6"/></svg><span>Zuhause</span></a>
-      <nav class="l-nav">${NAV.map(([h, l]) => `<a href="${h}" data-nav="${h}">${l}</a>`).join('')}</nav>
-      <a class="btn l-house" href="#/haus">🏠 Haus</a>
-      <span class="l-user" id="lUser"></span>
-    </header>
-    <div class="l-page" id="lPage" role="main"></div>`;
-  document.body.appendChild(root);
+  root.innerHTML = `<div class="l-page" id="lPage" role="main"></div>`;
+  document.body.insertBefore(root, document.getElementById('tabbar'));
   const page = root.querySelector<HTMLElement>('#lPage')!;
 
   const render = async () => {
     stopScanner();
-    const raw = location.hash || '#/haus';
-    const [hash, qs] = raw.split('?');
+    // ohne Adresse: Startseite der Person (Übersicht oder Haus); ohne Anmeldung die Anmeldung
+    if (['', '#', '#/'].includes(location.hash)) {
+      const u = ctx.user() ?? (await ctx.ensureUser());
+      history.replaceState(null, '', u && prefs().start === 'house' ? '#/haus' : '#/lager');
+    }
+    const [hash, qs] = location.hash.split('?');
     const params = new URLSearchParams(qs ?? '');
-    if (hash === '#/haus' || hash === '' || hash === '#/' || hash === '#') {
+    shell.update(hash, !!ctx.user());
+    if (hash === '#/haus') {
       root.hidden = true;
       document.body.classList.remove('mode-lager');
       onHouse(params);
@@ -73,10 +65,8 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
     }
     root.hidden = false;
     document.body.classList.add('mode-lager');
-    root.querySelectorAll<HTMLElement>('[data-nav]').forEach((a) => a.classList.toggle('on', a.dataset.nav === hash || (a.dataset.nav === '#/verwaltung' && hash.startsWith('#/verwaltung'))));
-    root.querySelector<HTMLElement>('[data-nav="#/verwaltung"]')!.hidden = ctx.user()?.role !== 'admin';
     const u = ctx.user() ?? (await ctx.ensureUser());
-    root.querySelector('#lUser')!.innerHTML = u ? esc(u.name) : '';
+    shell.update(hash, !!u);
     if (!u) return loginPage();
     for (const [re, view, fill] of ROUTES) {
       const m = hash.match(re);
@@ -89,7 +79,7 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
       try {
         await view(box, ctx, params);
       } catch (e) {
-        box.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p><p><a class="btn" href="#/lager">Zur Lager-Startseite</a></p>`;
+        box.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p><p><a class="btn" href="#/lager">Zur Übersicht</a></p>`;
       }
       return;
     }

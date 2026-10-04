@@ -40,8 +40,11 @@ const step = (s) => console.log('▶', s);
 const shot = (n) => page.screenshot({ path: `${DIR}/${n}.png` });
 
 try {
-  step('App ohne Anmeldung');
+  step('App ohne Anmeldung: Startseite ist die Anmeldung, das Haus lässt sich ansehen');
   await page.goto(base + '/');
+  await page.waitForSelector('.who[data-id="new"]');
+  console.log('  Adresse:', new URL(page.url()).hash);
+  await page.goto(base + '/#/haus');
   await page.waitForSelector('#floorTabs .floor-tab');
   console.log('  Etagen-Reiter:', await page.$$eval('#floorTabs .floor-tab', (b) => b.map((x) => x.textContent)));
   console.log('  Status:', await page.textContent('#account'));
@@ -57,8 +60,8 @@ try {
   await page.waitForSelector('text=Hausplan anlegen', { timeout: 10000 });
   await shot('01-hausplan-anlegen');
   await page.click('[data-c="draft"]');
-  await page.waitForSelector('.l-tiles:not(.login)');
-  console.log('  Lager-Start:', await page.textContent('.l-page h1'));
+  await page.waitForSelector('.ov-quick');
+  console.log('  Übersicht:', await page.textContent('.l-page h1'), '| Navigation:', await page.$$eval('#shell .sh-nav a', (a) => a.map((x) => x.textContent.trim())));
   await page.evaluate(() => fetch('/api/auth/logout', { method: 'POST' }));
   await page.goto(base + '/#/suche');
   await page.reload();
@@ -72,34 +75,35 @@ try {
   await page.waitForSelector('#q');
   console.log('  Kachel-Anmeldung ok, Seite:', await page.textContent('.l-page h1'));
   await page.goto(base + '/#/haus');
-  await page.waitForFunction(() => document.querySelector('#accStatus')?.textContent?.includes('Gespeichert'), null, { timeout: 15000 });
-  console.log('  Status:', await page.textContent('#accStatus'));
+  await page.waitForFunction(() => document.querySelector('#saveStatus')?.textContent?.includes('Gespeichert'), null, { timeout: 15000 });
+  console.log('  Status:', await page.textContent('#saveStatus'), '| Modus:', await page.evaluate(() => document.body.className));
   const st = await page.evaluate(() => fetch('/api/house/storage').then((r) => r.json()));
   console.log('  Lagerplätze aus dem Plan:', st.places.length, st.places.slice(0, 3).map((p) => `${p.address} ${p.name}`));
   console.log('  Räume:', await page.$$eval('#roomList .room-row b', (b) => b.map((x) => x.textContent)));
 
-  step('Lager-Ansicht einschalten');
-  await page.click('#storageBtn');
-  await page.waitForTimeout(800);
-  await shot('02-lager-ansicht');
+  step('Ansehen: Räume mit Füllstand in der Seitenleiste');
+  await page.waitForSelector('.view-panel [data-room]');
+  console.log('  Räume:', await page.$$eval('.view-panel [data-room] b', (b) => b.map((x) => x.textContent.replace(/\s+/g, ' '))));
+  await shot('02-ansehen');
 
-  step('Raum → Möbel → Fach → einbuchen');
-  await page.click('#roomList .room-row');
-  await page.waitForSelector('.room-furniture .room-row');
+  step('Raum → Möbel → Fach → einbuchen (Seitenleiste, Plan bleibt sichtbar)');
+  await page.click('.view-panel [data-room]');
+  await page.waitForSelector('.view-panel [data-it]');
   await shot('03-raum');
-  await page.click('.room-furniture .room-row >> nth=2');
-  await page.waitForSelector('.fach-list .fach-row');
-  console.log('  Fächer:', await page.$$eval('.fach-list .fach-row', (b) => b.map((x) => x.innerText.replace(/\s+/g, ' ')).slice(0, 4)));
+  await page.click('.view-panel [data-it] >> nth=2');
+  await page.waitForSelector('.view-panel [data-r]');
+  console.log('  Fächer:', await page.$$eval('.view-panel [data-r]', (b) => b.map((x) => x.innerText.replace(/\s+/g, ' ')).slice(0, 4)));
   await shot('04-moebel');
-  await page.click('.fach-list .fach-row >> nth=1');
-  await page.waitForSelector('.fach-in input[name="name"]');
+  await page.click('.view-panel [data-r] >> nth=1');
+  await page.waitForSelector('.view-panel .fach-in input[name="name"]');
   await page.fill('.fach-in input[name="name"]', 'Testgabel');
   await page.fill('.fach-in input[name="qty"]', '6');
+  await page.click('.fach-in [data-exp="30"]');
+  console.log('  Haltbar bis (1 Monat):', await page.inputValue('.fach-in input[name="exp"]'));
   await page.click('.fach-in button[type="submit"]');
   await page.waitForSelector('.fach-item >> text=Testgabel', { timeout: 10000 });
-  console.log('  Fach-Titel:', await page.textContent('.modal header h2'));
+  console.log('  Fach-Titel:', await page.textContent('.view-panel .vp-title'));
   await shot('05-fach');
-  await page.keyboard.press('Escape');
 
   step('Suche „Wo liegt …?“');
   await page.fill('#houseSearchInput', 'Testgabel');
@@ -107,8 +111,7 @@ try {
   console.log('  Treffer:', await page.$$eval('.search-hit', (b) => b.map((x) => x.innerText.replace(/\s+/g, ' '))));
   await shot('06-suche');
   await page.click('.search-hit');
-  await page.waitForSelector('.fach-item >> text=Testgabel');
-  await page.keyboard.press('Escape');
+  await page.waitForSelector('.view-panel .fach-item >> text=Testgabel');
   await page.waitForTimeout(500);
   await shot('07-treffer-im-haus');
 
@@ -117,14 +120,15 @@ try {
   await page.fill('#name', 'Backpapier');
   await page.click('#where');
   await page.click('.pp-btn >> nth=0');
-  await page.click('button[type="submit"]');
+  await page.click('#f button[type="submit"]');
   await page.waitForSelector('.l-item-head');
   console.log('  Gegenstand:', (await page.innerText('.l-where')).replace(/\s+/g, ' '));
   await page.goto(base + '/#/suche?q=Backpapier');
   await page.waitForSelector('#inHouse:not([hidden])');
   await page.click('#inHouse');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
-  console.log('  Planer zeigt:', await page.textContent('#props h2'));
+  await page.waitForSelector('.view-panel .fach-item');
+  console.log('  Haus zeigt:', await page.textContent('.view-panel .vp-title'));
   await page.goto(base + '/#/einkauf');
   await page.fill('#add input[name="name"]', 'Spülmittel');
   await page.click('#add button');
@@ -147,7 +151,8 @@ try {
   await shot('07c-assistent');
   await page.click('[data-house]');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
-  console.log('  Planer zeigt:', await page.textContent('#props h2'));
+  await page.waitForSelector('.view-panel .vp-title');
+  console.log('  Haus zeigt:', await page.textContent('.view-panel .vp-title'));
 
   step('Preisrecherche (simulierte Websuche) und Behälter');
   llm.replies.push(() => ({
@@ -241,8 +246,10 @@ try {
   await page.goto(base + '/#/haus');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
 
-  step('Möbel-Bibliothek: Sessel von Poly Haven importieren und platzieren');
-  await page.click('.tabs button[data-tab="catalog"]');
+  step('Planen: Werkzeugleiste, Möbel-Bibliothek – Sessel von Poly Haven importieren und platzieren');
+  await page.click('#planStart');
+  await page.waitForFunction(() => document.body.classList.contains('haus-plan'));
+  await page.click('[data-drawer="catalog"]');
   await page.click('#modelLibrary');
   await page.click('#mlCats [data-cat="sitzen"]');
   await page.waitForSelector('.ml-card[data-id="ArmChair_01"]', { timeout: 30000 });
@@ -259,7 +266,7 @@ try {
   await page.click('[data-cam="perspective"]');
   await page.waitForTimeout(2500);
   await shot('07h-moebel');
-  await page.click('.tabs button[data-tab="room"]');
+  await page.click('[data-drawer="room"]');
 
   step('Etage darüber anlegen, Haus-Ansicht');
   await page.click('#floorTabs [data-add]');
@@ -269,9 +276,57 @@ try {
   await page.click('#houseMode [data-h="house"]');
   await page.waitForTimeout(800);
   await shot('08-haus');
-  await page.waitForFunction(() => document.querySelector('#accStatus')?.textContent?.includes('Gespeichert'), null, { timeout: 15000 });
+  await page.waitForFunction(() => document.querySelector('#saveStatus')?.textContent?.includes('Gespeichert'), null, { timeout: 15000 });
   const h = await page.evaluate(() => fetch('/api/house').then((r) => r.json()));
   console.log('  Server: Version', h.version, 'Etagen', h.house.floors.map((f) => `${f.name}(${f.walls.length} Wände)`));
+  await page.click('#planDone');
+  await page.waitForFunction(() => document.body.classList.contains('haus-view'));
+
+  step('Einstellungen: Startseite Haus, 3D, dunkel, große Schrift');
+  await page.goto(base + '/#/einstellungen');
+  await page.click('[data-k="start"] [data-v="house"]');
+  await page.click('[data-k="houseView"] [data-v="3d"]');
+  await page.click('[data-k="theme"] [data-v="dark"]');
+  await page.click('[data-k="fontSize"] [data-v="large"]');
+  await page.waitForFunction(() => document.documentElement.dataset.font === 'large');
+  await page.waitForTimeout(400);
+  await page.goto(base + '/');
+  await page.reload();
+  await page.waitForFunction(() => location.hash === '#/haus' && document.querySelector('#main')?.className === 'v-3d', null, { timeout: 10000 });
+  console.log('  Start:', new URL(page.url()).hash, '| Ansicht:', await page.$eval('#main', (m) => m.className), '| Theme:', await page.evaluate(() => document.documentElement.dataset.theme));
+  await shot('09-einstellungen-dunkel');
+  await page.evaluate(() => fetch('/api/auth/me/prefs', { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ start: 'overview', houseView: '2d', theme: 'auto', fontSize: 'normal' }) }));
+
+  step('Recht „Haus planen“: Ben ohne Recht sieht keinen Planen-Knopf');
+  const ctx2 = await browser.newContext({ viewport: { width: 1300, height: 850 } });
+  const p2 = await ctx2.newPage();
+  await p2.goto(base + '/#/lager');
+  await p2.evaluate(async () => {
+    const st = await fetch('/api/auth/status').then((r) => r.json());
+    const ben = st.users.find((u) => u.name === 'Ben');
+    await fetch('/api/auth/login', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ person_id: ben.id, password: 'geheim22' }) });
+  });
+  await p2.goto(base + '/#/haus');
+  await p2.reload();
+  await p2.waitForSelector('.view-panel [data-room]');
+  console.log('  Planen-Knopf für Ben sichtbar:', await p2.isVisible('#planStart'));
+  if (await p2.isVisible('#planStart')) throw new Error('Ben darf nicht planen');
+  await ctx2.close();
+
+  step('Handy: Leiste unten, Auswahl als Blatt');
+  const ctx3 = await browser.newContext({ viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true, storageState: await page.context().storageState() });
+  const p3 = await ctx3.newPage();
+  await p3.goto(base + '/#/lager');
+  await p3.waitForSelector('#tabbar .tab-scan');
+  await p3.screenshot({ path: `${DIR}/10-handy-start.png` });
+  await p3.goto(base + '/#/haus');
+  await p3.waitForSelector('#floorTabs .floor-tab');
+  await p3.evaluate(() => { const z = window.__zuhause; const it = z.store.floor.items.find((i) => i.storageCol); z.store.select({ kind: 'item', id: it.id }); });
+  await p3.waitForFunction(() => document.body.classList.contains('sheet-open'));
+  await p3.waitForTimeout(400);
+  await p3.screenshot({ path: `${DIR}/11-handy-blatt.png` });
+  console.log('  Blatt:', await p3.textContent('.view-panel .vp-title'));
+  await ctx3.close();
 } catch (e) {
   failed = true;
   console.log('FEHLER:', e.message);

@@ -5,6 +5,7 @@
 import { api, esc, pickPhoto, placeInfo, type LagerCtx } from './core';
 import { parseCode } from './scan';
 import type { View } from './views';
+import { ic } from '../icons';
 
 type Msg =
   | { role: 'divider'; content: string }
@@ -117,8 +118,8 @@ export const viewAssistant: View = async (el, ctx, params) => {
     <form class="ai-composer" id="form">
       <div class="ai-previews" id="prev" hidden></div>
       <div class="ai-row">
-        <button type="button" class="btn icon" id="photo" title="Foto aufnehmen">📷</button>
-        ${SpeechRec ? '<button type="button" class="btn icon" id="mic" title="Sprechen">🎤</button>' : ''}
+        <button type="button" class="btn icon" id="photo" title="Foto aufnehmen" aria-label="Foto aufnehmen">${ic('camera')}</button>
+        ${SpeechRec ? `<button type="button" class="btn icon" id="mic" title="Sprechen" aria-label="Sprechen">${ic('mic')}</button>` : ''}
         <textarea id="text" rows="1" placeholder="z. B. „Leg 3 Dosen Tomaten in den Vorratsschrank“"></textarea>
         <button class="btn primary" id="send" title="Senden">➤</button>
       </div>
@@ -137,7 +138,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
       ${places.length ? `<div class="ai-places">${places.map((p) => {
         const info = placeInfo(ctx, p);
         return `<span><code>${esc(p.address)}</code> ${esc(info.title)} · ${esc(info.plan?.fach ?? '')}</span>`;
-      }).join('')}<button class="btn" data-house="${i}">🏠 Im Haus zeigen</button></div>` : ''}
+      }).join('')}<button class="btn" data-house="${i}">${ic('plan')}Im Haus zeigen</button></div>` : ''}
       ${c ? `<div class="ai-confirm ${c.done ? 'done' : ''}"><b>${c.count} Buchungen:</b><ul>${c.actions.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
         ${c.done ? `<small>${c.done === 'ok' ? 'ausgeführt' : 'abgebrochen'}</small>` : `<div class="l-actions"><button class="btn in" data-ok="${i}">Ausführen</button><button class="btn" data-no="${i}">Abbrechen</button></div>`}</div>` : ''}
     </div>`;

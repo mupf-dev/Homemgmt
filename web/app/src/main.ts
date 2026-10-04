@@ -18,6 +18,10 @@ import { HouseSync } from './houseSync';
 import { modelSize } from './modelLoader';
 import type { HouseMode } from './scene3d';
 import { initLager } from './lager/index';
+import { bindExpiry, expiryField, parseExpiry } from './lager/core';
+import { ic } from './icons';
+import { initShell } from './shell';
+import { onPrefs, prefs } from './prefs';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -54,56 +58,60 @@ const ICON = {
 // ---------------------------------------------------------------------------
 // Grundgerüst
 
+const shell = initShell();
 const app = $('#app');
 app.innerHTML = `
-<header>
-  <div class="brand"><a class="home-link" href="#/lager" title="Zum Lager (Scannen, Einkaufsliste …)">⌂</a>${ICON.logo}<span>Zuhause</span></div>
-  <input id="projectName" type="text" aria-label="Name des Hauses" />
-  <button class="btn icon" id="undo" title="Rückgängig (Strg+Z)">${ICON.undo}</button>
-  <button class="btn icon" id="redo" title="Wiederholen (Strg+Y)">${ICON.redo}</button>
+<div class="hausbar" id="hausbar">
+  <button class="btn primary plan-only" id="planDone" title="Planen beenden – zurück zum Ansehen">${ic('check')}Fertig</button>
   <div class="floor-tabs" id="floorTabs" role="tablist" aria-label="Etagen"></div>
-  <a class="btn" href="#/lager" title="Lager: Scannen, Ein-/Ausbuchen, Einkaufsliste, Haltbarkeit">📦 Lager</a>
-  <a class="btn icon" href="#/hilfe" title="Anleitung">?</a>
-  <div class="spacer"></div>
-  <form class="house-search" id="houseSearch" role="search">${ICON.search}<input type="search" id="houseSearchInput" placeholder="Wo liegt …?" aria-label="Im Haus suchen" /><div class="search-pop" id="searchPop" hidden></div></form>
-  <button class="btn" id="showroomBtn" title="Vollflächige 3D-Präsentation ohne Bedienleisten">${ICON.sparkle}Showroom</button>
-  <div class="seg" id="viewMode">
-    <button data-v="2d">2D</button><button data-v="split" class="on">Geteilt</button><button data-v="3d">3D</button>
+  <form class="house-search view-only" id="houseSearch" role="search">${ICON.search}<input type="search" id="houseSearchInput" placeholder="Wo liegt …?" aria-label="Im Haus suchen" autocomplete="off" /><div class="search-pop" id="searchPop" hidden></div></form>
+  <div class="plan-tools plan-only">
+    <button class="btn icon" id="undo" title="Rückgängig (Strg+Z)">${ICON.undo}</button>
+    <button class="btn icon" id="redo" title="Wiederholen (Strg+Y)">${ICON.redo}</button>
+    <span class="vsep"></span>
+    <button class="tool on" data-tool="select" title="Auswählen und verschieben">${ICON.select}<span>Auswählen</span></button>
+    <button class="tool" data-tool="wall" title="Wand zeichnen">${ICON.wall}<span>Wand</span></button>
+    <button class="tool" data-tool="door" title="Tür in eine Wand setzen">${ICON.door}<span>Tür</span></button>
+    <button class="tool" data-tool="window" title="Fenster in eine Wand setzen">${ICON.window}<span>Fenster</span></button>
+    <button class="tool" data-tool="room" title="Raum festlegen – jeder Raum wird ein Lager">${ICON.room}<span>Raum</span></button>
+    <span class="vsep"></span>
+    <button class="tool" data-drawer="catalog" title="Möbel und Einrichtung hinzufügen">${ic('sofa')}<span>Möbel</span></button>
+    <button class="tool" data-drawer="materials" title="Materialien und Oberflächen">${ic('palette')}<span>Materialien</span></button>
+    <button class="tool" data-drawer="room" title="Etage, Räume, Grundriss-Vorlage">${ic('layers')}<span>Etage</span></button>
   </div>
   <div class="spacer"></div>
+  <div class="seg" id="viewMode">
+    <button data-v="2d">2D</button><button data-v="split" class="plan-only">Geteilt</button><button data-v="3d">3D</button>
+  </div>
+  <button class="btn view-only" id="planStart" title="Wände, Möbel und Etagen bearbeiten" hidden>${ic('pencil')}Planen</button>
+  <span class="acc-status plan-only" id="saveStatus"></span>
   <div class="file-menu">
-    <button class="btn" id="fileBtn">Datei ▾</button>
+    <button class="btn icon" id="fileBtn" title="Weitere Funktionen" aria-label="Weitere Funktionen">${ic('dots')}</button>
     <div class="dropdown" id="fileMenu" hidden>
-      <button id="newBtn">Neues Haus …</button>
+      <label class="dd-name plan-only">Name des Hauses<input id="projectName" type="text" /></label>
+      <button id="showroomBtn">${ICON.sparkle}Showroom (3D im Vollbild)</button>
+      <hr class="plan-only" />
+      <button id="newBtn" class="plan-only">${ic('file')}Neues Haus …</button>
+      <button id="openBtn" class="plan-only">${ICON.open}Aus Datei importieren (.json) …</button>
+      <button id="saveBtn" class="plan-only">${ICON.save}Haus als Datei exportieren (.json)</button>
       <hr />
-      <button id="openBtn">${ICON.open}Aus Datei importieren (.json) …</button>
-      <button id="saveBtn">${ICON.save}Haus als Datei exportieren (.json)</button>
+      <a class="dd-link" href="#/hilfe">${ic('help')}Anleitung</a>
     </div>
   </div>
-  <div id="account" class="account"></div>
   <input type="file" id="openFile" accept=".json,application/json" hidden />
-</header>
+</div>
 
 <aside class="left">
   <div class="tabs">
     <button data-tab="room" class="on">Etage</button>
-    <button data-tab="catalog">Katalog</button>
+    <button data-tab="catalog">Möbel</button>
     <button data-tab="materials">Materialien</button>
+    <button class="drawer-close" id="drawerClose" title="Leiste einklappen" aria-label="Leiste einklappen">${ic('x')}</button>
   </div>
 
   <section class="tab on" id="tab-room">
     <h3>Etage</h3>
     <div id="floorPanel"></div>
-
-    <h3>Werkzeuge</h3>
-    <div class="tools">
-      <button class="tool on" data-tool="select">${ICON.select}Auswählen</button>
-      <button class="tool" data-tool="wall">${ICON.wall}Wand zeichnen</button>
-      <button class="tool" data-tool="door">${ICON.door}Tür</button>
-      <button class="tool" data-tool="window">${ICON.window}Fenster</button>
-      <button class="tool" data-tool="room">${ICON.room}Raum festlegen</button>
-    </div>
-    <p class="hint" id="toolHint"></p>
 
     <h3>Räume</h3>
     <div id="roomList"></div>
@@ -167,6 +175,7 @@ app.innerHTML = `
 <main class="v-split" id="main">
   <div class="pane" id="plan">
     <div class="overlay tr"><div class="chip"><button class="btn" id="fitPlan" title="Ansicht einpassen">Einpassen</button></div></div>
+    <div class="tool-hint plan-only" id="toolHint"></div>
   </div>
   <div class="pane" id="view">
     <div class="shared-badge"><b id="sharedTitle">Lade Küche …</b><span>Nur ansehen</span></div>
@@ -174,13 +183,13 @@ app.innerHTML = `
       <div class="chip">
         <button class="btn" id="tourBtn" title="Kamera kreist langsam durch den Raum">${ICON.rotate}Rundgang</button>
         <button class="btn" id="fsBtn" title="Browser-Vollbild">${ICON.expand}Vollbild</button>
-        <button class="btn" id="exitShowroom" title="Showroom beenden (Esc)">✕ Beenden</button>
+        <button class="btn" id="exitShowroom" title="Showroom beenden (Esc)">${ic('x')}Beenden</button>
       </div>
     </div>
     <div class="overlay tl">
       <div class="chip">
         <div class="seg" id="houseMode" title="Was zu sehen ist"><button data-h="floor" class="on" title="Nur die aktive Etage">Etage</button><button data-h="stack" title="Alle Etagen bis zur aktiven – Blick von oben ins Haus">Bis hier</button><button data-h="house" title="Das ganze Haus">Haus</button></div>
-        <button class="btn" id="storageBtn" title="Lager: Fächer nach Füllstand färben, anklicken zeigt den Inhalt">${ICON.box}Lager</button>
+        <button class="btn plan-only" id="storageBtn" title="Lager: Fächer nach Füllstand färben, anklicken zeigt den Inhalt">${ICON.box}Lager</button>
         <select id="heatSel" hidden title="Färbung der Fächer"><option value="">Füllstand</option><option value="moves">Bewegung (90 Tage)</option><option value="stale">Lange unberührt</option></select>
       </div>
       <div class="chip">
@@ -192,9 +201,9 @@ app.innerHTML = `
       </div>
     </div>
     <div class="overlay bl">
-      <div class="chip"><span title="Tageszeit (Sonnenstand)">☀</span><input type="range" id="timeOfDay" min="6" max="20" step="0.25" /><span id="timeLabel"></span></div>
-      <div class="chip"><span>Belichtung</span><input type="range" id="exposure" min="0.3" max="2.5" step="0.05" value="1" /></div>
-      <div class="chip light-chip">
+      <div class="chip plan-only"><span title="Tageszeit (Sonnenstand)">${ic('sun')}</span><input type="range" id="timeOfDay" min="6" max="20" step="0.25" /><span id="timeLabel"></span></div>
+      <div class="chip plan-only"><span>Belichtung</span><input type="range" id="exposure" min="0.3" max="2.5" step="0.05" value="1" /></div>
+      <div class="chip light-chip plan-only">
         <button class="btn" id="lightBtn" title="Licht einstellen: Sonne, Himmel, Lampen, Weichheit">${ICON.bulb}Licht</button>
         <div class="light-pop" id="lightPop" hidden>
           <label class="field"><span>Sonne <b data-v="sunIntensity"></b></span><input type="range" data-light="sunIntensity" min="0" max="2" step="0.05" /></label>
@@ -216,7 +225,8 @@ app.innerHTML = `
   </div>
 </main>
 
-<aside class="right props" id="props"></aside>
+<aside class="right props plan-only" id="props"></aside>
+<aside class="right view-panel view-only" id="viewPanel" aria-label="Fächer und Inhalt"></aside>
 `;
 
 // ---------------------------------------------------------------------------
@@ -225,7 +235,7 @@ app.innerHTML = `
 const plan = new Plan2D($('#plan'));
 const view = new Scene3D($('#view'));
 // Hausplan auf dem Server (früh anlegen: Panels lesen beim ersten Zeichnen den Lagerinhalt)
-const sync = new HouseSync({ toast, modal, statusEl: () => account.statusEl, afterLoad });
+const sync = new HouseSync({ toast, modal, statusEl: () => document.getElementById('saveStatus'), afterLoad });
 
 const toolHints: Record<Tool, string> = {
   select: 'Elemente, Wände, Türen und Fenster anklicken und ziehen. Breite eines Elements über die seitlichen Ziehpunkte frei ändern. Wandendpunkte verschieben. <kbd>Entf</kbd> löscht, <kbd>R</kbd> dreht. Rechte Maustaste / Leertaste + Ziehen verschiebt die Ansicht, Mausrad zoomt.',
@@ -241,7 +251,8 @@ plan.onToolChange = (t) => {
   document.querySelectorAll<HTMLElement>('.tool[data-tool]').forEach((b) => b.classList.toggle('on', b.dataset.tool === t));
   $('#calibrate').classList.toggle('on', t === 'calibrate');
   if (t !== 'place') document.querySelectorAll('.cat-item').forEach((b) => b.classList.remove('on'));
-  $('#toolHint').innerHTML = toolHints[t];
+  // Auswählen ist der Normalfall – Hinweis nur für die übrigen Werkzeuge (Bedienung steht in der Anleitung)
+  $('#toolHint').innerHTML = t === 'select' ? '' : toolHints[t];
 };
 plan.onToolChange('select');
 
@@ -262,11 +273,13 @@ document.querySelectorAll<HTMLElement>('#viewMode button').forEach((b) =>
 );
 
 // Tabs
-document.querySelectorAll<HTMLElement>('.tabs button').forEach((b) =>
+document.querySelectorAll<HTMLElement>('.tabs button[data-tab]').forEach((b) =>
   b.addEventListener('click', () => {
-    document.querySelectorAll('.tabs button').forEach((x) => x.classList.toggle('on', x === b));
+    document.querySelectorAll('.tabs button[data-tab]').forEach((x) => x.classList.toggle('on', x === b));
     document.querySelectorAll('.tab').forEach((t) => t.classList.toggle('on', t.id === 'tab-' + b.dataset.tab));
     if (b.dataset.tab === 'materials') renderMaterialsTab();
+    // beim Planen klappt die Leiste dafür auf
+    if (document.body.classList.contains('haus-plan')) setDrawer(b.dataset.tab!, false);
   }),
 );
 
@@ -298,7 +311,7 @@ $('#ptBtn').addEventListener('click', async () => {
   const badge = $('#gpuBadge');
   const short = gpu.name.replace(/^ANGLE \(|\)$/g, '').replace(/Direct3D.*$|vs_\d.*$/i, '').split(',').slice(-2, -1)[0]?.trim() || gpu.name;
   badge.hidden = false;
-  badge.textContent = gpu.integrated ? '⚠ integrierte GPU' : 'GPU ✓';
+  badge.innerHTML = gpu.integrated ? `${ic('warn')} integrierte GPU` : `GPU ${ic('check')}`;
   badge.title = `Genutzte Grafikkarte: ${short}`;
   badge.classList.toggle('warn', gpu.integrated);
   if (gpu.integrated) badge.addEventListener('click', () => showGpuHint(gpu.name));
@@ -432,6 +445,7 @@ $('#redo').addEventListener('click', () => store.redo());
 window.addEventListener('keydown', (e) => {
   const t = e.target as HTMLElement;
   if (t.tagName === 'INPUT' && (t as HTMLInputElement).type !== 'range') return;
+  if (!document.body.classList.contains('haus-plan')) return;
   if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
     e.preventDefault();
     if (e.shiftKey) store.redo();
@@ -458,6 +472,10 @@ $('#fileBtn').addEventListener('click', (e) => {
   fileMenu.hidden = !fileMenu.hidden;
 });
 document.addEventListener('click', () => (fileMenu.hidden = true));
+// Namensfeld im Menü: Klick hinein schließt das Menü nicht
+fileMenu.addEventListener('click', (e) => {
+  if ((e.target as HTMLElement).closest('.dd-name')) e.stopPropagation();
+});
 
 $('#newBtn').addEventListener('click', () => openNewPlan());
 
@@ -477,7 +495,7 @@ async function openNewPlan() {
       m.close();
       store.reset(b.dataset.kind === 'empty');
       afterLoad();
-      if (b.dataset.kind === 'empty') ($('.tabs button[data-tab="room"]') as HTMLElement).click();
+      if (b.dataset.kind === 'empty') setDrawer('room');
     }),
   );
 }
@@ -505,8 +523,9 @@ function importPlan(data: Project, name: string, mode: 'new' | 'replace') {
   store.select(null);
   store.floorChanged();
   afterLoad();
-  toast(`„${name}“ übernommen. Jetzt mit „Raum festlegen“ die Räume bestimmen – daraus entstehen die Lager.`);
-  ($('.tabs button[data-tab="room"]') as HTMLElement).click();
+  toast(`„${name}“ übernommen. Jetzt mit „Raum“ die Räume bestimmen – daraus entstehen die Lager.`);
+  setPlanning(true);
+  setDrawer('room');
 }
 
 function afterLoad() {
@@ -951,7 +970,7 @@ $('#libraryMaterial').addEventListener('click', () => openLibraryDialog());
 function modal(title: string, body: string, footer = '') {
   const back = document.createElement('div');
   back.className = 'modal-back';
-  back.innerHTML = `<div class="modal" role="dialog" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="btn icon" data-close>✕</button></header><div class="body">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div>`;
+  back.innerHTML = `<div class="modal" role="dialog" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="btn icon" data-close aria-label="Schließen">${ic('x')}</button></header><div class="body">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div>`;
   document.body.appendChild(back);
   const close = () => back.remove();
   back.addEventListener('click', (e) => {
@@ -1998,7 +2017,7 @@ function renderProps() {
             return `<button class="fach-row ${n ? 'full' : ''}" data-fach="${c.row}"><code>${pl ? esc(pl.address) : `${esc(code)}-${it.storageCol ?? '?'}${c.row}`}</code><span>${esc(c.label)}</span><small>${sync.online ? (n ? `${n} ${n === 1 ? 'Gegenstand' : 'Gegenstände'}` : 'leer') : ''}</small></button>`;
           })
           .join('')}</div>
-        <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">🏷 Etiketten / QR-Schilder für die Fächer</a>
+        <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">${ic('tag')}Etiketten / QR-Schilder für die Fächer</a>
         ${roomOf(store.floor, it) ? '' : '<p class="hint">Steht in keinem Raum – die Plätze gehören zum Lager der Etage. Mit „Raum festlegen“ einen Raum anlegen.</p>'}`
       : '';
     el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? 'Möbel &amp; Deko (3D-Modell)' : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
@@ -2304,6 +2323,15 @@ store.onSelection(() => {
   propsKey = '';
   renderProps();
   view.updateSelection();
+  const s = store.selection;
+  if (viewFach && (s?.kind !== 'item' || s.id !== viewFach.itemId)) viewFach = null;
+  renderViewPanel();
+  // Handy: das Blatt deckt den unteren Teil ab – ausgewähltes Möbel in den sichtbaren Bereich holen
+  if (s?.kind === 'item' && document.body.classList.contains('haus-view') && window.matchMedia('(max-width: 820px)').matches) {
+    const it = store.item(s.id);
+    // Höhe statt Lage messen: das Blatt fährt gerade erst herein
+    if (it) requestAnimationFrame(() => plan.centerOn(it, Math.max(120, $('#plan').clientHeight - $('#viewPanel').offsetHeight)));
+  }
 });
 
 function selectedObject() {
@@ -2346,12 +2374,13 @@ if (shareToken) {
 // ---------------------------------------------------------------------------
 // Haus: Server, Konto, Etagen, Räume, Lager
 
-const account = new Account($('#account'), {
+const account = new Account(shell.accountEl, {
   modal,
   toast,
   esc,
   onUser: async (u) => {
     if (shareToken) return;
+    updatePlanButton();
     await sync.start(!!u);
     lager.render();
   },
@@ -2377,8 +2406,16 @@ const lager = initLager(
     },
   },
   (params) => {
+    // Etage aus der Übersicht (#/haus?etage=<id>)
+    const etage = params.get('etage');
+    if (etage) {
+      if (store.house.floors.some((f) => f.id === etage)) store.setFloor(etage);
+      history.replaceState(null, '', '#/haus');
+      requestAnimationFrame(() => plan.fit());
+    }
     // Heatmap aus der Auswertung (#/haus?heat=moves|stale)
     if (params.get('heat') !== null) {
+      setView('3d');
       setStorageMode(true);
       view.mode = 'stack';
       document.querySelectorAll('#houseMode [data-h]').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.h === 'stack'));
@@ -2399,19 +2436,20 @@ const lager = initLager(
     } catch {
       /* egal */
     }
-    view.highlight = new Set(keys);
+    setHighlight(keys);
     store.setFloor(f.floor.id);
-    store.select({ kind: 'item', id: itemId });
-    setStorageMode(true);
+    if (document.body.classList.contains('haus-plan')) {
+      store.select({ kind: 'item', id: itemId });
+      setStorageMode(true);
+    } else showFach(itemId, Number(fach.split(':')[1]));
     requestAnimationFrame(() => {
       view.focusItem(f.item);
       plan.centerOn(f.item);
     });
     history.replaceState(null, '', '#/haus');
   },
+  shell,
 );
-// auf dem Handy direkt ins Lager (der Planer ist für große Bildschirme gedacht)
-if (!location.hash && window.matchMedia('(max-width: 800px)').matches) history.replaceState(null, '', '#/lager');
 if (!shareToken)
   account.refresh().then(async (u) => {
     await sync.start(!!u);
@@ -2434,9 +2472,11 @@ const roomColor = (i: number) => `hsl(${(i * 67 + 200) % 360}, 55%, 55%)`;
 // --- Etagen-Reiter und Etagen-Panel ---
 function renderFloorTabs() {
   const floors = store.house.floors;
+  // Etagen mit Suchtreffern bekommen einen Punkt
+  const hl = new Set([...view.highlight].map((k) => findItem(k.split(':')[0])?.floor.id));
   $('#floorTabs').innerHTML =
-    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${(f.elevation / 100).toFixed(2).replace('.', ',')} m">${esc(f.name)}</button>`).join('') +
-    `<button class="floor-tab add" data-add title="Etage hinzufügen">+</button>`;
+    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${(f.elevation / 100).toFixed(2).replace('.', ',')} m">${esc(f.name)}${hl.has(f.id) && f.id !== store.floorId ? '<span class="hl-dot" title="Treffer auf dieser Etage"></span>' : ''}</button>`).join('') +
+    `<button class="floor-tab add plan-only" data-add title="Etage hinzufügen">${ic('plus')}</button>`;
   $('#floorTabs').querySelectorAll<HTMLElement>('[data-f]').forEach((b) => b.addEventListener('click', () => store.setFloor(b.dataset.f!)));
   $('#floorTabs').querySelector('[data-add]')!.addEventListener('click', () => openAddFloor());
 }
@@ -2452,8 +2492,8 @@ function renderFloorPanel() {
       <label class="field"><span>Raumhöhe</span><span class="unit" data-unit="cm"><input type="number" data-fk="height" value="${f.height}" min="180" max="600" /></span></label>
       <label class="field"><span>&nbsp;</span><button class="btn" data-fk="heightAll" title="Raumhöhe auf alle Wände dieser Etage übertragen">Auf Wände</button></label>
     </div>
-    ${store.house.floors.length > 1 ? `<button class="btn danger" data-fk="delete" style="width:100%;justify-content:center">${ICON.trash}Etage „${esc(f.name)}“ löschen</button>` : ''}
-    <div id="lockedList"></div>`;
+    <div id="lockedList"></div>
+    ${store.house.floors.length > 1 ? `<details class="danger-zone"><summary>Etage entfernen …</summary><button class="btn danger" data-fk="delete" style="width:100%;justify-content:center;margin-top:8px">${ICON.trash}Etage „${esc(f.name)}“ löschen</button></details>` : ''}`;
   renderLockedList();
   el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input[data-fk], select[data-fk]').forEach((inp) =>
     inp.addEventListener('change', () => {
@@ -2557,7 +2597,7 @@ function renderRoomList() {
     .map((r, i) => {
       const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
       const n = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).length;
-      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? '🔒 ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${area.toFixed(1).replace('.', ',')} m²${n ? ` · ${n} Möbel` : ''}</small></button>`;
+      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${area.toFixed(1).replace('.', ',')} m²${n ? ` · ${n} Möbel` : ''}</small></button>`;
     })
     .join('')}</div>`;
   el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) =>
@@ -2696,48 +2736,55 @@ function expiryBadge(i: { expires_in: number | null; expires_on: string | null }
 }
 
 function openFach(itemId: string, row: number) {
-  const found = findItem(itemId);
-  if (!found) return;
-  const comp = compartments(found.item, store.house.settings)[row];
-  if (!comp) return;
+  // Ansehen: Inhalt in der Seitenleiste, der Plan bleibt sichtbar
+  if (!document.body.classList.contains('haus-plan')) return showFach(itemId, row);
   if (!sync.online) {
     toast('Zum Ein- und Ausbuchen bitte anmelden.');
     return;
   }
   const m = modal('Fach', '<p class="hint">Lade …</p>');
   m.el.querySelector('.modal')!.classList.add('fach-modal');
-  const body = m.el.querySelector('.body')!;
-  const head = m.el.querySelector('header h2')!;
+  fachView(m.el.querySelector('header h2')!, m.el.querySelector('.body')!, itemId, row);
+}
+
+/** Inhalt eines Fachs: ansehen, einbuchen, entnehmen, umlagern – im Fenster (Planen) oder in der Seitenleiste (Ansehen) */
+function fachView(head: Element, body: Element, itemId: string, row: number) {
+  const found = findItem(itemId);
+  if (!found) return;
+  const comp = compartments(found.item, store.house.settings)[row];
+  if (!comp) return;
   const draw = () => {
+    if (!body.isConnected) return;
     const pl = sync.fach(itemId, row);
     const roomName = roomOf(found.floor, found.item)?.name ?? found.floor.name;
     if (!pl) {
       head.textContent = comp.label;
-      body.innerHTML = `<p class="hint">Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert. ${sync.canEdit ? '' : 'Den Hausplan speichern nur Admins.'}</p>`;
+      body.innerHTML = `<p class="hint">Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert. ${sync.canEdit ? '' : 'Den Hausplan speichern nur Personen mit dem Recht „Haus planen“.'}</p>`;
       return;
     }
     head.textContent = `${pl.address} · ${comp.label}`;
     body.innerHTML = `
-      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">im Lager öffnen</a></p>
+      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">als Liste öffnen</a></p>
       ${pl.items.length ? `<div class="fach-items">${pl.items
         .map((i) => `<div class="fach-item" data-id="${i.id}">
-          ${i.photo_at ? `<img src="/api/items/${i.id}/photo?size=thumb&v=${encodeURIComponent(i.photo_at)}" alt="">` : `<span class="ph">${i.container ? '📦' : '•'}</span>`}
+          ${i.photo_at ? `<img src="/api/items/${i.id}/photo?size=thumb&v=${encodeURIComponent(i.photo_at)}" alt="">` : `<span class="ph">${ic(i.container ? 'box' : 'tag')}</span>`}
           <div><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.code)}${i.parent_id ? ' · im Behälter' : ''}</small>${expiryBadge(i)}</div>
-          <button class="btn mini" data-out title="1 Stück entnehmen" ${i.quantity < 1 ? 'disabled' : ''}>−1</button>
-          <a class="btn mini" href="#/item/${i.id}" title="Gegenstand öffnen">↗</a>
+          <button class="btn mini" data-out title="1 Stück entnehmen" ${i.quantity < 1 ? 'disabled' : ''}>${ic('minus')}1</button>
+          <a class="btn mini icon" href="#/item/${i.id}" title="Gegenstand öffnen" aria-label="Gegenstand öffnen">${ic('chev')}</a>
         </div>`)
         .join('')}</div>` : '<p class="hint">Das Fach ist leer.</p>'}
       <h3>Hineinlegen</h3>
       <form class="fach-in">
         <input type="text" name="name" placeholder="Was kommt hinein?" required maxlength="80" />
         <input type="number" name="qty" value="1" min="1" max="9999" title="Menge" />
-        <input type="date" name="exp" title="Haltbar bis (optional)" />
-        <button class="btn primary" type="submit">Einbuchen</button>
+        ${expiryField('exp')}
+        <button class="btn primary" type="submit">${ic('in')}Einbuchen</button>
       </form>
       <h3>Vorhandenen Gegenstand hierher umlagern</h3>
       <input type="search" class="fach-search" placeholder="Gegenstand suchen …" />
       <div class="fach-results"></div>
       <p class="form-error" hidden></p>`;
+    bindExpiry(body);
     const err = body.querySelector<HTMLElement>('.form-error')!;
     const run = async (fn: () => Promise<unknown>, msg?: string) => {
       err.hidden = true;
@@ -2763,7 +2810,7 @@ function openFach(itemId: string, row: number) {
       const name = String(fd.get('name') ?? '').trim();
       if (!name) return;
       run(
-        () => lagerApi('POST', '/api/checkin', { name, quantity: Number(fd.get('qty')) || 1, warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, expires_on: fd.get('exp') || undefined }),
+        () => lagerApi('POST', '/api/checkin', { name, quantity: Number(fd.get('qty')) || 1, warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, expires_on: parseExpiry(fd.get('exp')) ?? undefined }),
         `${name} liegt jetzt in ${pl.address}.`,
       );
     });
@@ -2801,10 +2848,7 @@ async function runSearch() {
   const q = searchInput.value.trim();
   if (!q) {
     searchPop.hidden = true;
-    if (view.highlight.size) {
-      view.highlight.clear();
-      view.build();
-    }
+    if (view.highlight.size) setHighlight([]);
     return;
   }
   if (!sync.online) {
@@ -2815,9 +2859,8 @@ async function runSearch() {
   const list = await lagerApi<any[]>('GET', `/api/items?q=${encodeURIComponent(q)}&limit=30`).catch(() => []);
   const byLoc = new Map([...sync.storage.values()].map((p) => [`${p.warehouse_id}-${p.col}-${p.row}`, p]));
   const hits = list.map((i) => ({ i, pl: byLoc.get(`${i.warehouse_id}-${i.col}-${i.row}`) }));
-  view.highlight = new Set(hits.filter((h) => h.pl).map((h) => `${h.pl!.plan_item}:${h.pl!.plan_slot}`));
+  setHighlight(hits.filter((h) => h.pl).map((h) => `${h.pl!.plan_item}:${h.pl!.plan_slot}`));
   if (view.highlight.size && !view.storageMode) setStorageMode(true);
-  else view.build();
   searchPop.innerHTML = hits.length
     ? hits
         .map(({ i, pl }) => {
@@ -2860,6 +2903,229 @@ searchInput.addEventListener('focus', () => {
 document.addEventListener('click', (e) => {
   if (!$('#houseSearch').contains(e.target as Node)) searchPop.hidden = true;
 });
+
+
+// ---------------------------------------------------------------------------
+// Haus: Ansehen (Normalfall für den ganzen Haushalt) und Planen (Werkzeuge; nur mit dem Recht „Haus planen“)
+
+/** im Ansehen-Modus geöffnetes Fach (Seitenleiste) */
+let viewFach: { itemId: string; row: number } | null = null;
+const mayPlan = () => !account.user || !!account.user.canPlan;
+function updatePlanButton() {
+  $('#planStart').hidden = !mayPlan();
+  if (!mayPlan() && document.body.classList.contains('haus-plan')) setPlanning(false);
+}
+
+function setView(v: '2d' | '3d' | 'split') {
+  document.querySelectorAll<HTMLElement>('#viewMode button').forEach((x) => x.classList.toggle('on', x.dataset.v === v));
+  $('#main').className = 'v-' + v;
+}
+
+function setPlanning(on: boolean) {
+  if (on && !mayPlan()) return;
+  document.body.classList.toggle('haus-plan', on);
+  document.body.classList.toggle('haus-view', !on);
+  plan.viewOnly = !on;
+  plan.setTool('select');
+  viewFach = null;
+  if (on) {
+    let tab: string | null = 'room';
+    try {
+      tab = localStorage.getItem('zh.drawer') ?? 'room';
+    } catch {
+      /* egal */
+    }
+    setDrawer(tab || null, false);
+    setHighlight([]);
+    searchInput.value = '';
+    setStorageMode(false);
+  } else {
+    document.body.classList.remove('drawer-open');
+    setStorageMode(true);
+    if ($('#main').className === 'v-split') setView(prefs().houseView);
+  }
+  propsKey = '';
+  renderProps();
+  renderViewPanel();
+  plan.draw();
+}
+$('#planStart').addEventListener('click', () => setPlanning(true));
+$('#planDone').addEventListener('click', () => setPlanning(false));
+
+/** Linke Leiste (Etage, Möbel, Materialien) beim Planen ein- und ausklappen */
+function setDrawer(tab: string | null, remember = true) {
+  document.body.classList.toggle('drawer-open', !!tab);
+  document.querySelectorAll<HTMLElement>('[data-drawer]').forEach((b) => b.classList.toggle('on', !!tab && b.dataset.drawer === tab));
+  if (tab && !$(`.tabs button[data-tab="${tab}"]`).classList.contains('on')) $(`.tabs button[data-tab="${tab}"]`).click();
+  if (remember) {
+    try {
+      localStorage.setItem('zh.drawer', tab ?? '');
+    } catch {
+      /* egal */
+    }
+  }
+}
+document.querySelectorAll<HTMLElement>('[data-drawer]').forEach((b) =>
+  b.addEventListener('click', () => {
+    const open = document.body.classList.contains('drawer-open') && b.classList.contains('on');
+    setDrawer(open ? null : b.dataset.drawer!);
+  }),
+);
+$('#drawerClose').addEventListener('click', () => setDrawer(null));
+
+/** Suchtreffer (Schlüssel „Möbel-ID:Fach“) in 3D, im Grundriss und an den Etagen-Reitern zeigen */
+function setHighlight(keys: string[]) {
+  view.highlight = new Set(keys);
+  plan.highlight = new Set(keys.map((k) => k.split(':')[0]));
+  view.build();
+  plan.draw();
+  renderFloorTabs();
+}
+
+/** Füllstand: 0 leer, 1 teils, 2 voll */
+const fillLevel = (used: number, all: number): 0 | 1 | 2 => (used === 0 ? 0 : used / all < 0.6 ? 1 : 2);
+function itemFill(it: Item) {
+  const all = compartments(it, store.house.settings).length;
+  let used = 0;
+  let count = 0;
+  for (let r = 0; r < all; r++) {
+    const n = sync.fach(it.id, r)?.items.length ?? 0;
+    if (n) used++;
+    count += n;
+  }
+  return { all, used, count };
+}
+plan.fillOf = (id) => {
+  const f = findItem(id);
+  if (!f) return null;
+  const { all, used } = itemFill(f.item);
+  return all ? fillLevel(used, all) : null;
+};
+
+function showFach(itemId: string, row: number) {
+  const f = findItem(itemId);
+  if (!f) return;
+  if (f.floor.id !== store.floorId) store.setFloor(f.floor.id);
+  store.select({ kind: 'item', id: itemId });
+  viewFach = { itemId, row };
+  renderViewPanel();
+}
+
+/** Seitenleiste im Ansehen-Modus: Räume der Etage → Möbel → Fächer → Inhalt (auf dem Handy als Blatt von unten) */
+function renderViewPanel() {
+  const el = $('#viewPanel');
+  if (document.body.classList.contains('haus-plan')) return;
+  const f = store.floor;
+  const sel = store.selection;
+  const S = store.house.settings;
+  document.body.classList.toggle('sheet-open', !!viewFach || sel?.kind === 'item' || sel?.kind === 'room');
+  const close = `<button class="vp-x" data-x aria-label="Schließen">${ic('x')}</button>`;
+  const bind = () => {
+    el.querySelector('[data-x]')?.addEventListener('click', () => {
+      viewFach = null;
+      store.select(null);
+    });
+  };
+  if (viewFach) {
+    const found = findItem(viewFach.itemId);
+    if (!found) {
+      viewFach = null;
+      return renderViewPanel();
+    }
+    el.innerHTML = `<div class="vp-head"><button class="vp-back" data-back>${ic('back')}${esc(itemName(found.item))}</button>${close}</div><h2 class="vp-title"></h2><div class="vp-body"></div>`;
+    bind();
+    el.querySelector('[data-back]')!.addEventListener('click', () => {
+      viewFach = null;
+      renderViewPanel();
+    });
+    if (!sync.online) {
+      el.querySelector('.vp-title')!.textContent = compartments(found.item, S)[viewFach.row]?.label ?? 'Fach';
+      el.querySelector('.vp-body')!.innerHTML = '<p class="hint">Zum Ansehen des Inhalts, Ein- und Ausbuchen bitte anmelden.</p>';
+      return;
+    }
+    fachView(el.querySelector('.vp-title')!, el.querySelector('.vp-body')!, viewFach.itemId, viewFach.row);
+    return;
+  }
+  if (sel?.kind === 'item') {
+    const it = store.item(sel.id);
+    if (it) {
+      const comps = compartments(it, S);
+      const room = roomOf(f, it);
+      const code = it.storageCol ? `${storageCode(f, it)}-${it.storageCol}` : '';
+      el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(room?.name ?? f.name)}</button>${close}</div>
+        <h2 class="vp-title">${code ? `<code>${esc(code)}</code>` : ''}${esc(itemName(it))}</h2>
+        <p class="vp-sub">${esc(room?.name ?? f.name)} · ${esc(f.name)}${comps.length ? ` · ${comps.length} Fächer` : ''}</p>
+        ${comps.length
+          ? `<div class="vp-list">${comps.map((c, r) => {
+              const pl = sync.fach(it.id, r);
+              const items = pl?.items ?? [];
+              return `<button class="vp-row" data-r="${r}"><code>${esc(pl?.address ?? `${code}${r}`)}</code><span class="grow"><b>${esc(c.label)}</b><small>${items.length ? esc(items.slice(0, 3).map((i) => i.name).join(', ')) + (items.length > 3 ? ` und ${items.length - 3} weitere` : '') : 'leer'}</small></span><i class="lv lv${items.length ? (items.length < 3 ? 1 : 2) : 0}"></i></button>`;
+            }).join('')}</div>`
+          : '<p class="hint">Dieses Möbel hat keine Fächer.</p>'}`;
+      bind();
+      el.querySelector('[data-up]')!.addEventListener('click', () => store.select(room ? { kind: 'room', id: room.id } : null));
+      el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) => b.addEventListener('click', () => showFach(it.id, Number(b.dataset.r))));
+      return;
+    }
+  }
+  // Raum: Möbel mit Fächern; Etage: Räume mit Füllstand
+  const roomItems = (rid: string) => f.items.filter((it) => roomOf(f, it)?.id === rid && compartments(it, S).length);
+  const bar = (used: number, all: number) => `<span class="bar"><i style="width:${all ? Math.round((used / all) * 100) : 0}%"></i></span>`;
+  if (sel?.kind === 'room') {
+    const r = store.room(sel.id);
+    if (r) {
+      const list = roomItems(r.id);
+      el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(f.name)}</button>${close}</div>
+        <h2 class="vp-title"><code>${esc(r.code)}</code>${esc(r.name)}</h2>
+        <p class="vp-sub">${list.length ? `${list.length} Möbel mit Fächern` : 'Keine Möbel mit Fächern'}</p>
+        <div class="vp-list">${list.map((it) => {
+          const fl = itemFill(it);
+          return `<button class="vp-row" data-it="${it.id}"><code>${esc(r.code)}-${esc(it.storageCol ?? '')}</code><span class="grow"><b>${esc(itemName(it))}</b><small>${fl.count} Gegenstände · ${fl.used} von ${fl.all} Fächern belegt</small></span>${bar(fl.used, fl.all)}</button>`;
+        }).join('')}</div>`;
+      bind();
+      el.querySelector('[data-up]')!.addEventListener('click', () => store.select(null));
+      el.querySelectorAll<HTMLElement>('[data-it]').forEach((b) => b.addEventListener('click', () => store.select({ kind: 'item', id: b.dataset.it! })));
+      return;
+    }
+  }
+  const rows = f.rooms.map((r, i) => {
+    const list = roomItems(r.id);
+    let all = 0;
+    let used = 0;
+    let count = 0;
+    for (const it of list) {
+      const x = itemFill(it);
+      all += x.all;
+      used += x.used;
+      count += x.count;
+    }
+    return { r, i, list, all, used, count };
+  });
+  el.innerHTML = `<h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">Möbel antippen, um Fächer und Inhalt zu sehen.</p>
+    ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${list.length} Möbel · ${count} Gegenstände` : 'keine Fächer'}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : '<p class="hint">Auf dieser Etage sind noch keine Räume festgelegt.</p>'}
+    <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
+  el.querySelectorAll<HTMLElement>('[data-room]').forEach((b) => b.addEventListener('click', () => store.select({ kind: 'room', id: b.dataset.room! })));
+}
+store.onFloor(() => {
+  viewFach = null;
+  renderViewPanel();
+});
+store.subscribe(() => {
+  if (!document.getElementById('viewPanel')?.contains(document.activeElement)) renderViewPanel();
+});
+sync.onStorage(() => {
+  plan.draw();
+  if (!viewFach) renderViewPanel();
+});
+onPrefs((p) => {
+  if (!document.body.classList.contains('haus-plan') && !document.body.classList.contains('showroom')) setView(p.houseView);
+});
+// Konto geändert (Anmeldung per Kachel, E-Mail, Abmelden): Planen-Knopf anpassen
+document.addEventListener('zh-account-render', updatePlanButton);
+// Start: Ansehen in der Lieblingsansicht der Person
+setView(prefs().houseView);
+setPlanning(false);
+updatePlanButton();
 
 // Projekt per URL laden, z. B. ?projekt=haus1-eg (Datei unter public/projekte/)
 const projectParam = new URLSearchParams(location.search).get('projekt');

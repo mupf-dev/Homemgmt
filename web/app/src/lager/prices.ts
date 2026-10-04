@@ -3,6 +3,7 @@
 // Server: GET/POST /api/shopping/prices (läuft im Hintergrund, Ergebnisse 24 Stunden gültig).
 
 import { api, esc, relDate, type LagerCtx } from './core';
+import { ic } from '../icons';
 
 const euro = (n: number) => Number(n).toLocaleString('de-DE', { style: 'currency', currency: 'EUR' });
 const host = (u: string) => {
@@ -19,7 +20,7 @@ const offer = (o: any) => `<span class="offer-shop">${esc(o.haendler)}${o.filial
 
 function priceHtml(c: any) {
   if (!c) return '';
-  if (c.status === 'pending' || c.status === 'running') return '<div class="price-wait">⏳ Suche Preise …</div>';
+  if (c.status === 'pending' || c.status === 'running') return `<div class="price-wait">${ic('hourglass')} Suche Preise …</div>`;
   if (c.status === 'error') return `<div class="price-none">Preisrecherche fehlgeschlagen: ${esc(c.error ?? '')}</div>`;
   const r = c.result ?? { angebote: [] };
   const [best, ...rest] = r.angebote;
