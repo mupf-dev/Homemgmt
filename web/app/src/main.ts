@@ -3381,8 +3381,9 @@ async function updateOutdoor(force = false) {
     view.setOutdoor({
       ...sun, north: loc.north, cloud: w?.cloud ?? 20, rain: (w?.precipitation ?? 0) > 0 || ['rain', 'drizzle', 'thunder'].includes(kind),
       fog: look.fog,
-      wet: (w?.precipitation ?? 0) > 0 || ['rain', 'drizzle', 'thunder'].includes(kind) ? 1 : 0,
-      snow: (w?.snow_depth ?? 0) >= 0.02 || (kind === 'snow' && (w?.temperature ?? 5) <= 1) ? 1 : 0,
+      // Nässe nach Regenstärke (voll ab ~6 mm/h), Schnee nach Schneehöhe (1 cm: Flecken, ab 10 cm geschlossen)
+      wet: Math.min(1, Math.sqrt(Math.max(Number(w?.rain_rate ?? 0), ['rain', 'drizzle', 'thunder'].includes(kind) ? 0.4 : 0) / 6)),
+      snow: Math.min(1, Math.max(Math.sqrt(Number(w?.snow_depth ?? 0) / 0.1), kind === 'snow' && (w?.temperature ?? 5) <= 1 ? 0.25 : 0)),
       // Wolkenzug: langsam mit der Zeit, schneller bei Wind
       drift: ((Date.now() / 60000) % 100000) * 0.004 * (0.3 + Math.min(2, (w?.wind_speed ?? 10) / 20)),
     });
@@ -3627,7 +3628,8 @@ async function updateLightning() {
   const r = await fetch(`/api/lightning?lat=${loc.lat}&lon=${loc.lon}`, { credentials: 'same-origin' }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
   if (r) showLightning(r);
 }
-function showLightning(r: { strikes: { km: number; bearing: number; age_s: number }[]; count15: number; level: number; nearest: { km: number; bearing: number; age_s: number; direction: string } | null }) {
+type StrikeInfo = { km: number; bearing: number; age_s: number; direction: string };
+function showLightning(r: { strikes: { km: number; bearing: number; age_s: number }[]; count15: number; level: number; nearest: StrikeInfo | null; latest?: StrikeInfo | null }) {
   const loc = store.house.settings.location;
   if (!loc) return;
   // ohne Echtzeit-Verbindung: neue nahe Blitze seit der letzten Abfrage → Bildschirm blitzt (je näher, desto heller)
@@ -3636,12 +3638,17 @@ function showLightning(r: { strikes: { km: number; bearing: number; age_s: numbe
     const near = Math.min(...fresh.map((s: any) => s.km));
     weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - near / 30)));
   }
-  const ago = (sec: number) => (sec < 90 ? 'gerade eben' : `vor ${Math.round(sec / 60)} Min.`);
+  const ago = (sec: number) => (sec < 10 ? 'gerade eben' : sec < 90 ? `vor ${sec} s` : `vor ${Math.round(sec / 60)} Min.`);
+  const km = (x: number) => x.toLocaleString('de-DE');
   const n = r.nearest;
   const title = r.level >= 3 ? 'Gewitter direkt über uns' : r.level === 2 ? 'Gewitter in der Nähe' : r.level === 1 ? 'Gewitter in der Region' : '';
-  const text = n ? `Nächster Blitz ${n.km.toLocaleString('de-DE')} km im ${n.direction}, ${ago(n.age_s)} · ${r.count15} Blitze in 15 Min. (bis 50 km)` : '';
+  // „Letzter Blitz“ = der neueste (den man gerade sieht), getrennt vom nächstgelegenen der letzten 15 Min.
+  const l = r.latest ?? n;
+  const text = l && n
+    ? `Letzter Blitz ${km(l.km)} km im ${l.direction}, ${ago(l.age_s)}\n${r.count15} Blitze in 15 Min.${n !== l && (n.km < l.km - 0.5) ? ` · am nächsten ${km(n.km)} km im ${n.direction} (${ago(n.age_s)})` : ''}`
+    : '';
   // Kopfzeile des Terminals: Warnung ab „in der Nähe“
-  setTermStorm(r.level >= 2 && n ? `${title} · ${n.km.toLocaleString('de-DE')} km ${n.direction}` : '', r.level);
+  setTermStorm(r.level >= 2 && l ? `${title} · letzter ${km(l.km)} km ${l.direction}` : '', r.level);
   // Ruhezustand: Hinweis und Karte, sobald es in 100 km blitzt
   const box = document.querySelector<HTMLElement>('#rest .rest-storm');
   if (!box) return;
@@ -3718,11 +3725,15 @@ function connectStrikes() {
   strikeStream.addEventListener('strike', (e) => {
     const st = JSON.parse((e as MessageEvent).data) as { km: number; direction: string };
     if (st.km <= 30) weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - st.km / 30)));
-    clearTimeout(strikeTimer);
-    strikeTimer = window.setTimeout(updateLightning, 1500);
+    // höchstens alle 1,5 s aktualisieren – aber sicher (bei Dauerfeuer würde ein Verschieben nie fertig)
+    if (!strikeTimer) strikeTimer = window.setTimeout(() => {
+      strikeTimer = 0;
+      updateLightning();
+    }, 1500);
   });
 }
-window.setInterval(() => updateLightning(), 60000);
+// alle 15 s: Altersangaben („vor 40 s“) bleiben aktuell, auch wenn gerade kein neuer Blitz kommt
+window.setInterval(() => updateLightning(), 15000);
 document.addEventListener('zh-account-render', () => {
   connectStrikes();
   if (terminal()) updateLightning();

@@ -56,10 +56,13 @@ function summarize(strikes, lat, lon, now = Date.now(), radiusKm = 100, minutes 
   const nearest = recent.reduce((m, s) => (!m || s.km < m.km ? s : m), null);
   // Warnstufe: 0 nichts, 1 Gewitter in der Region (≤ 50 km), 2 nah (≤ 20 km), 3 sehr nah (≤ 8 km)
   const level = !nearest || nearest.km > 50 ? 0 : nearest.km > 20 ? 1 : nearest.km > 8 ? 2 : 3;
+  // neuester Blitz in der Region (bis 50 km) – das, was man gerade sieht
+  const latest = list.find((s) => s.km <= 50) ?? null;
   return {
     strikes: list.slice(0, 500),
     count15: recent.filter((s) => s.km <= 50).length,
     nearest: nearest && { ...nearest, direction: direction(nearest.bearing) },
+    latest: latest && { ...latest, direction: direction(latest.bearing) },
     level,
   };
 }

@@ -61,6 +61,33 @@ function fbm(x: number, y: number) {
   }
   return s / 0.97;
 }
+/** kachelbares Rauschen (Periode p) – für nahtlos wiederholte Texturen */
+function noiseP(x: number, y: number, p: number) {
+  const xi = Math.floor(x);
+  const yi = Math.floor(y);
+  const xf = x - xi;
+  const yf = y - yi;
+  const u = xf * xf * (3 - 2 * xf);
+  const v = yf * yf * (3 - 2 * yf);
+  const w = (n: number) => ((n % p) + p) % p;
+  const a = hash2(w(xi), w(yi));
+  const b = hash2(w(xi + 1), w(yi));
+  const c = hash2(w(xi), w(yi + 1));
+  const d = hash2(w(xi + 1), w(yi + 1));
+  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
+}
+/** kachelbares fbm über u, v ∈ [0, 1) */
+function fbmTile(u: number, v: number, base: number) {
+  let s = 0;
+  let amp = 0.5;
+  let f = base;
+  for (let i = 0; i < 4; i++) {
+    s += amp * noiseP(u * f, v * f, f);
+    f *= 2;
+    amp *= 0.5;
+  }
+  return s / 0.9375;
+}
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
@@ -115,9 +142,11 @@ export class Scene3D {
     /** Nebel 0…1, nasser Boden 0…1, Schneedecke 0…1, Wolkenzug (verschiebt die Wolken) */
     fog?: number; wet?: number; snow?: number; drift?: number;
   } | null = null;
-  private roofSnow = false;
-  private groundWet: THREE.Material | null = null;
-  private groundSnow: THREE.Material | null = null;
+  /** Schnee auf dem Dach in Stufen 0 … 1 (Viertel), je nach Schneehöhe */
+  private roofSnow = 0;
+  private roofMats = new Map<number, THREE.Material>();
+  /** Boden je Stufe: Schnee (fleckig bis geschlossen) bzw. Nässe (dunkler, glänzender) */
+  private groundMats = new Map<string, THREE.Material>();
   onSamples?: (n: number) => void;
   onWalkChange?: (active: boolean) => void;
   /** Begehen: aktuelle Etage und Raum (für die Anzeige) */
@@ -623,7 +652,7 @@ export class Scene3D {
     if (withRoof) {
       const slope = (span / 2 + ov) / Math.cos(Math.atan(tan));
       for (const sd of [-1, 1]) {
-        const plane = box(alongX ? length : slope, plate, alongX ? slope : length, this.roofSnow ? SNOW_MAT : ROOF_MAT);
+        const plane = box(alongX ? length : slope, plate, alongX ? slope : length, this.roofMaterial(this.roofSnow));
         const ang = Math.atan(tan);
         const off = (span / 2 + ov) / 2; // Mitte der Fläche, vom First nach außen
         const y = knee + rise - off * tan + lift;
@@ -860,25 +889,43 @@ export class Scene3D {
     }
   }
 
-  /** Boden je nach Wetter: Rasen, nasser Rasen oder Schnee */
+  /** Wetter in Viertel-Stufen (so bleibt die Zahl der Materialien klein) */
+  private static step = (v: number | undefined) => Math.round(Math.max(0, Math.min(1, v ?? 0)) * 4) / 4;
+
+  /** Dach: Ziegelrot bis schneeweiß, je nach Schneehöhe */
+  private roofMaterial(level: number) {
+    if (!level) return ROOF_MAT;
+    let m = this.roofMats.get(level);
+    if (!m) {
+      const c = ROOF_MAT.color.clone().lerp(SNOW_MAT.color, 0.35 + 0.65 * level);
+      m = new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.8 + 0.1 * level, metalness: 0 });
+      this.roofMats.set(level, m);
+    }
+    return m;
+  }
+
+  /** Boden je nach Wetter: Rasen; nass (je stärker der Regen, desto dunkler und glänzender); Schnee (dünn = fleckig) */
   private weatherGround() {
     const o = this.outdoor;
-    if ((o?.snow ?? 0) > 0.3) {
-      return (this.groundSnow ??= new THREE.MeshPhysicalMaterial({ color: '#eef2f7', roughness: 0.9 }));
-    }
-    const lawn = this.lawnMaterial() as THREE.MeshPhysicalMaterial;
-    if ((o?.wet ?? 0) > 0.3) {
-      if (!this.groundWet) {
-        const w = lawn.clone();
-        w.color.set('#8c968a');
-        w.roughness = 0.45;
-        w.clearcoat = 0.4;
+    const snow = Scene3D.step(o?.snow);
+    const wet = Scene3D.step(o?.wet);
+    const key = snow ? `s${snow}` : wet ? `w${wet}` : '';
+    if (!key) return this.lawnMaterial();
+    let m = this.groundMats.get(key);
+    if (!m) {
+      if (snow) {
+        m = new THREE.MeshPhysicalMaterial({ map: this.lawnTexture(snow), roughness: 0.95, color: '#ffffff' });
+      } else {
+        const w = (this.lawnMaterial() as THREE.MeshPhysicalMaterial).clone();
+        w.color.set('#ffffff').lerp(new THREE.Color('#7f8a7d'), wet);
+        w.roughness = 1 - 0.55 * wet;
+        w.clearcoat = 0.45 * wet;
         w.clearcoatRoughness = 0.3;
-        this.groundWet = w;
+        m = w;
       }
-      return this.groundWet;
+      this.groundMats.set(key, m);
     }
-    return lawn;
+    return m;
   }
 
   /** Draußen live setzen (Sonne, Himmel) ohne alles neu aufzubauen */
@@ -887,7 +934,7 @@ export class Scene3D {
     // Nebel (nur im normalen Bild; das fotorealistische bekommt Dunst über den Himmel)
     const fog = o?.fog ?? 0;
     this.scene.fog = fog > 0.05 ? new THREE.Fog(this.skyLook.bottom.clone(), 6, 140 - fog * 120) : null;
-    const snow = (o?.snow ?? 0) > 0.3;
+    const snow = Scene3D.step(o?.snow);
     const groundMat = this.lawn ? this.weatherGround() : null;
     if (snow !== this.roofSnow) {
       this.roofSnow = snow;
@@ -901,25 +948,50 @@ export class Scene3D {
   /** Rasen: feine Grünfläche aus einer kleinen, gekachelten Textur (funktioniert auch im Pathtracer) */
   private lawnMaterial() {
     if (this.groundLawn) return this.groundLawn;
+    this.groundLawn = new THREE.MeshPhysicalMaterial({ map: this.lawnTexture(0), roughness: 1, color: '#ffffff' });
+    return this.groundLawn;
+  }
+
+  /** Rasen-Textur; snow 0 … 1: Schneeflecken, die mit der Schneehöhe zu einer geschlossenen Decke zusammenwachsen */
+  private lawnTexture(snow: number) {
+    // mit Schnee: größere Kachel (512 px auf 10 m statt 256 px auf 2,5 m), damit sich die Flecken nicht sichtbar wiederholen
+    const S = snow > 0 ? 512 : 256;
     const c = document.createElement('canvas');
-    c.width = c.height = 256;
+    c.width = c.height = S;
     const g = c.getContext('2d')!;
     g.fillStyle = '#4c7a2f';
-    g.fillRect(0, 0, 256, 256);
+    g.fillRect(0, 0, S, S);
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < 9000; i++) {
+    for (let i = 0; i < (S === 512 ? 36000 : 9000); i++) {
       const v = rnd();
       g.fillStyle = v < 0.45 ? '#5d8f39' : v < 0.8 ? '#426b27' : v < 0.95 ? '#6fa043' : '#7a8f3a';
-      g.fillRect(rnd() * 256, rnd() * 256, 1 + rnd() * 2, 2 + rnd() * 4);
+      g.fillRect(rnd() * S, rnd() * S, 1 + rnd() * 2, 2 + rnd() * 4);
+    }
+    if (snow > 0) {
+      // Schnee: nahtloses Rauschen – dünn nur Flecken, ab voller Stufe fast geschlossen mit etwas Gras darunter
+      const img = g.getImageData(0, 0, S, S);
+      const d = img.data;
+      const thr = 1.02 - snow * 0.9;
+      for (let y = 0; y < S; y++) {
+        for (let x = 0; x < S; x++) {
+          const n = fbmTile(x / S, y / S, 4);
+          const a = smooth(thr - 0.06, thr + 0.06, n) * (0.8 + 0.2 * snow);
+          const k = (y * S + x) * 4;
+          const sh = 236 + ((x * 7 + y * 13) % 14);
+          d[k] += (sh - d[k]) * a;
+          d[k + 1] += (sh + 3 - d[k + 1]) * a;
+          d[k + 2] += (sh + 10 - d[k + 2]) * a;
+        }
+      }
+      g.putImageData(img, 0, 0);
     }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.set(48, 48);
+    tex.repeat.setScalar(S === 512 ? 12 : 48);
     tex.anisotropy = 8;
-    this.groundLawn = new THREE.MeshPhysicalMaterial({ map: tex, roughness: 1, color: '#ffffff' });
-    return this.groundLawn;
+    return tex;
   }
 
   updateSelection() {

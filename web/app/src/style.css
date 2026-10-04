@@ -1057,5 +1057,5 @@ body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
 .rest-storm b { font-size: clamp(18px, 2.4vw, 26px); }
 .rest-storm[data-level="2"] b { color: #ffcf5a; }
 .rest-storm[data-level="3"] b { color: #ff7a5c; }
-.rest-storm span { font-size: clamp(14px, 1.8vw, 18px); opacity: .9; }
+.rest-storm span { font-size: clamp(14px, 1.8vw, 18px); opacity: .9; white-space: pre-line; }
 .rest-storm small { font-size: 11px; opacity: .5; }

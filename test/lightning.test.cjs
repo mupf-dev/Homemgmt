@@ -49,4 +49,7 @@ test('Zusammenfassung: nächster Blitz, Anzahl, Warnstufe, Alter', () => {
   assert.ok(s.nearest.km > 3 && s.nearest.km < 5);
   assert.equal(s.level, 3);
   assert.equal(s.strikes[0].age_s, 60);
+  // letzter (neuester) Blitz ist nicht der nächstgelegene
+  assert.equal(s.latest.age_s, 60);
+  assert.ok(s.latest.km > s.nearest.km);
 });

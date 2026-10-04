@@ -70,9 +70,10 @@ export class WeatherFx {
     const snow = this.look.kind === 'snow';
     this.drops = Array.from({ length: n }, () => ({
       x: Math.random() * W, y: Math.random() * H,
-      v: snow ? 30 + Math.random() * 50 : (this.look.kind === 'drizzle' ? 450 : 650) + Math.random() * 450,
+      v: snow ? 20 + Math.random() * 35 : (this.look.kind === 'drizzle' ? 450 : 650) + Math.random() * 450,
       // leichter Regen: kurze Striche; je stärker, desto länger
-      l: snow ? 1.5 + Math.random() * 2.5 : this.look.kind === 'drizzle' ? 4 + Math.random() * 4 : (7 + Math.random() * 9) * (0.7 + this.look.intensity * 0.6),
+      // Schnee: meist kleine Flocken (0,6–2 px), große sind näher und fallen schneller
+      l: snow ? 0.6 + Math.random() ** 2 * 1.4 : this.look.kind === 'drizzle' ? 4 + Math.random() * 4 : (7 + Math.random() * 9) * (0.7 + this.look.intensity * 0.6),
       s: Math.random() * Math.PI * 2,
     }));
   }
@@ -107,7 +108,7 @@ export class WeatherFx {
       // dezent: Deckkraft wächst mit der Regenstärke
       const a = 0.18 + 0.32 * this.look.intensity;
       ctx.strokeStyle = night ? `rgba(170,185,210,${a})` : `rgba(225,232,242,${a})`;
-      ctx.fillStyle = 'rgba(255,255,255,.85)';
+      ctx.fillStyle = '#ffffff';
       ctx.lineWidth = Math.max(1, dpr);
       ctx.beginPath();
       for (const d of this.drops) {
@@ -122,15 +123,18 @@ export class WeatherFx {
           if (d.x < 0) d.x += W;
         }
         if (snow) {
-          ctx.moveTo(d.x + d.l * dpr, d.y);
+          // halbtransparent; kleine (ferne) Flocken blasser
+          ctx.globalAlpha = 0.22 + 0.38 * ((d.l - 0.6) / 1.4);
+          ctx.beginPath();
           ctx.arc(d.x, d.y, d.l * dpr, 0, Math.PI * 2);
+          ctx.fill();
         } else {
           ctx.moveTo(d.x, d.y);
           ctx.lineTo(d.x + wind * d.l * 0.35 * dpr, d.y + d.l * dpr);
         }
       }
-      if (snow) ctx.fill();
-      else ctx.stroke();
+      ctx.globalAlpha = 1;
+      if (!snow) ctx.stroke();
     }
     // Gewitter: gelegentlich von selbst, sonst bei echten Blitzen in der Nähe (flash)
     if (kind === 'thunder' && !this.still && t > this.nextFlash) {
