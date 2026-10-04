@@ -3333,6 +3333,20 @@ plan.north = () => store.house.settings.location?.north ?? null;
 
 /** Draußen wie echt (Wandterminal): Sonne aus Ort und Uhrzeit, Bewölkung/Regen aus dem Wetter – jede Minute neu */
 let outdoorWeather: { at: number; data: any; q: string } | null = null;
+/** Testwetter zum Ausprobieren am Terminal: Adresse mit ?testwetter=schnee (siehe TEST_WEATHER) – nur dieses Fenster */
+const TEST_WEATHER: Record<string, Record<string, unknown>> = {
+  'schnee-leicht': { temperature: -1, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.1, rain_rate: 0, snowfall: 0.1, snow_depth: 0.03, visibility: 8000, wind_speed: 8, wind_direction: 240 },
+  schnee: { temperature: -2, code: 73, text: 'Schneefall', kind: 'snow', cloud: 100, precipitation: 0.3, rain_rate: 0, snowfall: 0.4, snow_depth: 0.12, visibility: 3000, wind_speed: 15, wind_direction: 250 },
+  schneesturm: { temperature: -6, code: 75, text: 'starker Schneefall', kind: 'snow', cloud: 100, precipitation: 0.8, rain_rate: 0, snowfall: 1.2, snow_depth: 0.35, visibility: 600, wind_speed: 45, wind_direction: 270 },
+  niesel: { temperature: 9, code: 53, text: 'Nieselregen', kind: 'drizzle', cloud: 100, precipitation: 0.1, rain_rate: 0.4, snowfall: 0, snow_depth: 0, visibility: 9000, wind_speed: 10, wind_direction: 240 },
+  regen: { temperature: 12, code: 63, text: 'Regen', kind: 'rain', cloud: 100, precipitation: 1, rain_rate: 4, snowfall: 0, snow_depth: 0, visibility: 10000, wind_speed: 20, wind_direction: 240 },
+  wolkenbruch: { temperature: 18, code: 65, text: 'starker Regen', kind: 'rain', cloud: 100, precipitation: 6, rain_rate: 24, snowfall: 0, snow_depth: 0, visibility: 4000, wind_speed: 35, wind_direction: 250 },
+  gewitter: { temperature: 21, code: 95, text: 'Gewitter', kind: 'thunder', cloud: 100, precipitation: 2.5, rain_rate: 10, snowfall: 0, snow_depth: 0, visibility: 7000, wind_speed: 30, wind_direction: 240 },
+  nebel: { temperature: 6, code: 45, text: 'Nebel', kind: 'fog', cloud: 100, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 250, wind_speed: 3, wind_direction: 0 },
+  wolkig: { temperature: 15, code: 2, text: 'wolkig', kind: 'clouds', cloud: 55, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 20000, wind_speed: 15, wind_direction: 240 },
+  klar: { temperature: 20, code: 0, text: 'klar', kind: 'clear', cloud: 0, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 30000, wind_speed: 5, wind_direction: 90 },
+};
+const testWeather = TEST_WEATHER[new URLSearchParams(location.search).get('testwetter') ?? ''] ?? null;
 async function updateOutdoor(force = false) {
   const t = terminal();
   const loc = store.house.settings.location;
@@ -3344,8 +3358,14 @@ async function updateOutdoor(force = false) {
   // neu abfragen: alle 15 Min., bei geänderter Lage sofort, nach einem Fehlschlag nach einer Minute
   const q = loc ? `?lat=${loc.lat}&lon=${loc.lon}&place=${encodeURIComponent(loc.label ?? '')}` : '';
   const due = !outdoorWeather || outdoorWeather.q !== q || Date.now() - outdoorWeather.at > (outdoorWeather.data ? 15 : 1) * 60000;
-  // ohne Lage und ohne Postleitzahl gibt es kein Wetter (z. B. bevor der Hausplan geladen ist)
-  if ((force || due) && (loc || t.settings.plz)) {
+  if (testWeather) {
+    if (outdoorWeather?.data?.place !== 'Testwetter') {
+      outdoorWeather = { at: Date.now(), data: { ...testWeather, place: 'Testwetter' }, q };
+      const d = outdoorWeather.data;
+      setTermWeather(`Testwetter: ${d.temperature} °C · ${d.text}`);
+    }
+  } else if ((force || due) && (loc || t.settings.plz)) {
+    // ohne Lage und ohne Postleitzahl gibt es kein Wetter (z. B. bevor der Hausplan geladen ist)
     const data = await fetch(`/api/weather${q}`, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     outdoorWeather = { at: Date.now(), data, q };
     setTermWeather(data ? `${data.temperature} °C · ${data.text}${data.rain_rate >= 0.1 ? ` · ${String(data.rain_rate).replace('.', ',')} mm/h` : ''}` : '');
