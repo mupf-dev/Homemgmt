@@ -1042,3 +1042,4 @@ body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
 .loc-compass circle { fill: var(--panel-2); stroke: var(--line); stroke-width: 2; }
 .loc-compass path { fill: var(--accent); }
 .loc-compass text { fill: var(--ink); font-size: 12px; font-weight: 700; }
+.rest-progress { position: absolute; right: 5%; top: 4%; margin: 0; font-size: 13px; opacity: .6; background: rgba(0,0,0,.35); padding: 5px 12px; border-radius: 99px; }

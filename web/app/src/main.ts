@@ -3358,7 +3358,8 @@ async function updateOutdoor(force = false) {
     }
   } else if (view.outdoor) view.setOutdoor(null);
 }
-window.setInterval(() => updateOutdoor(), 60000);
+// jede Minute – nicht während das fotorealistische Bild gerechnet wird (würde es neu beginnen lassen)
+window.setInterval(() => !painting && updateOutdoor(), 60000);
 document.addEventListener('zh-account-render', () => {
   if (terminal()) {
     view.lawn = true;
@@ -3377,7 +3378,7 @@ const rest = document.createElement('div');
 rest.id = 'rest';
 rest.className = 'rest';
 rest.hidden = true;
-rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-hint">Zum Bedienen antippen</p>`;
+rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><p class="rest-hint">Zum Bedienen antippen</p>`;
 document.body.appendChild(rest);
 let restTimer = 0;
 let restClock = 0;
@@ -3404,41 +3405,113 @@ function lightLikeOutside(w: { cloud?: number; precipitation?: number; sunrise?:
 }
 const frames = (n: number) => new Promise<void>((r) => { const f = () => (n-- <= 0 ? r() : requestAnimationFrame(f)); f(); });
 /** Bild des Hauses neu rechnen: erst schnell, dann fotorealistisch (höchstens 30 s, danach ruht die Grafik) */
-async function paintRest() {
-  if (rest.hidden) return;
+/** Detailgrad des fotorealistischen Bildes: Proben, Zeitlimit, Rechenauflösung (Terminal-Einstellung) */
+const QUALITY = {
+  draft: { samples: 32, ms: 15000, scale: 0.5 },
+  normal: { samples: 64, ms: 30000, scale: 0.6 },
+  high: { samples: 256, ms: 90000, scale: 1 },
+} as const;
+const REST_KEY = 'zh.rest';
+let restKey = '';
+let painting = false;
+/** Was das Bild bestimmt: Sonnenstand (in 3°-Schritten, nachts fest) und Wetter – nur bei Änderung neu rechnen */
+function restSceneKey() {
   const loc = store.house.settings.location;
-  await updateOutdoor(true);
-  const w = outdoorWeather?.data ?? null;
-  rest.querySelector('.rest-weather')!.textContent = w ? `${w.place || loc?.label || ''}${w.place || loc?.label ? ' · ' : ''}${w.temperature} °C · ${w.text}` : '';
-  // ohne Lage: Licht aus der Tageszeit zwischen Auf- und Untergang
-  if (!loc) lightLikeOutside(w);
-  setView('3d');
-  await frames(4); // 3D-Bereich bekommt erst jetzt seine Größe
-  view.mode = 'house';
-  view.build();
-  view.setView('perspective');
-  view.tiltCamera(18); // flacher Blick aufs Haus
-  await frames(12);
-  const img = rest.querySelector<HTMLImageElement>('.rest-img')!;
-  img.src = view.screenshot();
-  // fotorealistisch nur mit echter Grafik (Software-Rendering würde das Gerät minutenlang blockieren)
-  if (!/swiftshader|llvmpipe|software/i.test(view.gpuInfo().name)) {
-    await view.setPathTracing(true);
-    ptSamples = 0;
-    const t0 = performance.now();
-    while (!rest.hidden && ptSamples < 64 && performance.now() - t0 < 30000) await frames(10);
-    if (!rest.hidden) img.src = view.screenshot();
-    await view.setPathTracing(false);
+  const w = outdoorWeather?.data;
+  const now = new Date();
+  let sun = `t${Math.floor((now.getHours() * 60 + now.getMinutes()) / 15)}`;
+  if (loc) {
+    const p = sunPosition(now, loc.lat, loc.lon);
+    sun = p.altitude < -6 ? 'nacht' : `${Math.round(p.azimuth / 3)}:${Math.round(p.altitude / 3)}`;
   }
-  // was zu tun ist: Einkaufsliste, bald ablaufend
-  const [shop, exp] = await Promise.all([
-    fetch('/api/shopping', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ open: [] })),
-    fetch('/api/expiring?days=7', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => []),
-  ]);
-  rest.querySelector('.rest-notes')!.innerHTML = [
-    shop.open?.length ? `${ic('cart')} ${shop.open.length} auf der Einkaufsliste` : '',
-    exp.length ? `${ic('clock')} ${exp.length} läuft in 7 Tagen ab` : '',
-  ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
+  return `${store.house.floors.length}|${sun}|${w?.code ?? '-'}|${Math.round((w?.cloud ?? 0) / 25)}|${(w?.precipitation ?? 0) > 0}`;
+}
+/** Bild klein (JPEG) merken – nach einem Neuladen ist der Ruhezustand sofort da */
+function rememberRest(dataUrl: string, key: string) {
+  const im = new Image();
+  im.onload = () => {
+    const sc = Math.min(1, 1600 / im.width);
+    const c = document.createElement('canvas');
+    c.width = Math.round(im.width * sc);
+    c.height = Math.round(im.height * sc);
+    c.getContext('2d')!.drawImage(im, 0, 0, c.width, c.height);
+    try {
+      localStorage.setItem(REST_KEY, JSON.stringify({ key, img: c.toDataURL('image/jpeg', 0.85) }));
+    } catch {
+      /* zu groß oder gesperrt */
+    }
+  };
+  im.src = dataUrl;
+}
+/** Nur rechnen, wenn sich Sonne oder Wetter geändert haben und der Bildschirm sichtbar ist */
+async function checkRest() {
+  if (rest.hidden || document.hidden || painting) return;
+  await updateOutdoor();
+  const key = restSceneKey();
+  if (key === restKey) return;
+  restKey = key;
+  await paintRest(key);
+}
+document.addEventListener('visibilitychange', () => checkRest());
+
+/** Bild des Hauses rechnen: erst schnell, dann fotorealistisch bis zum Detailgrad, dann ruht die Grafik */
+async function paintRest(key: string) {
+  if (rest.hidden) return;
+  painting = true;
+  const progress = rest.querySelector<HTMLElement>('.rest-progress')!;
+  try {
+    const loc = store.house.settings.location;
+    const w = outdoorWeather?.data ?? null;
+    rest.querySelector('.rest-weather')!.textContent = w ? `${w.place || loc?.label || ''}${w.place || loc?.label ? ' · ' : ''}${w.temperature} °C · ${w.text}` : '';
+    // ohne Lage: Licht aus der Tageszeit zwischen Auf- und Untergang
+    if (!loc) lightLikeOutside(w);
+    setView('3d');
+    await frames(4); // 3D-Bereich bekommt erst jetzt seine Größe
+    view.mode = 'house';
+    view.build();
+    view.setView('perspective');
+    view.tiltCamera(18); // flacher Blick aufs Haus
+    await frames(12);
+    const img = rest.querySelector<HTMLImageElement>('.rest-img')!;
+    // mit gemerktem Bild nicht kurz auf das einfache 3D zurückfallen
+    if (!img.getAttribute('src')) img.src = view.screenshot();
+    // fotorealistisch nur mit echter Grafik (Software-Rendering würde das Gerät minutenlang blockieren)
+    if (!/swiftshader|llvmpipe|software/i.test(view.gpuInfo().name)) {
+      const q = QUALITY[terminal()?.settings.renderQuality ?? 'normal'];
+      view.ptScale = q.scale;
+      await view.setPathTracing(true);
+      ptSamples = 0;
+      const t0 = performance.now();
+      progress.hidden = false;
+      while (!rest.hidden && !document.hidden && ptSamples < q.samples && performance.now() - t0 < q.ms) {
+        progress.textContent = `Bild wird fotorealistisch gerechnet … ${Math.min(100, Math.round(Math.max(ptSamples / q.samples, (performance.now() - t0) / q.ms) * 100))} %`;
+        await frames(10);
+      }
+      progress.hidden = true;
+      const done = !rest.hidden && !document.hidden;
+      if (done) {
+        img.src = view.screenshot();
+        rememberRest(img.src, key);
+      } else restKey = ''; // abgebrochen: beim nächsten Mal neu
+      await view.setPathTracing(false);
+      view.ptScale = 1;
+    } else {
+      img.src = view.screenshot();
+      rememberRest(img.src, key);
+    }
+    // was zu tun ist: Einkaufsliste, bald ablaufend
+    const [shop, exp] = await Promise.all([
+      fetch('/api/shopping', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ open: [] })),
+      fetch('/api/expiring?days=7', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => []),
+    ]);
+    rest.querySelector('.rest-notes')!.innerHTML = [
+      shop.open?.length ? `${ic('cart')} ${shop.open.length} auf der Einkaufsliste` : '',
+      exp.length ? `${ic('clock')} ${exp.length} läuft in 7 Tagen ab` : '',
+    ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
+  } finally {
+    painting = false;
+    progress.hidden = true;
+  }
 }
 function startRest() {
   // zurück zum Haus, Auswahl und Suche zurücksetzen
@@ -3459,8 +3532,18 @@ function startRest() {
   };
   clock();
   restClock = window.setInterval(clock, 15000);
-  paintRest();
-  restTimer = window.setInterval(paintRest, 15 * 60000);
+  // gemerktes Bild sofort zeigen; neu gerechnet wird nur, wenn sich Sonne oder Wetter seitdem geändert haben
+  try {
+    const saved = JSON.parse(localStorage.getItem(REST_KEY) ?? 'null');
+    if (saved?.img) {
+      rest.querySelector<HTMLImageElement>('.rest-img')!.src = saved.img;
+      restKey = saved.key;
+    }
+  } catch {
+    /* egal */
+  }
+  checkRest();
+  restTimer = window.setInterval(checkRest, 2 * 60000);
 }
 function stopRest() {
   if (rest.hidden) return;

@@ -36,7 +36,7 @@ test('Admin legt ein Terminal an, Einstellungen werden geprüft', async () => {
   term = r.data.terminal;
   link = r.data.path;
   assert.match(link, /^\/terminal\/[\w-]{20,}$/);
-  assert.deepEqual(term.settings, { orientation: 'landscape', houseView: '3d', theme: 'auto', fontSize: 'normal', idleMinutes: 5, screensaver: true, plz: '10115' });
+  assert.deepEqual(term.settings, { orientation: 'landscape', houseView: '3d', theme: 'auto', fontSize: 'normal', idleMinutes: 5, screensaver: true, plz: '10115', renderQuality: 'normal' });
   const u = await admin.patch(`/api/terminals/${term.id}`, { settings: { orientation: 'portrait' } });
   assert.equal(u.data.settings.orientation, 'portrait');
   assert.equal(u.data.settings.plz, '10115', 'übrige Einstellungen bleiben');

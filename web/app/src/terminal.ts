@@ -13,6 +13,7 @@ export interface TerminalSettings {
   idleMinutes: number;
   screensaver: boolean;
   plz: string;
+  renderQuality: 'draft' | 'normal' | 'high';
 }
 export interface TerminalInfo {
   id: number;

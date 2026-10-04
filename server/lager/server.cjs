@@ -884,6 +884,8 @@ const TERMINAL_SETTINGS = {
   houseView: ['2d', '3d'],
   theme: ['auto', 'light', 'dark'],
   fontSize: ['normal', 'large', 'xlarge'],
+  // Ruhezustand fotorealistisch: Entwurf (schnell), Normal, Hoch (lange Rechnung)
+  renderQuality: ['normal', 'draft', 'high'],
 };
 function readTerminalSettings(raw) {
   let o = {};

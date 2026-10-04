@@ -326,7 +326,7 @@ export const viewTerminals: View = async (el, ctx) => {
     <div class="l-actions"><button class="btn primary" id="add">${ic('plus')}Wandterminal anlegen</button></div>`;
   const reload = () => viewTerminals(el, ctx, new URLSearchParams());
   const editor = (t?: TerminalRow) => {
-    const s = t?.settings ?? { orientation: 'portrait', houseView: '2d', theme: 'auto', fontSize: 'normal', idleMinutes: 2, screensaver: true, plz: '' };
+    const s = t?.settings ?? { orientation: 'portrait', houseView: '2d', theme: 'auto', fontSize: 'normal', idleMinutes: 2, screensaver: true, plz: '', renderQuality: 'normal' };
     const sel = (name: string, opts: [string, string][]) => `<select name="${name}">${opts.map(([v, l]) => `<option value="${v}" ${s[name] === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
     const m = ctx.modal(t ? `${t.name} bearbeiten` : 'Wandterminal anlegen', `<form class="l-form">
       <label>Name (Ort)<input name="name" value="${esc(t?.name ?? '')}" placeholder="z. B. Diele" required maxlength="40" /></label>
@@ -336,11 +336,12 @@ export const viewTerminals: View = async (el, ctx) => {
       <label>Schriftgröße${sel('fontSize', [['normal', 'Normal'], ['large', 'Groß'], ['xlarge', 'Sehr groß']])}</label>
       <label>Zurück zum Haus nach (Minuten ohne Bedienung)<input name="idleMinutes" type="number" min="1" max="60" value="${s.idleMinutes}" /></label>
       <label class="l-check"><input type="checkbox" name="screensaver" ${s.screensaver ? 'checked' : ''} /> Ruhezustand: gedimmtes Haus, fotorealistisch, Licht nach Tageszeit und Wetter</label>
+      <label>Detailgrad im Ruhezustand${sel('renderQuality', [['draft', 'Entwurf – schnell (32 Proben, max. 15 s)'], ['normal', 'Normal (64 Proben, max. 30 s)'], ['high', 'Hoch – sehr ruhiges Bild (256 Proben, max. 90 s)']])}</label>
       <label>Postleitzahl (für das Wetter)<input name="plz" value="${esc(s.plz)}" inputmode="numeric" maxlength="5" placeholder="z. B. 70173" /></label>
     </form>`, `${t ? '<button class="btn danger" data-del>Entfernen</button><span class="spacer"></span>' : ''}<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Speichern</button>`);
     m.el.querySelector('[data-ok]')!.addEventListener('click', async () => {
       const fd = new FormData(m.el.querySelector('form')!);
-      const settings = { orientation: fd.get('orientation'), houseView: fd.get('houseView'), theme: fd.get('theme'), fontSize: fd.get('fontSize'), idleMinutes: Number(fd.get('idleMinutes')) || 2, screensaver: !!fd.get('screensaver'), plz: String(fd.get('plz') ?? '').trim() };
+      const settings = { orientation: fd.get('orientation'), houseView: fd.get('houseView'), theme: fd.get('theme'), fontSize: fd.get('fontSize'), idleMinutes: Number(fd.get('idleMinutes')) || 2, screensaver: !!fd.get('screensaver'), plz: String(fd.get('plz') ?? '').trim(), renderQuality: fd.get('renderQuality') };
       try {
         if (t) await api('PATCH', `/api/terminals/${t.id}`, { name: fd.get('name'), settings });
         else {

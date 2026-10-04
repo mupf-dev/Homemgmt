@@ -986,8 +986,11 @@ export class Scene3D {
       pt.textureSize.set(2048, 2048);
       this.pathTracer = pt;
     }
+    this.pathTracer.renderScale = this.ptScale;
     this.ptSceneDirty = true;
   }
+  /** Rechenauflösung des Pathtracers (1 = volle Auflösung; kleiner = schneller, Bild wird hochskaliert) */
+  ptScale = 1;
 
   /** Name der vom Browser genutzten Grafikkarte (sofern der Browser ihn verrät) */
   gpuInfo(): { name: string; integrated: boolean } {
