@@ -3348,7 +3348,7 @@ async function updateOutdoor(force = false) {
   if ((force || due) && (loc || t.settings.plz)) {
     const data = await fetch(`/api/weather${q}`, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     outdoorWeather = { at: Date.now(), data, q };
-    setTermWeather(data ? `${data.temperature} °C · ${data.text}` : '');
+    setTermWeather(data ? `${data.temperature} °C · ${data.text}${data.rain_rate >= 0.1 ? ` · ${String(data.rain_rate).replace('.', ',')} mm/h` : ''}` : '');
   }
   const w = outdoorWeather?.data ?? null;
   const sun = loc ? sunPosition(new Date(), loc.lat, loc.lon) : null;

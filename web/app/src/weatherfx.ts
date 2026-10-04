@@ -57,9 +57,9 @@ export class WeatherFx {
   private particles() {
     const { kind, intensity } = this.look;
     const area = (this.canvas.width * this.canvas.height) / 1e6;
-    if (kind === 'snow') return Math.round((60 + 260 * intensity) * area);
-    if (kind === 'rain' || kind === 'thunder') return Math.round((80 + 520 * intensity) * area);
-    if (kind === 'drizzle') return Math.round((60 + 160 * intensity) * area);
+    if (kind === 'snow') return Math.round((30 + 220 * intensity) * area);
+    if (kind === 'rain' || kind === 'thunder') return Math.round((15 + 330 * intensity) * area);
+    if (kind === 'drizzle') return Math.round((20 + 90 * intensity) * area);
     return 0;
   }
 
@@ -70,8 +70,9 @@ export class WeatherFx {
     const snow = this.look.kind === 'snow';
     this.drops = Array.from({ length: n }, () => ({
       x: Math.random() * W, y: Math.random() * H,
-      v: snow ? 30 + Math.random() * 50 : 700 + Math.random() * 500,
-      l: snow ? 1.5 + Math.random() * 2.5 : 10 + Math.random() * 16,
+      v: snow ? 30 + Math.random() * 50 : (this.look.kind === 'drizzle' ? 450 : 650) + Math.random() * 450,
+      // leichter Regen: kurze Striche; je stärker, desto länger
+      l: snow ? 1.5 + Math.random() * 2.5 : this.look.kind === 'drizzle' ? 4 + Math.random() * 4 : (7 + Math.random() * 9) * (0.7 + this.look.intensity * 0.6),
       s: Math.random() * Math.PI * 2,
     }));
   }
@@ -103,7 +104,9 @@ export class WeatherFx {
     // Niederschlag
     if (this.drops.length) {
       const snow = kind === 'snow';
-      ctx.strokeStyle = night ? 'rgba(170,185,210,.55)' : 'rgba(225,232,242,.6)';
+      // dezent: Deckkraft wächst mit der Regenstärke
+      const a = 0.18 + 0.32 * this.look.intensity;
+      ctx.strokeStyle = night ? `rgba(170,185,210,${a})` : `rgba(225,232,242,${a})`;
       ctx.fillStyle = 'rgba(255,255,255,.85)';
       ctx.lineWidth = Math.max(1, dpr);
       ctx.beginPath();
@@ -150,9 +153,10 @@ export class WeatherFx {
 export function lookFromWeather(w: any, night: boolean, northDeg = 0): WeatherLook {
   if (!w) return { kind: 'clear', intensity: 0, fog: 0, wind: 0, night };
   const kind = String(w.kind ?? 'clear');
-  const mm = Number(w.precipitation ?? 0);
-  const snowCm = Number(w.snowfall ?? 0);
-  const intensity = kind === 'snow' ? Math.min(1, snowCm / 1.5 + 0.25) : Math.min(1, mm / 4 + (kind === 'drizzle' ? 0.1 : 0.3));
+  // Regenstärke in mm/h: < 0,5 Niesel, ~2,5 mäßig, ~8 stark, ab ~20 Wolkenbruch (Wurzel: kleine Mengen bleiben sichtbar)
+  const rate = Number(w.rain_rate ?? Number(w.precipitation ?? 0) * 4);
+  const snowCm = Number(w.snowfall ?? 0) * 4; // cm pro Stunde
+  const intensity = kind === 'snow' ? Math.min(1, Math.sqrt(snowCm / 4)) : Math.min(1, Math.sqrt(Math.max(rate, kind === 'drizzle' ? 0.2 : kind === 'rain' || kind === 'thunder' ? 0.6 : 0) / 20));
   const vis = w.visibility == null ? 20000 : Number(w.visibility);
   const fog = kind === 'fog' ? Math.max(0.55, 1 - vis / 2000) : vis < 5000 ? (5000 - vis) / 8000 : 0;
   // Wind von links/rechts im Bild (grob: Windrichtung relativ zur Blickrichtung Süden)

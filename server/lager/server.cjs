@@ -985,6 +985,8 @@ async function weatherAt(lat, lon, place) {
   const data = {
     place, temperature: Math.round(c.temperature_2m), code: c.weather_code, text: weatherText(c.weather_code), cloud: c.cloud_cover,
     precipitation: c.precipitation, is_day: !!c.is_day, sunrise: w.daily?.sunrise?.[0] ?? null, sunset: w.daily?.sunset?.[0] ?? null,
+    // Niederschlag kommt je Messintervall (meist 15 Min.) – für die Darstellung als Rate pro Stunde
+    rain_rate: Math.round((c.precipitation ?? 0) * (3600 / (c.interval || 3600)) * 10) / 10,
     kind: weatherKind(c.weather_code), snowfall: c.snowfall ?? 0, snow_depth: c.snow_depth ?? 0, visibility: c.visibility ?? null,
     wind_speed: c.wind_speed_10m ?? 0, wind_direction: c.wind_direction_10m ?? 0,
   };
