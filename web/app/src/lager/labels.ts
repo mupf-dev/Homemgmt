@@ -15,10 +15,10 @@ declare global {
   }
 }
 
-const script = (src: string, ok: () => boolean) =>
+export const script = (src: string, ok: () => boolean) =>
   ok() ? Promise.resolve() : new Promise<void>((res, rej) => document.head.appendChild(Object.assign(document.createElement('script'), { src, onload: () => res(), onerror: () => rej(new Error(`${src} nicht ladbar`)) })));
 
-function qrSvg(text: string) {
+export function qrSvg(text: string) {
   const q = window.qrcode(0, 'M');
   q.addData(text);
   q.make();

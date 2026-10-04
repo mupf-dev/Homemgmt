@@ -2,6 +2,7 @@
 // gespeicherte Planungen (frühere Küchenplanungen) als Etage ins Haus übernehmen. Das Haus selbst speichert HouseSync.
 import type { Project } from './model/types.ts';
 import { setPrefs, type Prefs } from './prefs';
+import { setTerminal, type TerminalInfo } from './terminal';
 import { ic } from './icons';
 
 export interface User {
@@ -63,6 +64,8 @@ export class Account {
   private requireApproval = false;
   private pendingCount = 0;
   private serverAvailable = true;
+  /** angemeldetes Wandterminal (Gerät ohne Person) */
+  terminal: TerminalInfo | null = null;
   private menuOpen = false;
   /** Platz für die Speicheranzeige des Hauses (HouseSync) */
   statusEl: HTMLElement | null = null;
@@ -75,9 +78,12 @@ export class Account {
 
   async refresh() {
     try {
-      const r = await api<{ user: User | null; firstUser: boolean; registrationEnabled: boolean; requireApproval: boolean }>('/auth/me');
+      const r = await api<{ user: User | null; terminal: TerminalInfo | null; firstUser: boolean; registrationEnabled: boolean; requireApproval: boolean }>('/auth/me');
       this.user = r.user;
       if (r.user) setPrefs(r.user.prefs);
+      // Wandterminal: Gerät statt Person
+      this.terminal = r.terminal ?? null;
+      setTerminal(this.terminal);
       this.firstUser = r.firstUser;
       this.registrationEnabled = r.registrationEnabled;
       this.requireApproval = r.requireApproval;
@@ -110,6 +116,12 @@ export class Account {
     if (!this.serverAvailable) {
       this.root.innerHTML = `<span class="acc-status warn" title="Server nicht erreichbar – Änderungen werden nur in diesem Browser gespeichert">Offline</span>`;
       this.statusEl = null;
+      return;
+    }
+    if (!this.user && this.terminal) {
+      this.root.innerHTML = '';
+      this.statusEl = null;
+      document.dispatchEvent(new CustomEvent('zh-account-render'));
       return;
     }
     if (!this.user) {

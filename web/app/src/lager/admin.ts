@@ -8,6 +8,7 @@ import { ic, type IconName } from '../icons';
 declare global {
   interface Window {
     Transfer?: any;
+    qrcode?: any;
   }
 }
 
@@ -32,6 +33,7 @@ export const viewAdmin: View = (el, ctx) => {
   el.innerHTML = `<a class="l-back" href="#/mehr">${ic('back')}Mehr</a><h1>Verwaltung</h1><div class="ov-tiles">
     ${tile('#/verwaltung/personen', 'users', 'Personen', 'Anmeldung, Rollen, Recht „Haus planen“, Freigaben')}
     ${tile('#/verwaltung/lager', 'box', 'Lager', 'Lager und Kürzel (Räume kommen aus dem Hausplan)')}
+    ${tile('#/verwaltung/terminals', 'photo', 'Wandterminals', 'Tablets an der Wand: Ausrichtung, Ruhezustand, Einrichtungslink')}
     ${tile('#/verwaltung/schluessel', 'key', 'API-Schlüssel', 'Für KI-Assistenten (MCP) und eigene Skripte')}
     ${tile('#/verwaltung/backups', 'file', 'Sicherungen', 'Sichern, herunterladen, wiederherstellen')}
     ${tile('#/verwaltung/assistent', 'spark', 'Assistent', 'KI-Anbieter, Modell, Preisrecherche, Verbrauch')}
@@ -284,5 +286,91 @@ export const viewTransfer: View = async (el, ctx) => {
     } catch (err) {
       ctx.toast((err as Error).message);
     }
+  });
+};
+
+// ---------------------------------------------------------------------------
+// Wandterminals: Tablets an der Wand ohne persönliche Anmeldung (Einrichtungslink setzt ein Geräte-Cookie)
+
+type TerminalRow = { id: number; name: string; settings: Record<string, any>; last_seen_at: string | null };
+const ORIENT: Record<string, string> = { portrait: 'Hochformat', landscape: 'Querformat' };
+
+/** Einrichtungslink mit QR-Code zeigen (auf dem Tablet öffnen oder scannen) */
+async function showLink(ctx: LagerCtx, name: string, path: string) {
+  const url = `${location.origin}${path}`;
+  const { script, qrSvg } = await import('./labels');
+  await script(`${import.meta.env.BASE_URL}vendor/qrcode.js`, () => !!window.qrcode).catch(() => {});
+  const m = ctx.modal(`Einrichtungslink für „${name}“`, `<div class="term-link">
+    <div class="term-qr">${window.qrcode ? qrSvg(url) : ''}</div>
+    <div><p>Diesen Link <b>auf dem Tablet</b> öffnen oder den QR-Code mit dem Tablet scannen. Das Tablet wird damit zum Wandterminal „${esc(name)}“ – ohne persönliche Anmeldung.</p>
+    <p class="hint">Ein neuer Link macht den alten ungültig. Ein bereits eingerichtetes Tablet muss dann neu verbunden werden.</p>
+    <div class="share-row"><input readonly value="${esc(url)}" id="tl" /><button class="btn" id="tlc">${ic('copy')}Kopieren</button></div></div></div>`,
+    '<button class="btn primary" data-close>Fertig</button>');
+  m.el.querySelector('#tlc')!.addEventListener('click', async () => {
+    try {
+      await navigator.clipboard.writeText(url);
+      ctx.toast('Link kopiert.');
+    } catch {
+      m.el.querySelector<HTMLInputElement>('#tl')!.select();
+    }
+  });
+}
+
+export const viewTerminals: View = async (el, ctx) => {
+  const list = await api<TerminalRow[]>('GET', '/api/terminals');
+  el.innerHTML = `${back}<h1>Wandterminals</h1>
+    <p class="hint">Tablets an der Wand zeigen das Haus zum Suchen und Ansehen. Wer etwas ein- oder ausbucht, tippt seine Kachel an. Ohne Bedienung kehrt das Terminal zum Haus zurück und zeigt den Ruhezustand – das Haus im Licht von Tageszeit und Wetter.</p>
+    <div class="l-list">${list.map((t) => `<div class="l-item" data-id="${t.id}">${ic('photo')}
+      <span class="l-main"><b>${esc(t.name)}</b><small>${ORIENT[t.settings.orientation]} · ${t.settings.houseView === '3d' ? '3D' : '2D'} · zurück zum Haus nach ${t.settings.idleMinutes} Min.${t.settings.screensaver ? ' · Ruhezustand' : ''}${t.settings.plz ? ` · Wetter ${esc(t.settings.plz)}` : ''} · ${t.last_seen_at ? `zuletzt aktiv ${fmtDate(t.last_seen_at)}` : 'noch nicht verbunden'}</small></span>
+      <button class="btn mini" data-act="link">Einrichtungslink</button><button class="btn mini" data-act="edit">Bearbeiten</button></div>`).join('') || '<p class="hint">Noch kein Wandterminal.</p>'}</div>
+    <div class="l-actions"><button class="btn primary" id="add">${ic('plus')}Wandterminal anlegen</button></div>`;
+  const reload = () => viewTerminals(el, ctx, new URLSearchParams());
+  const editor = (t?: TerminalRow) => {
+    const s = t?.settings ?? { orientation: 'portrait', houseView: '2d', theme: 'auto', fontSize: 'normal', idleMinutes: 2, screensaver: true, plz: '' };
+    const sel = (name: string, opts: [string, string][]) => `<select name="${name}">${opts.map(([v, l]) => `<option value="${v}" ${s[name] === v ? 'selected' : ''}>${l}</option>`).join('')}</select>`;
+    const m = ctx.modal(t ? `${t.name} bearbeiten` : 'Wandterminal anlegen', `<form class="l-form">
+      <label>Name (Ort)<input name="name" value="${esc(t?.name ?? '')}" placeholder="z. B. Diele" required maxlength="40" /></label>
+      <label>Ausrichtung des Tablets${sel('orientation', [['portrait', 'Hochformat'], ['landscape', 'Querformat']])}</label>
+      <label>Haus zeigen als${sel('houseView', [['2d', 'Grundriss (2D)'], ['3d', '3D']])}</label>
+      <label>Darstellung${sel('theme', [['auto', 'Automatisch'], ['light', 'Hell'], ['dark', 'Dunkel']])}</label>
+      <label>Schriftgröße${sel('fontSize', [['normal', 'Normal'], ['large', 'Groß'], ['xlarge', 'Sehr groß']])}</label>
+      <label>Zurück zum Haus nach (Minuten ohne Bedienung)<input name="idleMinutes" type="number" min="1" max="60" value="${s.idleMinutes}" /></label>
+      <label class="l-check"><input type="checkbox" name="screensaver" ${s.screensaver ? 'checked' : ''} /> Ruhezustand: gedimmtes Haus, fotorealistisch, Licht nach Tageszeit und Wetter</label>
+      <label>Postleitzahl (für das Wetter)<input name="plz" value="${esc(s.plz)}" inputmode="numeric" maxlength="5" placeholder="z. B. 70173" /></label>
+    </form>`, `${t ? '<button class="btn danger" data-del>Entfernen</button><span class="spacer"></span>' : ''}<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Speichern</button>`);
+    m.el.querySelector('[data-ok]')!.addEventListener('click', async () => {
+      const fd = new FormData(m.el.querySelector('form')!);
+      const settings = { orientation: fd.get('orientation'), houseView: fd.get('houseView'), theme: fd.get('theme'), fontSize: fd.get('fontSize'), idleMinutes: Number(fd.get('idleMinutes')) || 2, screensaver: !!fd.get('screensaver'), plz: String(fd.get('plz') ?? '').trim() };
+      try {
+        if (t) await api('PATCH', `/api/terminals/${t.id}`, { name: fd.get('name'), settings });
+        else {
+          const r = await api<{ terminal: TerminalRow; path: string }>('POST', '/api/terminals', { name: fd.get('name'), settings });
+          m.close();
+          await reload();
+          return showLink(ctx, r.terminal.name, r.path);
+        }
+        m.close();
+        reload();
+      } catch (e) {
+        ctx.toast((e as Error).message);
+      }
+    });
+    m.el.querySelector('[data-del]')?.addEventListener('click', async () => {
+      if (!confirm(`Wandterminal „${t!.name}“ entfernen? Das Tablet ist danach nicht mehr verbunden.`)) return;
+      if (await run(ctx, () => api('DELETE', `/api/terminals/${t!.id}`), `${t!.name} entfernt.`)) {
+        m.close();
+        reload();
+      }
+    });
+  };
+  el.querySelector('#add')!.addEventListener('click', () => editor());
+  el.querySelectorAll<HTMLElement>('.l-item[data-id]').forEach((row) => {
+    const t = list.find((x) => x.id === Number(row.dataset.id))!;
+    row.querySelector('[data-act="edit"]')!.addEventListener('click', () => editor(t));
+    row.querySelector('[data-act="link"]')!.addEventListener('click', async () => {
+      if (t.last_seen_at && !confirm(`Neuen Einrichtungslink erzeugen? Das bisher verbundene Tablet „${t.name}“ muss dann neu verbunden werden.`)) return;
+      const r = await api<{ path: string }>('POST', `/api/terminals/${t.id}/link`, {});
+      showLink(ctx, t.name, r.path);
+    });
   });
 };

@@ -23,6 +23,7 @@ import { clearFailures, failures, flush, QueuedError } from './lager/outbox';
 import { ic } from './icons';
 import { initShell } from './shell';
 import { onPrefs, prefs } from './prefs';
+import { idleNow, initIdle, terminal } from './terminal';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -337,7 +338,11 @@ function showGpuHint(name: string) {
   );
 }
 
-view.onSamples = (n) => ($('#ptSamples').textContent = `${n} Proben`);
+let ptSamples = 0;
+view.onSamples = (n) => {
+  ptSamples = n;
+  $('#ptSamples').textContent = `${n} Proben`;
+};
 
 $('#shotBtn').addEventListener('click', () => {
   const a = document.createElement('a');
@@ -2382,7 +2387,7 @@ const account = new Account(shell.accountEl, {
   onUser: async (u) => {
     if (shareToken) return;
     updatePlanButton();
-    await sync.start(!!u);
+    await sync.start(!!u || !!account.terminal);
     lager.render();
   },
   importPlan,
@@ -2399,7 +2404,7 @@ const lager = initLager(
     login: () => account.openLogin(),
     ensureUser: async () => {
       const u = await account.refresh();
-      if (u && !sync.online) await sync.start(true);
+      if ((u || account.terminal) && !sync.online) await sync.start(true);
       return u;
     },
     showInHouse: (it, row) => {
@@ -2453,7 +2458,7 @@ const lager = initLager(
 );
 if (!shareToken)
   account.refresh().then(async (u) => {
-    await sync.start(!!u);
+    await sync.start(!!u || !!account.terminal);
     lager.render();
   });
 else lager.render();
@@ -2772,7 +2777,8 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
         .join('')}</div>` : '<p class="hint">Das Fach ist leer.</p>'}
       <h3>Hineinlegen</h3>
       <form class="fach-in">
-        <input type="text" name="name" placeholder="Was kommt hinein?" required maxlength="80" />
+        <input type="text" name="name" placeholder="Was kommt hinein?" required maxlength="80" autocomplete="off" />
+        <div class="fach-sug"></div>
         <input type="number" name="qty" value="1" min="1" max="9999" title="Menge" />
         ${expiryField('exp')}
         <button class="btn primary" type="submit">${ic('in')}Einbuchen</button>
@@ -2802,13 +2808,38 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
         run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }, i.name), `1× ${i.name} entnommen.`);
       }),
     );
-    body.querySelector<HTMLFormElement>('.fach-in')!.addEventListener('submit', (e) => {
+    // Vorschläge aus vorhandenen Gegenständen: gewählt → dieser Gegenstand wird hierher gebucht (kein Doppel)
+    const form = body.querySelector<HTMLFormElement>('.fach-in')!;
+    const nameIn = form.querySelector<HTMLInputElement>('[name="name"]')!;
+    const sug = form.querySelector<HTMLElement>('.fach-sug')!;
+    let chosen: { id: number; name: string } | null = null;
+    let sugTimer = 0;
+    nameIn.addEventListener('input', () => {
+      chosen = null;
+      clearTimeout(sugTimer);
+      sugTimer = window.setTimeout(async () => {
+        const q = nameIn.value.trim();
+        if (q.length < 2) return void (sug.innerHTML = '');
+        const list = await lagerApi<any[]>('GET', `/api/items?q=${encodeURIComponent(q)}&limit=5`).catch(() => []);
+        sug.innerHTML = list.map((i) => `<button type="button" data-id="${i.id}"><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.wh_code)}-${esc(i.col)}${i.row}</small></button>`).join('');
+        sug.querySelectorAll<HTMLElement>('[data-id]').forEach((b) =>
+          b.addEventListener('click', () => {
+            const i = list.find((x) => x.id === Number(b.dataset.id));
+            chosen = { id: i.id, name: i.name };
+            nameIn.value = i.name;
+            sug.innerHTML = `<p class="hint">Vorhandener Gegenstand – Zugang wird gebucht${i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row ? '' : `, er liegt danach hier statt in <code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code>`}.</p>`;
+          }),
+        );
+      }, 200);
+    });
+    form.addEventListener('submit', (e) => {
       e.preventDefault();
-      const fd = new FormData(e.target as HTMLFormElement);
+      const fd = new FormData(form);
       const name = String(fd.get('name') ?? '').trim();
       if (!name) return;
+      const what = chosen && chosen.name === name ? { item_id: chosen.id } : { name };
       run(
-        () => lagerApi('POST', '/api/checkin', { name, quantity: Number(fd.get('qty')) || 1, warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, expires_on: parseExpiry(fd.get('exp')) ?? undefined }),
+        () => lagerApi('POST', '/api/checkin', { ...what, quantity: Number(fd.get('qty')) || 1, warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null, expires_on: parseExpiry(fd.get('exp')) ?? undefined }, name),
         `${name} liegt jetzt in ${pl.address}.`,
       );
     });
@@ -2908,7 +2939,7 @@ document.addEventListener('click', (e) => {
 
 /** im Ansehen-Modus geöffnetes Fach (Seitenleiste) */
 let viewFach: { itemId: string; row: number } | null = null;
-const mayPlan = () => !account.user || !!account.user.canPlan;
+const mayPlan = () => !terminal() && (!account.user || !!account.user.canPlan);
 function updatePlanButton() {
   $('#planStart').hidden = !mayPlan();
   if (!mayPlan() && document.body.classList.contains('haus-plan')) setPlanning(false);
@@ -3133,11 +3164,122 @@ document.addEventListener('zh-outbox-flushed', (e) => {
 });
 document.addEventListener('zh-outbox-flush', () => flush().then((r) => document.dispatchEvent(new CustomEvent('zh-outbox-flushed', { detail: r }))));
 // Konto geändert (Anmeldung per Kachel, E-Mail, Abmelden): Planen-Knopf anpassen
-document.addEventListener('zh-account-render', updatePlanButton);
+document.addEventListener('zh-account-render', () => {
+  updatePlanButton();
+  // Wandterminal: nur ansehen, nichts im Browser speichern
+  if (terminal()) store.readonly = true;
+});
 // Start: Ansehen in der Lieblingsansicht der Person
 setView(prefs().houseView);
 setPlanning(false);
 updatePlanButton();
+
+
+// ---------------------------------------------------------------------------
+// Wandterminal: ohne Bedienung zurück zum Haus, Ruhezustand mit gedimmtem Haus – Licht nach Tageszeit und Wetter
+
+const rest = document.createElement('div');
+rest.id = 'rest';
+rest.className = 'rest';
+rest.hidden = true;
+rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-hint">Zum Bedienen antippen</p>`;
+document.body.appendChild(rest);
+let restTimer = 0;
+let restClock = 0;
+let restPrev: { main: string; mode: HouseMode } | null = null;
+const hoursOf = (iso: string | null | undefined, dflt: number) => {
+  const m = iso?.match(/T(\d{2}):(\d{2})/);
+  return m ? Number(m[1]) + Number(m[2]) / 60 : dflt;
+};
+/** Sonnenstand und Licht wie draußen: Tageszeit zwischen Auf- und Untergang, Bewölkung, Regen, nachts Lampen */
+function lightLikeOutside(w: { cloud?: number; precipitation?: number; sunrise?: string | null; sunset?: string | null } | null) {
+  const st = store.house.settings;
+  const now = new Date();
+  const h = now.getHours() + now.getMinutes() / 60;
+  const rise = hoursOf(w?.sunrise, 6.5);
+  const set = hoursOf(w?.sunset, 19.5);
+  const day = h >= rise && h <= set;
+  st.timeOfDay = day ? 6 + ((h - rise) / Math.max(1, set - rise)) * 14 : 20;
+  if (!day) Object.assign(st, { sunIntensity: 0.05, skyIntensity: 0.25, lampIntensity: 1.8, softness: 0.8 });
+  else {
+    const cloud = w?.cloud ?? 30;
+    const rain = (w?.precipitation ?? 0) > 0;
+    Object.assign(st, { sunIntensity: rain ? 0.15 : cloud < 30 ? 1.3 : cloud < 70 ? 0.7 : 0.25, skyIntensity: rain || cloud > 70 ? 1.4 : 1, lampIntensity: 0.6, softness: cloud > 50 ? 1 : 0.4 });
+  }
+}
+const frames = (n: number) => new Promise<void>((r) => { const f = () => (n-- <= 0 ? r() : requestAnimationFrame(f)); f(); });
+/** Bild des Hauses neu rechnen: erst schnell, dann fotorealistisch (höchstens 30 s, danach ruht die Grafik) */
+async function paintRest() {
+  if (rest.hidden) return;
+  const w = await fetch('/api/weather', { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
+  rest.querySelector('.rest-weather')!.textContent = w ? `${w.place} · ${w.temperature} °C · ${w.text}` : '';
+  lightLikeOutside(w);
+  setView('3d');
+  await frames(4); // 3D-Bereich bekommt erst jetzt seine Größe
+  view.mode = 'house';
+  view.build();
+  view.setView('perspective');
+  await frames(12);
+  const img = rest.querySelector<HTMLImageElement>('.rest-img')!;
+  img.src = view.screenshot();
+  // fotorealistisch nur mit echter Grafik (Software-Rendering würde das Gerät minutenlang blockieren)
+  if (!/swiftshader|llvmpipe|software/i.test(view.gpuInfo().name)) {
+    await view.setPathTracing(true);
+    ptSamples = 0;
+    const t0 = performance.now();
+    while (!rest.hidden && ptSamples < 64 && performance.now() - t0 < 30000) await frames(10);
+    if (!rest.hidden) img.src = view.screenshot();
+    await view.setPathTracing(false);
+  }
+  // was zu tun ist: Einkaufsliste, bald ablaufend
+  const [shop, exp] = await Promise.all([
+    fetch('/api/shopping', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ open: [] })),
+    fetch('/api/expiring?days=7', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => []),
+  ]);
+  rest.querySelector('.rest-notes')!.innerHTML = [
+    shop.open?.length ? `${ic('cart')} ${shop.open.length} auf der Einkaufsliste` : '',
+    exp.length ? `${ic('clock')} ${exp.length} läuft in 7 Tagen ab` : '',
+  ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
+}
+function startRest() {
+  // zurück zum Haus, Auswahl und Suche zurücksetzen
+  if (location.hash !== '#/haus') location.hash = '#/haus';
+  document.querySelectorAll('.modal-back').forEach((m) => m.remove());
+  viewFach = null;
+  store.select(null);
+  searchInput.value = '';
+  setHighlight([]);
+  if (!terminal()?.settings.screensaver) return;
+  restPrev = { main: $('#main').className, mode: view.mode };
+  rest.hidden = false;
+  document.body.classList.add('resting');
+  const clock = () => {
+    const d = new Date();
+    rest.querySelector('.rest-clock')!.textContent = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    rest.querySelector('.rest-date')!.textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+  };
+  clock();
+  restClock = window.setInterval(clock, 15000);
+  paintRest();
+  restTimer = window.setInterval(paintRest, 15 * 60000);
+}
+function stopRest() {
+  if (rest.hidden) return;
+  rest.hidden = true;
+  document.body.classList.remove('resting');
+  clearInterval(restTimer);
+  clearInterval(restClock);
+  if (view.pathTracing) view.setPathTracing(false);
+  if (restPrev) {
+    $('#main').className = restPrev.main;
+    setView(restPrev.main.replace('v-', '') as '2d' | '3d');
+    view.mode = restPrev.mode;
+    view.build();
+    view.setView('perspective');
+    restPrev = null;
+  }
+}
+initIdle(startRest, stopRest);
 
 // Projekt per URL laden, z. B. ?projekt=haus1-eg (Datei unter public/projekte/)
 const projectParam = new URLSearchParams(location.search).get('projekt');
@@ -3157,7 +3299,7 @@ if (projectParam) {
 
 // Nur in der Entwicklung: Zugriff für automatisierte Ansichtstests
 // Zugriff für automatisierte Ansichtstests (Klicktests)
-(window as any).__zuhause = { view, plan, store, sync };
+(window as any).__zuhause = { view, plan, store, sync, rest: () => idleNow() };
 
 // Showroom direkt öffnen: per Link (?showroom) oder nach Neuladen, wenn er aktiv war
 {

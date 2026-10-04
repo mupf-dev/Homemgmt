@@ -349,6 +349,31 @@ try {
   const after = await page.evaluate(async () => (await (await fetch('/api/items?q=Testgabel')).json())[0].quantity);
   console.log('  Testgabel vorher', target.qty, '→ nachher', after);
   if (after !== target.qty - 1) throw new Error('Nachbuchen fehlgeschlagen');
+
+  step('Wandterminal: Einrichtungslink, Hochformat, „Wer bucht?“, Ruhezustand');
+  const tm = await page.evaluate(async () => (await fetch('/api/terminals', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name: 'Diele', settings: { orientation: 'portrait', idleMinutes: 1 } }) })).json());
+  const ctx4 = await browser.newContext({ viewport: { width: 744, height: 1133 }, hasTouch: true });
+  const p4 = await ctx4.newPage();
+  await p4.goto(base + tm.path);
+  await p4.waitForSelector('#rail a[data-r="#/haus"].on');
+  await p4.waitForSelector('.view-panel [data-room]');
+  console.log('  Terminal:', await p4.textContent('.term-place'), '| Planen sichtbar:', await p4.isVisible('#planStart'));
+  await p4.goto(base + `/#/haus?fach=${encodeURIComponent(`${target.item}:${target.row}`)}`);
+  await p4.click('.view-panel .fach-item:has-text("Testgabel") [data-out]');
+  await p4.waitForSelector('.who-back');
+  await p4.screenshot({ path: `${DIR}/13-terminal-wer.png` });
+  await p4.click('.who-grid button:has-text("Ben")');
+  await p4.waitForSelector('.term-who:has-text("Ben")');
+  const last = await page.evaluate(async () => (await (await fetch('/api/movements/recent?limit=1')).json())[0]);
+  console.log('  Buchung:', last.quantity, last.item, 'von', last.person);
+  if (last.person !== 'Ben') throw new Error('Buchung nicht der gewählten Person zugeordnet');
+  await p4.evaluate(() => window.__zuhause.rest());
+  await p4.waitForSelector('#rest:not([hidden])', { timeout: 10000 });
+  await p4.waitForTimeout(2500);
+  await p4.screenshot({ path: `${DIR}/14-terminal-ruhe.png` });
+  await p4.mouse.click(200, 200);
+  await p4.waitForSelector('#rest', { state: 'hidden' });
+  await ctx4.close();
 } catch (e) {
   failed = true;
   console.log('FEHLER:', e.message);

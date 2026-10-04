@@ -937,3 +937,92 @@ a.btn.in { color: var(--ok); } a.btn.out { color: var(--bad); }
 .sh-outbox svg.i { animation: spin 2.4s linear infinite; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .sh-outbox svg.i { animation: none; } }
+.fach-in > .fach-sug { grid-column: 1 / -1; grid-row: 3; display: flex; flex-direction: column; gap: 3px; }
+.fach-sug:empty { display: none; }
+.fach-sug button { display: flex; justify-content: space-between; gap: 10px; text-align: left; border: 1px solid var(--line); background: var(--panel-2); border-radius: 8px; padding: 7px 10px; cursor: pointer; color: var(--ink); font: inherit; }
+.fach-sug button:hover { border-color: var(--accent); }
+.fach-sug small { color: var(--ink-soft); }
+.fach-sug .hint { margin: 2px 0; }
+
+/* ---------------------------------------------------------------------------
+   Wandterminal (terminal.ts): Navigation am linken Rand, große Touch-Flächen, Hoch- oder Querformat */
+.sh-rail, .sh-term { display: none; }
+body.terminal { --rail-w: calc(104px * var(--fz)); --shell-h: 60px; --tabs-h: 0px; }
+body.terminal .sh-nav, body.terminal .sh-scan, body.terminal .sh-find, body.terminal #account, body.terminal #tabbar,
+body.terminal #planStart, body.terminal .hausbar .file-menu, body.terminal #walkBtn, body.terminal #view .overlay.bl,
+body.terminal .ov-quick, body.terminal .l-back { display: none !important; }
+body.terminal .sh-term { display: flex; align-items: center; gap: 14px; flex: 1; justify-content: flex-end; }
+.term-place { display: inline-flex; align-items: center; gap: 6px; color: var(--ink-soft); font-weight: 500; margin-right: auto; }
+.term-clock { font-size: 22px; font-variant-numeric: tabular-nums; }
+.term-who { display: inline-flex; align-items: center; gap: 8px; border: 1px solid var(--line); background: var(--accent-soft); color: var(--ink); border-radius: 99px; padding: 4px 12px 4px 4px; font: inherit; font-weight: 600; cursor: pointer; }
+.term-who .avatar { width: 30px; height: 30px; }
+.term-who svg.i { width: 14px; height: 14px; color: var(--ink-soft); }
+body.terminal .sh-rail {
+  display: grid; align-content: start; gap: 8px; position: fixed; left: 0; top: var(--shell-h); bottom: 0; width: var(--rail-w); z-index: 34;
+  padding: 14px 10px; background: var(--panel); border-right: 1px solid var(--line);
+}
+.sh-rail a { display: grid; justify-items: center; gap: 6px; padding: 14px 4px; border-radius: 14px; color: var(--ink-soft); text-decoration: none; font-size: 14px; font-weight: 500; position: relative; zoom: var(--fz); }
+.sh-rail a svg.i { width: 30px; height: 30px; }
+.sh-rail a.on { background: var(--accent-soft); color: var(--accent); font-weight: 600; }
+.sh-rail .badge { position: absolute; top: 8px; right: 16px; margin: 0; }
+body.terminal #app { left: var(--rail-w); bottom: 0; }
+body.terminal #lager { padding-left: var(--rail-w); padding-bottom: 0; }
+/* große Touch-Flächen */
+body.terminal .hausbar { padding: 10px 14px; gap: 10px; }
+body.terminal .floor-tab { padding: 10px 16px; font-size: 15px; }
+body.terminal .house-search { height: 48px; max-width: none; flex: 1 1 260px; }
+body.terminal .house-search input { font-size: 17px; }
+body.terminal #viewMode button { padding: 10px 16px; font-size: 15px; }
+body.terminal .vp-row { padding: 13px 14px; font-size: 15px; }
+body.terminal .vp-back { font-size: 15px; padding: 8px 0; }
+body.terminal .fach-item { padding: 10px; }
+body.terminal .fach-item .btn { padding: 10px 14px; font-size: 15px; }
+body.terminal .fach-in input, body.terminal .fach-search { padding: 12px; font-size: 16px; }
+body.terminal .fach-in button[type="submit"] { padding: 12px 16px; font-size: 15px; }
+body.terminal .exp-chips button { padding: 8px 14px; font-size: 14px; }
+body.terminal .fach-sug button { padding: 12px; font-size: 15px; }
+/* Hochformat: Plan oben, Fächer und Inhalt unten (immer sichtbar) */
+body.terminal.orient-portrait.haus-view #app {
+  --right-w: 0px;
+  grid-template-rows: auto minmax(0, 1fr) 44%;
+  grid-template-areas: 'bar bar bar' 'left main right' 'panel panel panel';
+}
+body.terminal.orient-portrait.haus-view .view-panel {
+  grid-area: panel; position: static; transform: none; visibility: visible; max-height: none; overflow-y: auto;
+  border-left: 0; border-top: 1px solid var(--line); border-radius: 0; box-shadow: none;
+}
+body.terminal.orient-portrait .vp-x, body.terminal.orient-landscape .vp-x { display: none; }
+/* Querformat: Plan links, Fächer rechts */
+body.terminal.orient-landscape.haus-view #app { --right-w: calc(400px * var(--fz)); grid-template-rows: auto minmax(0, 1fr); grid-template-areas: 'bar bar bar' 'left main right'; }
+body.terminal.orient-landscape.haus-view .view-panel { position: static; transform: none; visibility: visible; max-height: none; border-radius: 0; box-shadow: none; border-left: 1px solid var(--line); border-top: 0; }
+
+/* Wer bucht? */
+.who-back { position: fixed; inset: 0; z-index: 70; background: rgba(15, 12, 8, .5); display: grid; place-items: center; padding: 20px; }
+.who-dialog { background: var(--panel); border-radius: 18px; padding: 24px; width: min(620px, 100%); display: grid; gap: 16px; box-shadow: var(--shadow); zoom: var(--fz); }
+.who-dialog h2 { margin: 0; font-size: 22px; }
+.who-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 12px; }
+.who-grid button { display: grid; justify-items: center; gap: 10px; padding: 20px 10px; border: 1px solid var(--line); background: var(--panel-2); border-radius: 16px; font: inherit; font-size: 17px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.who-grid button:hover, .who-grid button:active { border-color: var(--accent); background: var(--accent-soft); }
+.who-grid .avatar { width: 58px; height: 58px; font-size: 24px; }
+.who-cancel { justify-self: start; padding: 10px 18px; font-size: 15px; }
+
+/* Ruhezustand: großes gedimmtes Haus, Uhr, Wetter */
+.rest { position: fixed; inset: 0; z-index: 80; background: #0b0b0c; color: #f4f3f0; cursor: pointer; overflow: hidden; }
+.rest-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; filter: brightness(.55) saturate(.9); }
+.rest-img:not([src]) { display: none; }
+.rest-info { position: absolute; left: 6%; bottom: 8%; display: grid; gap: 6px; text-shadow: 0 2px 12px rgba(0,0,0,.6); }
+.rest-clock { font-size: clamp(64px, 12vw, 140px); font-weight: 600; line-height: 1; font-variant-numeric: tabular-nums; letter-spacing: -.02em; }
+.rest-date { font-size: clamp(18px, 2.6vw, 28px); opacity: .9; }
+.rest-weather { font-size: clamp(16px, 2.2vw, 24px); opacity: .85; }
+.rest-notes { display: flex; gap: 18px; flex-wrap: wrap; margin-top: 10px; font-size: clamp(14px, 1.8vw, 19px); }
+.rest-notes span { display: inline-flex; gap: 8px; align-items: center; background: rgba(0,0,0,.35); border-radius: 99px; padding: 6px 14px; }
+.rest-hint { position: absolute; right: 5%; bottom: 5%; margin: 0; opacity: .5; font-size: 14px; }
+body.resting #shell, body.resting #rail { visibility: hidden; }
+
+/* Einrichtungslink */
+.term-link { display: grid; grid-template-columns: 200px minmax(0, 1fr); gap: 18px; align-items: start; }
+.term-qr svg { width: 200px; height: 200px; background: #fff; border-radius: 8px; }
+@media (max-width: 600px) { .term-link { grid-template-columns: 1fr; } }
+/* im Ruhezustand rechnet die 3D-Ansicht bildschirmfüllend (hinter dem Bild) */
+body.resting #app { top: 0 !important; left: 0 !important; bottom: 0 !important; grid-template-rows: 0 minmax(0, 1fr) 0 !important; grid-template-columns: 0 minmax(0, 1fr) 0 !important; }
+body.resting .view-panel, body.resting #hausbar { visibility: hidden; }

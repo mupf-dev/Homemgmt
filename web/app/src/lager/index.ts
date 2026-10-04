@@ -6,11 +6,12 @@ import { esc } from './core';
 import { viewCheckin, viewCheckout, viewExpiry, viewItem, viewPlace, viewQuick, viewSearch, viewShopping, viewStats, type View } from './views';
 import { viewHome, viewMore, viewSettings } from './home';
 import { prefs } from '../prefs';
+import { terminal, terminalAllows } from '../terminal';
 import type { Shell } from '../shell';
 import { viewAssistant } from './assistant';
 import { viewLabels } from './labels';
 import { viewHelp } from './help';
-import { viewAdmin, viewAiSettings, viewBackups, viewKeys, viewPersons, viewTransfer, viewWarehouses } from './admin';
+import { viewAdmin, viewAiSettings, viewBackups, viewKeys, viewPersons, viewTerminals, viewTransfer, viewWarehouses } from './admin';
 import { stopScanner, viewScan } from './scan';
 
 const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][] = [
@@ -36,6 +37,7 @@ const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][
   [/^#\/verwaltung\/backups$/, viewBackups, () => {}],
   [/^#\/verwaltung\/assistent$/, viewAiSettings, () => {}],
   [/^#\/verwaltung\/transfer$/, viewTransfer, () => {}],
+  [/^#\/verwaltung\/terminals$/, viewTerminals, () => {}],
   [/^#\/q\/(.+)$/, viewQuick, (m, p) => p.set('code', decodeURIComponent(m[1]))],
 ];
 
@@ -52,8 +54,10 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
     // ohne Adresse: Startseite der Person (Übersicht oder Haus); ohne Anmeldung die Anmeldung
     if (['', '#', '#/'].includes(location.hash)) {
       const u = ctx.user() ?? (await ctx.ensureUser());
-      history.replaceState(null, '', u && prefs().start === 'house' ? '#/haus' : '#/lager');
+      history.replaceState(null, '', terminal() || (u && prefs().start === 'house') ? '#/haus' : '#/lager');
     }
+    // Wandterminal: nur Haus, Suchen, Einkauf, Haltbarkeit und Gegenstände
+    if (terminal() && !terminalAllows(location.hash.split('?')[0])) history.replaceState(null, '', '#/haus');
     const [hash, qs] = location.hash.split('?');
     const params = new URLSearchParams(qs ?? '');
     shell.update(hash, !!ctx.user());
@@ -66,8 +70,8 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
     root.hidden = false;
     document.body.classList.add('mode-lager');
     const u = ctx.user() ?? (await ctx.ensureUser());
-    shell.update(hash, !!u);
-    if (!u) return loginPage();
+    shell.update(hash, !!u || !!terminal());
+    if (!u && !terminal()) return loginPage();
     for (const [re, view, fill] of ROUTES) {
       const m = hash.match(re);
       if (!m) continue;

@@ -7,6 +7,7 @@ import { compartments, itemName } from '../model/storage.ts';
 import { roomOf } from '../model/house.ts';
 import { ic } from '../icons';
 import { describe, enqueue, queueable, QueuedError, requestId } from './outbox';
+import { pickWho, terminal } from '../terminal';
 
 export interface LagerCtx {
   modal: (title: string, body: string, footer?: string) => { el: HTMLElement; close: () => void };
@@ -56,6 +57,12 @@ export type ApiItem = {
  * (outbox.ts); der Aufrufer bekommt dann einen QueuedError mit verständlicher Meldung. label: Name für diese Meldung.
  */
 export async function api<T = any>(method: string, url: string, body?: unknown, label?: string): Promise<T> {
+  // Wandterminal: vor jeder Änderung fragen, wer bucht (die Wahl gilt eine Weile)
+  if (terminal() && method !== 'GET' && !(body && typeof body === 'object' && 'person_id' in (body as object))) {
+    const who = await pickWho();
+    if (!who) throw new Error('Abgebrochen – niemand ausgewählt.');
+    body = { ...((body as object) ?? {}), person_id: who };
+  }
   const queue = queueable(method, url) && !!body && typeof body === 'object';
   if (queue && !(body as Record<string, unknown>).request_id) body = { ...(body as object), request_id: requestId() };
   const offline = () => {

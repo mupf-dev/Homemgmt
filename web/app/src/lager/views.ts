@@ -81,8 +81,9 @@ export const viewItem: View = async (el, ctx, params) => {
   const id = Number(params.get('id'));
   const it = await api<ApiItem & { history: any[]; items: ApiItem[] }>('GET', `/api/items/${id}`);
   const p = placeInfo(ctx, it);
-  const me = ctx.user()!;
-  const lastOwn = it.history[0] && (it.history[0].person_id === me.id || me.role === 'admin');
+  const me = ctx.user();
+  // Rückgängig nur für die eigene letzte Buchung (am Wandterminal gibt es keine angemeldete Person)
+  const lastOwn = !!me && it.history[0] && (it.history[0].person_id === me.id || me.role === 'admin');
   el.innerHTML = `
     <a class="l-back" href="javascript:history.back()">← Zurück</a>
     <div class="l-item-head">

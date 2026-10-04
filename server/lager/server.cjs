@@ -147,6 +147,15 @@ function openDatabase() {
     // Recht „Haus planen“ (Admins dürfen immer) und persönliche Einstellungen der App (JSON, siehe PREFS)
     if (!has('can_plan')) db.exec('ALTER TABLE persons ADD COLUMN can_plan INTEGER NOT NULL DEFAULT 0');
     if (!has('prefs')) db.exec("ALTER TABLE persons ADD COLUMN prefs TEXT NOT NULL DEFAULT '{}'");
+    // Wandterminals: Geräte ohne persönliche Anmeldung (Einrichtungslink setzt ein Geräte-Cookie)
+    db.exec(`CREATE TABLE IF NOT EXISTS terminals (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      name TEXT NOT NULL,
+      token_hash TEXT UNIQUE,
+      settings TEXT NOT NULL DEFAULT '{}',
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      last_seen_at TEXT
+    )`);
     db.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
         token_hash TEXT PRIMARY KEY,
@@ -391,6 +400,27 @@ function keyAuth(token) {
   return { person: row, via: 'key', scope: row.scope, keyId: row.key_id };
 }
 const bearer = (req) => (String(req.headers.authorization || '').match(/^Bearer\s+(\S+)$/i) || [])[1] || null;
+
+// Wandterminal (Geräte-Cookie): darf ansehen und – mit Angabe, wer bucht – buchen; keine Verwaltung, kein Planen
+const TERMINAL_COOKIE = 'zh_terminal';
+function terminalAuth(req) {
+  const token = readCookie(req, TERMINAL_COOKIE);
+  if (!token) return null;
+  const row = db.prepare('SELECT * FROM terminals WHERE token_hash = ?').get(sha256(token));
+  if (!row) return null;
+  if (!row.last_seen_at || Date.now() - Date.parse(row.last_seen_at + 'Z') > 5 * 60000) {
+    db.prepare("UPDATE terminals SET last_seen_at = datetime('now') WHERE id = ?").run(row.id);
+  }
+  // „Person“ zum Lesen; bei schreibenden Aufrufen ersetzt die gewählte Person (person_id) sie, siehe handle()
+  return { person: { id: 0, name: row.name, role: 'terminal', status: 'active' }, via: 'terminal', scope: 'write', terminal: row };
+}
+// Was ein Terminal schreiben darf (immer mit person_id = wer bucht)
+const TERMINAL_WRITES = [
+  ['POST', /^\/api\/(checkin|checkout|shopping)$/],
+  ['POST', /^\/api\/(movements|shopping)\/\d+\/(undo|restock)$/],
+  ['PATCH', /^\/api\/shopping\/\d+$/],
+  ['DELETE', /^\/api\/shopping\/\d+$/],
+];
 
 // Einfache Bremse gegen Passwort-Raten: nach 5 Fehlversuchen zunehmend lange Sperre
 const loginFails = new Map();
@@ -827,6 +857,7 @@ route('GET', '/api/auth/me', (_p, _b, _qs, ctx) => {
   const first = setupNeeded();
   return {
     user: ctx.via === 'session' ? accountUser(ctx.person) : null,
+    terminal: ctx.via === 'terminal' ? terminalPublic(ctx.terminal) : null,
     firstUser: first,
     registrationEnabled: first || st.registrationEnabled,
     requireApproval: !first && st.requireApproval,
@@ -844,6 +875,121 @@ route('PATCH', '/api/auth/me/prefs', (_p, body, _qs, ctx) => {
   }
   db.prepare('UPDATE persons SET prefs = ? WHERE id = ?').run(JSON.stringify(prefs), ctx.person.id);
   return prefs;
+});
+
+// ---------- Wandterminals ----------
+// Einstellungen je Gerät: Ausrichtung, Ansicht, Darstellung, Rückkehr zum Haus, Ruhezustand, Ort fürs Wetter
+const TERMINAL_SETTINGS = {
+  orientation: ['portrait', 'landscape'],
+  houseView: ['2d', '3d'],
+  theme: ['auto', 'light', 'dark'],
+  fontSize: ['normal', 'large', 'xlarge'],
+};
+function readTerminalSettings(raw) {
+  let o = {};
+  try { o = JSON.parse(raw || '{}') || {}; } catch { /* leer */ }
+  const out = {};
+  for (const [k, vals] of Object.entries(TERMINAL_SETTINGS)) out[k] = vals.includes(o[k]) ? o[k] : vals[0];
+  out.idleMinutes = Math.max(1, Math.min(60, Math.round(Number(o.idleMinutes) || 2)));
+  out.screensaver = o.screensaver !== false;
+  out.plz = /^\d{4,5}$/.test(String(o.plz ?? '')) ? String(o.plz) : '';
+  return out;
+}
+function mergeTerminalSettings(row, patch) {
+  const cur = readTerminalSettings(row?.settings);
+  const next = { ...cur };
+  for (const [k, vals] of Object.entries(TERMINAL_SETTINGS)) {
+    if (patch[k] === undefined) continue;
+    if (!vals.includes(patch[k])) throw new HttpError(400, `Ungültiger Wert für ${k}.`);
+    next[k] = patch[k];
+  }
+  if (patch.idleMinutes !== undefined) next.idleMinutes = patch.idleMinutes;
+  if (patch.screensaver !== undefined) next.screensaver = !!patch.screensaver;
+  if (patch.plz !== undefined) {
+    const plz = String(patch.plz ?? '').trim();
+    if (plz && !/^\d{4,5}$/.test(plz)) throw new HttpError(400, 'Postleitzahl bitte mit 4 oder 5 Ziffern.');
+    next.plz = plz;
+  }
+  return readTerminalSettings(JSON.stringify(next));
+}
+const terminalPublic = (t) => t && { id: t.id, name: t.name, settings: readTerminalSettings(t.settings), created_at: t.created_at, last_seen_at: t.last_seen_at, paired: !!t.token_hash };
+function terminalName(raw) {
+  const name = String(raw ?? '').trim();
+  if (!name) throw new HttpError(400, 'Bitte einen Namen angeben, z. B. „Diele“.');
+  if (name.length > 40) throw new HttpError(400, 'Der Name ist zu lang.');
+  return name;
+}
+/** neuen Einrichtungslink erzeugen (ersetzt den alten – ein damit eingerichtetes Gerät muss neu verbunden werden) */
+function newTerminalToken(id) {
+  const token = randomToken();
+  db.prepare('UPDATE terminals SET token_hash = ? WHERE id = ?').run(sha256(token), id);
+  return token;
+}
+route('GET', '/api/terminals', () => db.prepare('SELECT * FROM terminals ORDER BY name COLLATE NOCASE').all().map(terminalPublic), { auth: 'admin' });
+route('POST', '/api/terminals', (_p, body) => {
+  const name = terminalName(body.name);
+  const settings = mergeTerminalSettings(null, body.settings ?? {});
+  const { lastInsertRowid } = db.prepare('INSERT INTO terminals (name, settings) VALUES (?, ?)').run(name, JSON.stringify(settings));
+  const token = newTerminalToken(lastInsertRowid);
+  return { terminal: terminalPublic(db.prepare('SELECT * FROM terminals WHERE id = ?').get(lastInsertRowid)), path: `/terminal/${token}` };
+}, { auth: 'admin' });
+route('PATCH', '/api/terminals/:id', (p, body) => {
+  const row = db.prepare('SELECT * FROM terminals WHERE id = ?').get(Number(p.id));
+  if (!row) throw new HttpError(404, 'Terminal nicht gefunden.');
+  const name = body.name !== undefined ? terminalName(body.name) : row.name;
+  const settings = mergeTerminalSettings(row, body.settings ?? {});
+  db.prepare('UPDATE terminals SET name = ?, settings = ? WHERE id = ?').run(name, JSON.stringify(settings), row.id);
+  return terminalPublic(db.prepare('SELECT * FROM terminals WHERE id = ?').get(row.id));
+}, { auth: 'admin' });
+route('POST', '/api/terminals/:id/link', (p) => {
+  const row = db.prepare('SELECT id FROM terminals WHERE id = ?').get(Number(p.id));
+  if (!row) throw new HttpError(404, 'Terminal nicht gefunden.');
+  return { path: `/terminal/${newTerminalToken(row.id)}` };
+}, { auth: 'admin' });
+route('DELETE', '/api/terminals/:id', (p) => {
+  db.prepare('DELETE FROM terminals WHERE id = ?').run(Number(p.id));
+  return { ok: true };
+}, { auth: 'admin' });
+
+// Wetter am Ort des Terminals (Ort: OpenStreetMap, Wetter: Open-Meteo – beides ohne Konto/Schlüssel) – für Licht und Anzeige im Ruhezustand
+const weatherCache = new Map();
+const geoCache = new Map();
+const WEATHER_TEXT = [[0, 'klar'], [1, 'heiter'], [2, 'wolkig'], [3, 'bedeckt'], [45, 'Nebel'], [51, 'Niesel'], [61, 'Regen'], [66, 'Eisregen'], [71, 'Schnee'], [80, 'Schauer'], [85, 'Schneeschauer'], [95, 'Gewitter']];
+const weatherText = (code) => [...WEATHER_TEXT].reverse().find(([c]) => code >= c)?.[1] ?? '';
+async function weatherFor(plz) {
+  const hit = weatherCache.get(plz);
+  if (hit && Date.now() - hit.at < 15 * 60000) return hit.data;
+  // Ort zur Postleitzahl über OpenStreetMap (Nominatim, ohne Schlüssel; Ergebnis bleibt im Speicher)
+  let g = geoCache.get(plz);
+  if (!g) {
+    const geo = await fetch(`https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(plz)}&country=de&format=json&limit=1&addressdetails=1`, {
+      headers: { 'User-Agent': 'Zuhause-Heimserver (Wandterminal-Wetter)' }, signal: AbortSignal.timeout(8000),
+    }).then((r) => r.json());
+    const hit = geo?.[0];
+    if (!hit) throw new HttpError(404, `Zur Postleitzahl ${plz} wurde kein Ort gefunden.`);
+    const a = hit.address ?? {};
+    g = { name: a.city || a.town || a.village || a.suburb || plz, latitude: Number(hit.lat), longitude: Number(hit.lon) };
+    geoCache.set(plz, g);
+  }
+  const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${g.latitude}&longitude=${g.longitude}&current=temperature_2m,weather_code,cloud_cover,is_day,precipitation&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json());
+  const c = w?.current;
+  if (!c) throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
+  const data = {
+    place: g.name, temperature: Math.round(c.temperature_2m), code: c.weather_code, text: weatherText(c.weather_code), cloud: c.cloud_cover,
+    precipitation: c.precipitation, is_day: !!c.is_day, sunrise: w.daily?.sunrise?.[0] ?? null, sunset: w.daily?.sunset?.[0] ?? null,
+  };
+  weatherCache.set(plz, { at: Date.now(), data });
+  return data;
+}
+route('GET', '/api/weather', async (_p, _b, qs, ctx) => {
+  const plz = String(qs.get('plz') || (ctx.terminal ? readTerminalSettings(ctx.terminal.settings).plz : '') || '').trim();
+  if (!/^\d{4,5}$/.test(plz)) throw new HttpError(400, 'Keine Postleitzahl hinterlegt.');
+  try {
+    return await weatherFor(plz);
+  } catch (e) {
+    if (e instanceof HttpError) throw e;
+    throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
+  }
 });
 
 // Registrieren {email, name?, password}. Gibt es schon eine Person mit diesem Namen ohne E-Mail und Passwort
@@ -2051,6 +2197,21 @@ async function handle(req, res) {
     res.writeHead(302, { Location: `/#/q/${encodeURIComponent(url.pathname.slice(3))}` });
     return res.end();
   }
+  // Einrichtungslink eines Wandterminals: Geräte-Cookie setzen, dann in die App
+  const tm = url.pathname.match(/^\/terminal\/([A-Za-z0-9_-]{20,80})$/);
+  if (tm) {
+    const row = db.prepare('SELECT id FROM terminals WHERE token_hash = ?').get(sha256(tm[1]));
+    if (!row) {
+      res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+      return res.end('Dieser Einrichtungslink ist ungültig oder wurde ersetzt. Bitte in der Verwaltung einen neuen erzeugen.');
+    }
+    const secure = isHttps(req) ? '; Secure' : '';
+    res.writeHead(302, {
+      Location: '/#/haus',
+      'Set-Cookie': [`${TERMINAL_COOKIE}=${tm[1]}; Path=/; HttpOnly; SameSite=Lax; Max-Age=${5 * 365 * 86400}${secure}`, `${SESSION_COOKIE}=; Path=/; HttpOnly; SameSite=Lax; Max-Age=0`],
+    });
+    return res.end();
+  }
   if (url.pathname === '/healthz') {
     try { db.prepare('SELECT 1').get(); return sendJson(res, 200, { ok: true }); } catch { return sendJson(res, 503, { ok: false }); }
   }
@@ -2061,13 +2222,21 @@ async function handle(req, res) {
       if (r.method !== req.method) continue;
       const m = url.pathname.match(r.pattern);
       if (!m) continue;
-      const ctx = { req, cookies: [], ...(keyAuth(bearer(req)) || sessionAuth(req) || {}) };
+      const ctx = { req, cookies: [], ...(keyAuth(bearer(req)) || sessionAuth(req) || terminalAuth(req) || {}) };
       if (r.auth !== 'public') {
         if (!ctx.person) throw new HttpError(401, 'Bitte anmelden.');
         if (ctx.via === 'key' && ctx.scope === 'read' && req.method !== 'GET') throw new HttpError(403, 'Dieser API-Schlüssel darf nur lesen.');
         if (r.auth === 'admin' && (ctx.via !== 'session' || ctx.person.role !== 'admin')) throw new HttpError(403, 'Nur für Admins.');
       }
       const body = !['POST', 'PATCH', 'PUT'].includes(req.method) ? {} : r.raw ? await readRaw(req) : await readBody(req);
+      // Terminal: nur freigegebene Buchungen, und nur mit der Person, die am Gerät gewählt wurde
+      if (ctx.via === 'terminal' && req.method !== 'GET' && r.auth !== 'public') {
+        if (!TERMINAL_WRITES.some(([mt, re]) => mt === req.method && re.test(url.pathname))) throw new HttpError(403, 'Am Wandterminal nicht möglich.');
+        const who = Number(body.person_id ?? url.searchParams.get('person_id'));
+        const person = who ? db.prepare("SELECT * FROM persons WHERE id = ? AND archived = 0 AND status = 'active'").get(who) : null;
+        if (!person) throw new HttpError(400, 'Bitte zuerst antippen, wer bucht.');
+        ctx.person = person;
+      }
       const result = await r.handler(m.groups || {}, body, url.searchParams, ctx);
       if (result?.[SEND_FILE]) return sendFile(res, result[SEND_FILE], result.filename);
       if (result?.[SEND_DATA]) {
@@ -2125,7 +2294,7 @@ function mcpHandler({ allowedOrigins = [], keyInUrl = false } = {}) {
 }
 
 // Anmeldung einer Anfrage: API-Schlüssel oder Sitzungs-Cookie → { person, via, scope, sessionHash? } oder null
-const authenticate = (req) => keyAuth(bearer(req)) || sessionAuth(req) || null;
+const authenticate = (req) => keyAuth(bearer(req)) || sessionAuth(req) || terminalAuth(req) || null;
 
 // Schema eines weiteren Moduls einhängen: läuft sofort und nach jedem erneuten Öffnen (Wiederherstellung)
 function onOpen(hook) { openHooks.push(hook); hook(db); }

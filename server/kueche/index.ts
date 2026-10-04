@@ -17,7 +17,7 @@ export interface Person {
 }
 export interface Auth {
   person: Person;
-  via: 'session' | 'key';
+  via: 'session' | 'key' | 'terminal';
   scope: 'read' | 'write';
 }
 
@@ -77,6 +77,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   const requireUser = (req: Request, res: Response, next: NextFunction) => {
     if (!req.auth) return res.status(401).json({ error: 'Bitte anmelden.' });
     if (req.auth.scope === 'read' && req.method !== 'GET') return res.status(403).json({ error: 'Dieser API-Schlüssel darf nur lesen.' });
+    if (req.auth.via === 'terminal' && req.method !== 'GET') return res.status(403).json({ error: 'Am Wandterminal nicht möglich.' });
     next();
   };
   const requireAdmin = (req: Request, res: Response, next: NextFunction) => {

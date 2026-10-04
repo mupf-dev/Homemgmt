@@ -46,8 +46,16 @@ export function initShell() {
       ? `<a href="${h}" data-k="${k}" class="tab-scan"><span class="ring">${ic(i)}</span><span>${l}</span></a>`
       : `<a href="${h}" data-k="${k}">${ic(i)}<span>${k === 'start' ? 'Start' : l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`,
   ).join('');
+  // Wandterminal: große Navigation am linken Rand
+  const rail = document.createElement('nav');
+  rail.id = 'rail';
+  rail.className = 'sh-rail';
+  rail.setAttribute('aria-label', 'Navigation');
+  const R: [string, string, IconName][] = [['#/haus', 'Haus', 'plan'], ['#/suche', 'Suchen', 'search'], ['#/einkauf', 'Einkauf', 'cart'], ['#/haltbarkeit', 'Haltbarkeit', 'clock']];
+  rail.innerHTML = R.map(([h, l, i]) => `<a href="${h}" data-r="${h}">${ic(i)}<span>${l}</span>${h === '#/einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('');
   document.body.prepend(top);
   document.body.appendChild(tabs);
+  document.body.appendChild(rail);
 
   // vorgemerkte Buchungen (schlechtes WLAN)
   const pill = top.querySelector<HTMLButtonElement>('#outboxPill')!;
@@ -67,6 +75,8 @@ export function initShell() {
     update(hash: string, loggedIn: boolean) {
       const k = navKey(hash);
       document.querySelectorAll<HTMLElement>('#shell [data-k], #tabbar [data-k]').forEach((a) => a.classList.toggle('on', a.dataset.k === k));
+      const h = hash.split('?')[0];
+      rail.querySelectorAll<HTMLElement>('[data-r]').forEach((a) => a.classList.toggle('on', a.dataset.r === h || (a.dataset.r === '#/suche' && (h.startsWith('#/item/') || h === '#/platz'))));
       document.body.classList.toggle('logged-out', !loggedIn);
       if (loggedIn && Date.now() - badgeAt > 5000) {
         badgeAt = Date.now();
@@ -77,7 +87,7 @@ export function initShell() {
     async refreshBadge() {
       const r = await fetch('/api/shopping', { credentials: 'same-origin' }).then((x) => (x.ok ? x.json() : null)).catch(() => null);
       const n = r?.open?.length ?? 0;
-      document.querySelectorAll<HTMLElement>('#shell .badge, #tabbar .badge').forEach((b) => {
+      document.querySelectorAll<HTMLElement>('#shell .badge, #tabbar .badge, #rail .badge').forEach((b) => {
         b.textContent = String(n);
         b.hidden = !n;
       });
