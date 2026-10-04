@@ -1,5 +1,22 @@
 # Changelog
 
+## 0.7.0 – 2026-10-04
+
+**Objektbibliothek** (Mehr → Objektbibliothek): Möbelarten wie Küchenschränke und Lagerregale als Daten statt im Code.
+**Editor** mit 3D-Vorschau: Maße, Sockel, Plattenstärke, Spalten mit Schubladen, Türen mit Böden, offenen Fächern,
+Klappen, Kühl- und Gefrierfächern – oder ein eigenes 3D-Modell (.glb) mit eingetragenen Fächern. Die Vorschau zeigt jedes
+Fach als Rahmen; **jedes Fach wird ein Lagerplatz**. Vorlagen (Regal, Vorratsschrank, Kommode, Unterschrank,
+Kleiderschrank, Oberschrank) als Ausgangspunkt.
+
+**Community-Katalog** im eigenen Repo [homemgmt-object-library](https://github.com/mupf-dev/homemgmt-object-library) mit
+Galerie auf GitHub Pages: Möbelarten installieren und aktualisieren, eigene exportieren (`.zuhause-objekt.json`) und per
+Pull Request beisteuern – automatisch geprüft, ohne Server und ohne Schlüssel. Start mit Würfelregal 4×4,
+Schuhschrank, Apothekerschrank, Werkzeugwagen und Bad-Hängeschrank.
+
+Installierte Möbelarten stehen beim Planen unter „Möbel“. Das Haus behält eine **Kopie** jeder verwendeten Möbelart –
+Änderungen in der Bibliothek verschieben keine Adressen; neuere Versionen übernimmt man am Möbel („Version …
+übernehmen“, mit Warnung bei geänderter Fächerzahl). Bearbeiten und installieren darf, wer „Haus planen“ darf.
+
 ## 0.6.0 – 2026-10-04
 
 **Eine App für den ganzen Haushalt:** dieselbe Navigation auf jeder Seite – Übersicht, Haus, Suchen, Einkauf, Mehr. Am

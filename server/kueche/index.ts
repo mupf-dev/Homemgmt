@@ -39,6 +39,7 @@ declare global {
   }
 }
 
+import { compareVersions, validateObjectType, type ObjectType } from '../../web/app/src/model/objects.ts';
 const str = (v: unknown, max = 200) => (typeof v === 'string' ? v.trim().slice(0, max) : '');
 
 export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
@@ -55,13 +56,24 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
         updated_at TEXT NOT NULL DEFAULT (datetime('now'))
       );
       CREATE INDEX IF NOT EXISTS idx_kitchen_person ON kitchen_projects(person_id);
+      -- Objektbibliothek: Möbelarten als Daten (zuhause-objekt/1); source: eigene | community | datei
+      CREATE TABLE IF NOT EXISTS object_types (
+        id TEXT PRIMARY KEY,
+        data TEXT NOT NULL,
+        source TEXT NOT NULL DEFAULT 'eigene',
+        source_url TEXT,
+        hidden INTEGER NOT NULL DEFAULT 0,
+        created_by INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+        created_at TEXT NOT NULL DEFAULT (datetime('now')),
+        updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+      );
       CREATE UNIQUE INDEX IF NOT EXISTS idx_kitchen_share ON kitchen_projects(share_token) WHERE share_token IS NOT NULL;`);
   });
   const db = () => core.db;
 
   const router = express.Router();
   // Body nur auf den eigenen Pfaden lesen – alle anderen Anfragen gehen unangetastet an das Lager-Modul
-  const OWN = ['/api/projects', '/api/shared', '/api/admin', '/api/library'];
+  const OWN = ['/api/projects', '/api/shared', '/api/admin', '/api/library', '/api/objects'];
   router.use(OWN, (req, _res, next) => {
     req.auth = core.authenticate(req);
     next();
@@ -254,6 +266,128 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   router.post('/api/library/models/upload', requireUser, express.raw({ type: () => true, limit: '60mb' }), (req, res) => {
     try {
       res.json(library.uploadModel(req.body as Buffer, str(req.query.name, 80)));
+    } catch (e) {
+      res.status(400).json({ error: (e as Error).message });
+    }
+  });
+
+  // --- Objektbibliothek: Möbelarten als Daten, eigener Bestand und Community-Katalog (eigenes Repo homemgmt-object-library, veröffentlicht über GitHub Pages) ---
+  // Lesen: alle Angemeldeten (auch Wandterminals); Ändern und Installieren: wer planen darf (Admins immer)
+  const requirePlanner = (req: Request, res: Response, next: NextFunction) => {
+    const a = req.auth;
+    if (a?.via !== 'session' || (a.person.role !== 'admin' && !a.person.can_plan)) return res.status(403).json({ error: 'Die Objektbibliothek ändern nur Personen mit dem Recht „Haus planen“.' });
+    next();
+  };
+  const CATALOG_URL = (process.env.OBJECT_CATALOG_URL || 'https://mupf-dev.github.io/homemgmt-object-library/').replace(/\/?$/, '/');
+  type ObjRow = { id: string; data: string; source: string; source_url: string | null; hidden: number; updated_at: string };
+  const objRow = (r: ObjRow) => ({ object: JSON.parse(r.data) as ObjectType, source: r.source, sourceUrl: r.source_url, hidden: !!r.hidden, updatedAt: r.updated_at });
+  const getObj = (id: string) => db().prepare('SELECT * FROM object_types WHERE id = ?').get(id) as ObjRow | undefined;
+  const saveObj = (t: ObjectType, source: string, sourceUrl: string | null, by: number | null) => {
+    db().prepare(`INSERT INTO object_types (id, data, source, source_url, created_by) VALUES (?, ?, ?, ?, ?)
+      ON CONFLICT(id) DO UPDATE SET data = excluded.data, source = excluded.source, source_url = excluded.source_url, hidden = 0, updated_at = datetime('now')`)
+      .run(t.id, JSON.stringify(t), source, sourceUrl, by);
+    return objRow(getObj(t.id)!);
+  };
+  const fail400 = (res: Response, e: unknown) => res.status(400).json({ error: (e as Error).message });
+
+  router.get('/api/objects', requireUser, (_req, res) => {
+    res.json({ objects: (db().prepare('SELECT * FROM object_types ORDER BY id').all() as ObjRow[]).map(objRow) });
+  });
+  // Eigene Möbelart anlegen oder ändern (Community-Möbelarten werden nicht verändert, sondern kopiert)
+  router.put('/api/objects/:id', requireUser, requirePlanner, (req, res) => {
+    let t: ObjectType;
+    try {
+      t = validateObjectType(req.body?.object);
+    } catch (e) {
+      return fail400(res, e);
+    }
+    if (t.id !== req.params.id) return res.status(400).json({ error: 'Kennung passt nicht zur Adresse.' });
+    if (t.build.type === 'modell' && !t.build.model.url) return res.status(400).json({ error: 'Bitte zuerst ein 3D-Modell hochladen.' });
+    const old = getObj(t.id);
+    if (old?.source === 'community') return res.status(409).json({ error: 'Möbelarten aus dem Community-Katalog werden nicht verändert – bitte kopieren und die Kopie bearbeiten.' });
+    res.json(saveObj(t, 'eigene', null, me(req)));
+  });
+  // Import einer Datei (.json); vorhandene Kennung nur mit replace
+  router.post('/api/objects/import', requireUser, requirePlanner, (req, res) => {
+    let t: ObjectType;
+    try {
+      t = validateObjectType(req.body?.object);
+    } catch (e) {
+      return fail400(res, e);
+    }
+    if (t.build.type === 'modell' && !t.build.model.url) return res.status(400).json({ error: 'Möbelarten mit 3D-Modell bitte über den Community-Katalog installieren (die Datei enthält das Modell nicht).' });
+    if (getObj(t.id) && !req.body?.replace) return res.status(409).json({ error: `Die Möbelart „${t.id}“ gibt es schon.`, exists: true });
+    res.json(saveObj(t, 'datei', null, me(req)));
+  });
+  router.patch('/api/objects/:id', requireUser, requirePlanner, (req, res) => {
+    const id = String(req.params.id);
+    if (!getObj(id)) return res.status(404).json({ error: 'Möbelart nicht gefunden.' });
+    db().prepare("UPDATE object_types SET hidden = ?, updated_at = datetime('now') WHERE id = ?").run(req.body?.hidden ? 1 : 0, id);
+    res.json(objRow(getObj(id)!));
+  });
+  router.delete('/api/objects/:id', requireUser, requirePlanner, (req, res) => {
+    db().prepare('DELETE FROM object_types WHERE id = ?').run(String(req.params.id));
+    res.json({ ok: true });
+  });
+
+  // Community-Katalog: index.json auf GitHub Pages (ohne Konto/Schlüssel), 30 Min. zwischengespeichert
+  let catalogCache: { at: number; data: any } | null = null;
+  const fetchCatalog = async () => {
+    if (catalogCache && Date.now() - catalogCache.at < 30 * 60000) return catalogCache.data;
+    const r = await fetch(CATALOG_URL + 'index.json', { signal: AbortSignal.timeout(10000) });
+    if (!r.ok) throw new Error(`Community-Katalog nicht erreichbar (${r.status}).`);
+    const data = await r.json();
+    if (data?.format !== 'zuhause-katalog/1' || !Array.isArray(data.objects)) throw new Error('Community-Katalog hat ein unbekanntes Format.');
+    catalogCache = { at: Date.now(), data };
+    return data;
+  };
+  router.get('/api/objects/community', requireUser, async (_req, res) => {
+    try {
+      const cat = await fetchCatalog();
+      const installed = new Map((db().prepare('SELECT * FROM object_types').all() as ObjRow[]).map((r) => [r.id, objRow(r)]));
+      res.json({
+        url: CATALOG_URL,
+        objects: cat.objects.slice(0, 500).map((o: any) => {
+          const have = installed.get(String(o.id));
+          return {
+            id: String(o.id), name: str(o.name, 60), group: str(o.group, 40), version: str(o.version, 20), author: str(o.author, 60),
+            license: str(o.license, 40), description: str(o.description, 500), file: str(o.file, 200),
+            preview: o.preview && /^[\w./-]+\.svg$/.test(String(o.preview)) && !String(o.preview).includes('..') ? CATALOG_URL + String(o.preview) : null,
+            places: Number.isFinite(o.places) ? Number(o.places) : null,
+            installed: have ? have.object.version : null,
+            update: !!have && have.source === 'community' && compareVersions(String(o.version), have.object.version) > 0,
+          };
+        }),
+      });
+    } catch (e) {
+      res.status(502).json({ error: (e as Error).message });
+    }
+  });
+  // Installieren bzw. aktualisieren: Möbelart laden, prüfen, ggf. 3D-Modell herunterladen und ablegen
+  router.post('/api/objects/community/install', requireUser, requirePlanner, async (req, res) => {
+    try {
+      const cat = await fetchCatalog();
+      const entry = cat.objects.find((o: any) => String(o.id) === String(req.body?.id));
+      if (!entry) return res.status(404).json({ error: 'Nicht im Community-Katalog.' });
+      const file = String(entry.file ?? '');
+      if (!/^[\w./-]+\.json$/.test(file) || file.includes('..')) return res.status(400).json({ error: 'Ungültiger Eintrag im Katalog.' });
+      const url = CATALOG_URL + file;
+      const raw = await fetch(url, { signal: AbortSignal.timeout(15000) }).then((r) => {
+        if (!r.ok) throw new Error(`Möbelart nicht ladbar (${r.status}).`);
+        return r.json();
+      });
+      const t = validateObjectType(raw);
+      if (t.id !== entry.id) throw new Error('Kennung der Datei passt nicht zum Katalog.');
+      const old = getObj(t.id);
+      if (old && old.source !== 'community') return res.status(409).json({ error: `Es gibt schon eine eigene Möbelart „${t.id}“.` });
+      if (t.build.type === 'modell' && t.build.model.file) {
+        const glb = await fetch(CATALOG_URL + t.build.model.file, { signal: AbortSignal.timeout(60000) }).then(async (r) => {
+          if (!r.ok) throw new Error(`3D-Modell nicht ladbar (${r.status}).`);
+          return Buffer.from(await r.arrayBuffer());
+        });
+        t.build.model.url = library.uploadModel(glb, t.build.model.name || t.name).url;
+      }
+      res.json(saveObj(t, 'community', url, me(req)));
     } catch (e) {
       res.status(400).json({ error: (e as Error).message });
     }

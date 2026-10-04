@@ -35,6 +35,13 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
       <p>Der Plan wird automatisch gespeichert und von allen geteilt (ändern dürfen nur Personen mit dem Recht „Haus planen“; vergeben unter Verwaltung → Personen). Arbeiten zwei gleichzeitig daran, fragt die App, welcher Stand gilt.</p>`,
   },
   {
+    id: 'objekte', title: 'Objektbibliothek: eigene Möbelarten',
+    html: `<ul><li>Unter <b>Mehr → Objektbibliothek</b> stehen alle Möbelarten neben den eingebauten: <b>Installiert</b>, <b>Community</b> (fertige Möbelarten aus dem gemeinsamen Katalog auf GitHub) und <b>Vorlagen</b>. Installierte Möbelarten erscheinen beim Planen unter „Möbel“ in ihrer Gruppe.</li>
+      <li><b>Editor:</b> Name, Maße und Aufbau – Spalten von links nach rechts, darin Elemente von oben nach unten (Schublade, Tür mit Böden, offenes Fach, Klappe, Kühl- oder Gefrierfach), Höhen und Breiten als Verhältnis. Oder ein eigenes 3D-Modell (.glb) mit eingetragenen Fächern. Die Vorschau zeigt jedes Fach als Rahmen – <b>jedes Fach wird ein Lagerplatz</b>.</li>
+      <li>Das Haus behält eine <b>Kopie</b> jeder verwendeten Möbelart: Änderungen in der Bibliothek ändern bestehende Möbel und Adressen nicht. Gibt es eine neuere Version, bietet das Möbel beim Planen „Version … übernehmen“ an.</li>
+      <li><b>Teilen:</b> Exportieren speichert eine <code>.zuhause-objekt.json</code>, die sich anderswo importieren oder als Pull Request im Katalog-Repo <code>mupf-dev/homemgmt-object-library</code> einreichen lässt. Ändern und installieren darf, wer das Recht „Haus planen“ hat.</li></ul>`,
+  },
+  {
     id: 'imhaus', title: 'Lager im Haus: Fächer, Suche, „Im Haus zeigen“',
     html: `<ul><li>Beim Ansehen zeigt die Seitenleiste die <b>Räume</b> der Etage mit Füllstand; Raum → <b>Möbel</b> → <b>Fach</b> → Inhalt. Dort einbuchen (mit Vorschlägen aus vorhandenen Gegenständen), „−1“ entnehmen oder etwas hierher umlagern. Am Handy erscheint das als Blatt von unten.</li>
       <li>Im Grundriss sind Möbel nach Füllstand gefärbt (leer, teils, voll). In 3D sind die Fächer gefärbt – blau leer, grün belegt, orange läuft bald ab, rot abgelaufen; die Färbung lässt sich auf <b>Bewegung</b> oder <b>lange unberührt</b> umstellen.</li>

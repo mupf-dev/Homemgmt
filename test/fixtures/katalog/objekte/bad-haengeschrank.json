@@ -1,0 +1,50 @@
+{
+  "format": "zuhause-objekt/1",
+  "id": "community.bad-haengeschrank",
+  "name": "Bad-Hängeschrank",
+  "group": "Bad",
+  "version": "1.0",
+  "author": "Zuhause",
+  "license": "CC0-1.0",
+  "description": "Zweitüriger Hängeschrank fürs Bad mit je drei Böden.",
+  "size": {
+    "width": 80,
+    "depth": 20,
+    "height": 70,
+    "elevation": 110,
+    "widths": [
+      60,
+      80,
+      100
+    ]
+  },
+  "snapToWall": true,
+  "build": {
+    "type": "korpus",
+    "plinth": 0,
+    "board": 1.6,
+    "back": true,
+    "columns": [
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "door",
+            "size": 1,
+            "shelves": 3
+          }
+        ]
+      },
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "door",
+            "size": 1,
+            "shelves": 3
+          }
+        ]
+      }
+    ]
+  }
+}

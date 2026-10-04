@@ -94,6 +94,7 @@ export const viewMore: View = (el, ctx) => {
       ${tile('#/assistent', 'spark', 'Assistent', 'Fragen und buchen in normaler Sprache')}
       ${tile('#/auswertung', 'chart', 'Auswertung', 'Verbrauch, Heatmap im Haus')}
       ${tile('#/etiketten', 'tag', 'Etiketten', 'QR-Schilder für Fächer')}
+      ${tile('#/objekte', 'box', 'Objektbibliothek', 'Möbelarten: eigene und aus der Community')}
       ${tile('#/einstellungen', 'gear', 'Einstellungen', 'Startseite, Ansicht, Darstellung')}
       ${tile('#/hilfe', 'help', 'Anleitung', 'So funktioniert Zuhause')}
       ${u.role === 'admin' ? tile('#/verwaltung', 'users', 'Verwaltung', 'Personen, Rechte, Sicherungen') : ''}

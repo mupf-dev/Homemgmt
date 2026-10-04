@@ -1,0 +1,117 @@
+{
+  "format": "zuhause-objekt/1",
+  "id": "community.kallax-4x4",
+  "name": "Regal 4×4 (Würfelregal)",
+  "group": "Schränke & Regale",
+  "version": "1.0",
+  "author": "Zuhause",
+  "license": "CC0-1.0",
+  "description": "Würfelregal mit 16 gleich großen Fächern (je 33 × 33 cm), z. B. für Kisten und Körbe.",
+  "size": {
+    "width": 147,
+    "depth": 39,
+    "height": 147,
+    "elevation": 0,
+    "widths": [
+      77,
+      112,
+      147
+    ]
+  },
+  "snapToWall": true,
+  "build": {
+    "type": "korpus",
+    "plinth": 0,
+    "board": 3.8,
+    "back": false,
+    "columns": [
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          }
+        ]
+      },
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          }
+        ]
+      },
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          }
+        ]
+      },
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          },
+          {
+            "kind": "open",
+            "size": 1
+          }
+        ]
+      }
+    ]
+  },
+  "materials": {
+    "carcass": "lack-white"
+  }
+}

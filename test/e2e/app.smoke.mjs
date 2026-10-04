@@ -21,8 +21,19 @@ function chromePath() {
   return undefined; // playwright-core sucht selbst
 }
 let failed = false;
+// Community-Katalog der Objektbibliothek: lokal (Testkatalog) statt von GitHub Pages
+const { createServer } = await import('node:http');
+const { readFile } = await import('node:fs/promises');
+const libSrv = createServer(async (req, res) => {
+  try {
+    res.end(await readFile(join(ROOT, 'test', 'fixtures', 'katalog', decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\.\./g, ''))));
+  } catch {
+    res.statusCode = 404;
+    res.end();
+  }
+}).listen(4901, '127.0.0.1');
 const srv = spawn(process.execPath, ['--disable-warning=ExperimentalWarning', 'server/index.ts'], {
-  cwd: ROOT, env: { ...process.env, PORT: '4900', HTTPS_PORT: '0', MCP_PORT: '0', DB_PATH: `${DIR}/db/z.db`, BACKUP_INTERVAL_HOURS: '0', AI_WEB_SEARCH: '1' }, stdio: 'pipe',
+  cwd: ROOT, env: { ...process.env, PORT: '4900', HTTPS_PORT: '0', MCP_PORT: '0', DB_PATH: `${DIR}/db/z.db`, BACKUP_INTERVAL_HOURS: '0', AI_WEB_SEARCH: '1', OBJECT_CATALOG_URL: 'http://127.0.0.1:4901/' }, stdio: 'pipe',
 });
 let log = '';
 srv.stdout.on('data', (d) => (log += d));
@@ -246,6 +257,29 @@ try {
   await page.goto(base + '/#/haus');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
 
+  step('Objektbibliothek: Community-Möbelart installieren, eigene aus Vorlage anlegen');
+  await page.goto(base + '/#/objekte?tab=community');
+  await page.waitForSelector('.ob-row[data-id="community.kallax-4x4"] [data-a="install"]');
+  console.log('  Community:', await page.locator('.ob-row').count(), 'Möbelarten');
+  await page.click('.ob-row[data-id="community.kallax-4x4"] [data-a="install"]');
+  await page.waitForSelector('.ob-row[data-id="community.kallax-4x4"] .tag.ok');
+  await page.goto(base + '/#/objekte?tab=vorlagen');
+  await page.click('.ob-card a[href*="eigene.vorratsschrank"]');
+  await page.waitForSelector('.ob-preview canvas');
+  await page.fill('[data-k="name"]', 'Speisekammer-Regal');
+  await page.click('.ob-col[data-ci="0"] [data-el="add"]');
+  await page.waitForTimeout(800);
+  console.log('  Editor:', await page.textContent('#fa h3'), '| Kennung:', await page.inputValue('[data-k="id"]'));
+  await page.evaluate(() => scrollTo(0, 0));
+  await page.waitForTimeout(300);
+  await shot('07g-objekt-editor');
+  await page.click('#save');
+  await page.waitForSelector('.ob-row[data-id="eigene.speisekammer-regal"]');
+  console.log('  Installiert:', await page.$$eval('.ob-row b', (b) => b.map((x) => x.textContent)));
+  await shot('07f-objektbibliothek');
+  await page.goto(base + '/#/haus');
+  await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
+
   step('Planen: Werkzeugleiste, Möbel-Bibliothek – Sessel von Poly Haven importieren und platzieren');
   await page.click('#planStart');
   await page.waitForFunction(() => document.body.classList.contains('haus-plan'));
@@ -266,6 +300,13 @@ try {
   await page.click('[data-cam="perspective"]');
   await page.waitForTimeout(2500);
   await shot('07h-moebel');
+  // Möbelart aus der Objektbibliothek setzen: Fächer werden Lagerplätze
+  if (!(await page.locator('[data-drawer="catalog"].on').count())) await page.click('[data-drawer="catalog"]');
+  await page.click('.cat-item[data-type="obj:community.kallax-4x4"]');
+  await page.mouse.click(box2.x + box2.width * 0.55, box2.y + box2.height * 0.6);
+  await page.waitForFunction(() => window.__zuhause.store.house.objectTypes?.['community.kallax-4x4']);
+  const kallax = await page.evaluate(() => window.__zuhause.store.floor.items.find((x) => x.type === 'obj:community.kallax-4x4'));
+  console.log('  Kallax platziert, Spalte', kallax?.storageCol, '| Fächer im Panel:', await page.locator('#props .fach-row').count());
   await page.click('[data-drawer="room"]');
 
   step('Etage darüber anlegen, Haus-Ansicht');
@@ -381,6 +422,7 @@ try {
 } finally {
   console.log('Fehler im Browser:', errors.length ? errors : 'keine');
   await browser.close();
+  libSrv.close();
   srv.kill();
   if (/Error|Fehler/.test(log)) console.log('Server-Log:', log.slice(-1500));
 }

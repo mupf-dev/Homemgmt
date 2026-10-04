@@ -1,0 +1,41 @@
+{
+  "format": "zuhause-objekt/1",
+  "id": "community.apothekerschrank",
+  "name": "Apothekerschrank 30",
+  "group": "Küche",
+  "version": "1.0",
+  "author": "Zuhause",
+  "license": "CC0-1.0",
+  "description": "Schmaler Hochschrank mit Vollauszug und fünf Ablagen – jede Ablage ist ein eigener Lagerplatz.",
+  "size": {
+    "width": 30,
+    "depth": 57,
+    "height": 200,
+    "elevation": 0,
+    "widths": [
+      20,
+      30,
+      40
+    ]
+  },
+  "snapToWall": true,
+  "build": {
+    "type": "korpus",
+    "plinth": 10,
+    "board": 1.8,
+    "back": true,
+    "columns": [
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "door",
+            "size": 1,
+            "shelves": 5,
+            "label": "Apothekerauszug"
+          }
+        ]
+      }
+    ]
+  }
+}

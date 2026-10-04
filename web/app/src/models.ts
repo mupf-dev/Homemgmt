@@ -3,6 +3,7 @@ import { RoundedBoxGeometry } from 'three/examples/jsm/geometries/RoundedBoxGeom
 import type { Item, MaterialSlot, Project } from './model/types.ts';
 import { getEntry } from './model/catalog.ts';
 import { levelsOf } from './model/storage.ts';
+import { korpusLayout, type KorpusBuild } from './model/objects.ts';
 import { modelInstance } from './modelLoader';
 import { FIXED, mergeUV, slotMaterial, type UVExtent } from './materials';
 import type { CountertopRun } from './model/geom.ts';
@@ -216,8 +217,71 @@ export function buildItem(item: Item, ctx: BuildContext): THREE.Group {
     case 'model':
       if (item.model?.url) g.add(modelInstance(item.model.url, W, D, H));
       break;
+    case 'custom': {
+      const t = entry.object;
+      if (!t) {
+        boxAt(g, -W / 2, W / 2, 0, H, -D / 2, D / 2, mat('carcass'));
+        break;
+      }
+      if (t.build.type === 'modell') {
+        if (t.build.model.url) g.add(modelInstance(t.build.model.url, W, D, H));
+      } else buildKorpus(g, t.build, W, D, H, mat);
+      break;
+    }
   }
   return g;
+}
+
+/**
+ * Möbelart aus der Bibliothek: Korpus aus Seiten, Boden, Deckel, Rückwand und Trennwänden; je Element eine Front
+ * (Schublade, Tür, Klappe, Kühl-/Gefrierfach) oder offene Böden. Die Aufteilung kommt aus korpusLayout – dieselbe wie
+ * für die Fächer im Lager.
+ */
+function buildKorpus(g: THREE.Group, b: KorpusBuild, W: number, D: number, H: number, mat: Mats) {
+  const cm = mat('carcass');
+  const t = b.board / 100;
+  const P = b.plinth / 100;
+  const zB = -D / 2;
+  const zF = D / 2;
+  const hasFronts = b.columns.some((c) => c.elements.some((e) => e.kind !== 'open'));
+  const zC = hasFronts ? zF - FRONT_T - 0.001 : zF; // Korpus endet hinter den Fronten
+  if (P > 0) boxAt(g, -W / 2 + 0.001, W / 2 - 0.001, 0, P, zB + 0.02, zC - 0.04, mat('front'));
+  boxAt(g, -W / 2, -W / 2 + t, P, H, zB, zC, cm, 0.001);
+  boxAt(g, W / 2 - t, W / 2, P, H, zB, zC, cm, 0.001);
+  boxAt(g, -W / 2 + t, W / 2 - t, H - t, H, zB, zC, cm, 0.001);
+  boxAt(g, -W / 2 + t, W / 2 - t, P, P + t, zB, zC, cm, 0.001);
+  if (b.back) boxAt(g, -W / 2 + t, W / 2 - t, P + t, H - t, zB, zB + Math.min(t, 0.008), cm);
+  const cols = korpusLayout(b, W * 100, H * 100);
+  const fronts: FrontRect[] = [];
+  cols.forEach((col, ci) => {
+    const x0 = col.x0 / 100;
+    const x1 = col.x1 / 100;
+    // Trennwand rechts der Spalte
+    if (ci < cols.length - 1) boxAt(g, x1, x1 + t, P + t, H - t, zB, zC, cm, 0.001);
+    col.elements.forEach(({ el, y0: ey0, y1: ey1 }, ei) => {
+      const y0 = ey0 / 100;
+      const y1 = ey1 / 100;
+      // Zwischenboden unter jedem Element (außer dem untersten)
+      if (ei < col.elements.length - 1) boxAt(g, x0, x1, y0 - t / 2, y0 + t / 2, zB, zC, cm, 0.001);
+      if (el.kind === 'open') {
+        const n = el.shelves ?? 1;
+        for (let k = 1; k < n; k++) {
+          const y = y1 - ((y1 - y0) * k) / n;
+          boxAt(g, x0, x1, y - t / 2, y + t / 2, zB + 0.006, zF - 0.005, cm, 0.001);
+        }
+        return;
+      }
+      // Fronten reichen bis zur Mitte der angrenzenden Platten
+      const fx0 = ci === 0 ? -W / 2 : x0 - t / 2;
+      const fx1 = ci === cols.length - 1 ? W / 2 : x1 + t / 2;
+      const fy0 = ei === col.elements.length - 1 ? P : y0 - t / 2;
+      const fy1 = ei === 0 ? H : y1 + t / 2;
+      if (el.kind === 'drawer' || el.kind === 'flap' || el.kind === 'freezer') fronts.push({ x0: fx0, x1: fx1, y0: fy0, y1: fy1, handle: el.kind === 'flap' ? 'bottom' : 'top' });
+      else if (el.kind === 'door' && fx1 - fx0 > 0.62) fronts.push(...doorFronts(fx0, fx1, fy0, fy1, false));
+      else fronts.push({ x0: fx0, x1: fx1, y0: fy0, y1: fy1, handle: ci === cols.length - 1 && cols.length > 1 ? 'left' : 'right' });
+    });
+  });
+  addFronts(g, fronts, zF, mat);
 }
 
 // ---------------------------------------------------------------------------

@@ -2,6 +2,7 @@
 // (handytauglich). Ohne Adresse entscheidet die Einstellung der Person: Übersicht oder Haus. Navigation: shell.ts.
 
 import type { LagerCtx } from './core';
+import { viewObjectEditor, viewObjects } from './objects';
 import { esc } from './core';
 import { viewCheckin, viewCheckout, viewExpiry, viewItem, viewPlace, viewQuick, viewSearch, viewShopping, viewStats, type View } from './views';
 import { viewHome, viewMore, viewSettings } from './home';
@@ -30,6 +31,8 @@ const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][
   [/^#\/auswertung$/, viewStats, () => {}],
   [/^#\/etiketten$/, viewLabels, () => {}],
   [/^#\/hilfe$/, viewHelp, () => {}],
+  [/^#\/objekte$/, viewObjects, () => {}],
+  [/^#\/objekte\/bearbeiten$/, viewObjectEditor, () => {}],
   [/^#\/verwaltung$/, viewAdmin, () => {}],
   [/^#\/verwaltung\/personen$/, viewPersons, () => {}],
   [/^#\/verwaltung\/lager$/, viewWarehouses, () => {}],
