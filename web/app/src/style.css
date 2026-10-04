@@ -1048,7 +1048,9 @@ body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
 .wfx { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none; z-index: 1; }
 .rest .wfx { z-index: 0; }
 .rest-info, .rest-hint, .rest-progress, .rest-storm { z-index: 2; }
-.term-storm { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 99px; font-weight: 600; font-size: 14px; background: var(--warn-soft); color: var(--warn); }
+.term-storm { display: inline-flex; align-items: center; gap: 6px; padding: 4px 12px; border-radius: 99px; font-weight: 600; font-size: 14px; background: var(--warn-soft); color: var(--warn); white-space: nowrap; flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.term-storm span { overflow: hidden; text-overflow: ellipsis; }
+.term-place { white-space: nowrap; }
 .term-storm[data-level="3"] { background: var(--bad-soft); color: var(--bad); }
 .term-storm svg.i { width: 16px; height: 16px; }
 .rest-storm { position: absolute; right: 5%; top: 9%; display: flex; flex-direction: column; align-items: flex-end; gap: 10px; text-align: right; max-width: min(420px, 60vw); text-shadow: 0 2px 10px rgba(0,0,0,.6); }

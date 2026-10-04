@@ -3335,6 +3335,7 @@ plan.north = () => store.house.settings.location?.north ?? null;
 let outdoorWeather: { at: number; data: any; q: string } | null = null;
 /** Testwetter zum Ausprobieren am Terminal: Adresse mit ?testwetter=schnee (siehe TEST_WEATHER) – nur dieses Fenster */
 const TEST_WEATHER: Record<string, Record<string, unknown>> = {
+  'schnee-hauch': { temperature: 0, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.05, rain_rate: 0, snowfall: 0.05, snow_depth: 0.004, visibility: 10000, wind_speed: 5, wind_direction: 240 },
   'schnee-leicht': { temperature: -1, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.1, rain_rate: 0, snowfall: 0.1, snow_depth: 0.03, visibility: 8000, wind_speed: 8, wind_direction: 240 },
   schnee: { temperature: -2, code: 73, text: 'Schneefall', kind: 'snow', cloud: 100, precipitation: 0.3, rain_rate: 0, snowfall: 0.4, snow_depth: 0.12, visibility: 3000, wind_speed: 15, wind_direction: 250 },
   schneesturm: { temperature: -6, code: 75, text: 'starker Schneefall', kind: 'snow', cloud: 100, precipitation: 0.8, rain_rate: 0, snowfall: 1.2, snow_depth: 0.35, visibility: 600, wind_speed: 45, wind_direction: 270 },
@@ -3648,7 +3649,7 @@ function showLightning(r: { strikes: { km: number; bearing: number; age_s: numbe
     ? `Letzter Blitz ${km(l.km)} km im ${l.direction}, ${ago(l.age_s)}\n${r.count15} Blitze in 15 Min.${n !== l && (n.km < l.km - 0.5) ? ` · am nächsten ${km(n.km)} km im ${n.direction} (${ago(n.age_s)})` : ''}`
     : '';
   // Kopfzeile des Terminals: Warnung ab „in der Nähe“
-  setTermStorm(r.level >= 2 && l ? `${title} · letzter ${km(l.km)} km ${l.direction}` : '', r.level);
+  setTermStorm(r.level >= 2 && l ? `Gewitter · ${km(Math.round(l.km))} km ${l.direction}` : '', r.level);
   // Ruhezustand: Hinweis und Karte, sobald es in 100 km blitzt
   const box = document.querySelector<HTMLElement>('#rest .rest-storm');
   if (!box) return;

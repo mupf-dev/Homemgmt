@@ -31,6 +31,7 @@ export interface FachInfo {
 
 const ROOF_MAT = new THREE.MeshPhysicalMaterial({ color: '#8e4535', roughness: 0.8, metalness: 0 });
 const SNOW_MAT = new THREE.MeshPhysicalMaterial({ color: '#f3f6fb', roughness: 0.85, metalness: 0 });
+const SNOW_FRINGE = new THREE.MeshPhysicalMaterial({ color: '#eef2f7', roughness: 0.9, metalness: 0, transparent: true, opacity: 0.5, depthWrite: false });
 
 // Wolken: Wertrauschen in mehreren Oktaven (reproduzierbar, ohne Bibliothek)
 const hash2 = (x: number, y: number) => {
@@ -60,33 +61,6 @@ function fbm(x: number, y: number) {
     amp *= 0.5;
   }
   return s / 0.97;
-}
-/** kachelbares Rauschen (Periode p) – für nahtlos wiederholte Texturen */
-function noiseP(x: number, y: number, p: number) {
-  const xi = Math.floor(x);
-  const yi = Math.floor(y);
-  const xf = x - xi;
-  const yf = y - yi;
-  const u = xf * xf * (3 - 2 * xf);
-  const v = yf * yf * (3 - 2 * yf);
-  const w = (n: number) => ((n % p) + p) % p;
-  const a = hash2(w(xi), w(yi));
-  const b = hash2(w(xi + 1), w(yi));
-  const c = hash2(w(xi), w(yi + 1));
-  const d = hash2(w(xi + 1), w(yi + 1));
-  return a + (b - a) * u + (c - a) * v + (a - b - c + d) * u * v;
-}
-/** kachelbares fbm über u, v ∈ [0, 1) */
-function fbmTile(u: number, v: number, base: number) {
-  let s = 0;
-  let amp = 0.5;
-  let f = base;
-  for (let i = 0; i < 4; i++) {
-    s += amp * noiseP(u * f, v * f, f);
-    f *= 2;
-    amp *= 0.5;
-  }
-  return s / 0.9375;
 }
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
@@ -142,9 +116,8 @@ export class Scene3D {
     /** Nebel 0…1, nasser Boden 0…1, Schneedecke 0…1, Wolkenzug (verschiebt die Wolken) */
     fog?: number; wet?: number; snow?: number; drift?: number;
   } | null = null;
-  /** Schnee auf dem Dach in Stufen 0 … 1 (Viertel), je nach Schneehöhe */
-  private roofSnow = 0;
-  private roofMats = new Map<number, THREE.Material>();
+  /** Schnee in Zehnteln 0 … 10 (Fleck vor der Terrasse und auf dem Dach) */
+  private patchLevel = 0;
   /** Boden je Stufe: Schnee (fleckig bis geschlossen) bzw. Nässe (dunkler, glänzender) */
   private groundMats = new Map<string, THREE.Material>();
   onSamples?: (n: number) => void;
@@ -397,6 +370,7 @@ export class Scene3D {
     const underground = top < -1;
     this.ground.material = this.lawn && !underground ? this.weatherGround() : this.groundPlain;
     this.ground.visible = this.mode === 'floor' || (this.lawn ? !underground : !floors.some((f) => f.elevation < -1));
+    this.updateSnowPatch();
 
     const p = store.project;
     this.updateSun(p);
@@ -652,7 +626,9 @@ export class Scene3D {
     if (withRoof) {
       const slope = (span / 2 + ov) / Math.cos(Math.atan(tan));
       for (const sd of [-1, 1]) {
-        const plane = box(alongX ? length : slope, plate, alongX ? slope : length, this.roofMaterial(this.roofSnow));
+        const plane = box(alongX ? length : slope, plate, alongX ? slope : length, ROOF_MAT);
+        // Schnee: Fleck auf der Dachfläche, wächst mit der Schneehöhe bis zur ganzen Fläche
+        if (this.patchLevel) plane.add(this.roofSnowPatch((alongX ? length : slope) / 2, (alongX ? slope : length) / 2, plate / 2, sd));
         const ang = Math.atan(tan);
         const off = (span / 2 + ov) / 2; // Mitte der Fläche, vom First nach außen
         const y = knee + rise - off * tan + lift;
@@ -892,30 +868,42 @@ export class Scene3D {
   /** Wetter in Viertel-Stufen (so bleibt die Zahl der Materialien klein) */
   private static step = (v: number | undefined) => Math.round(Math.max(0, Math.min(1, v ?? 0)) * 4) / 4;
 
-  /** Dach: Ziegelrot bis schneeweiß, je nach Schneehöhe */
-  private roofMaterial(level: number) {
-    if (!level) return ROOF_MAT;
-    let m = this.roofMats.get(level);
-    if (!m) {
-      const c = ROOF_MAT.color.clone().lerp(SNOW_MAT.color, 0.35 + 0.65 * level);
-      m = new THREE.MeshPhysicalMaterial({ color: c, roughness: 0.8 + 0.1 * level, metalness: 0 });
-      this.roofMats.set(level, m);
+  /** Schneefleck auf einer Dachfläche (lokale Koordinaten der Fläche): unregelmäßig, wächst mit der Schneehöhe */
+  private roofSnowPatch(ax: number, az: number, top: number, seed: number) {
+    const level = this.patchLevel / 10;
+    const grow = 0.3 + 0.95 * level; // ab etwa 75 % deckt der Fleck die Fläche ganz
+    const pos: number[] = [];
+    const pts: [number, number][] = [];
+    for (let i = 0; i < 96; i++) {
+      const a = (i / 96) * Math.PI * 2;
+      const k = 1 + 0.14 * Math.sin(3 * a + 0.4 + seed) + 0.08 * Math.sin(7 * a + 1.9 * seed) + 0.04 * Math.sin(13 * a + 2);
+      // Ellipse in Dachform, an den Rändern der Fläche abgeschnitten
+      pts.push([Math.max(-ax, Math.min(ax, Math.cos(a) * ax * grow * k)), Math.max(-az, Math.min(az, Math.sin(a) * az * grow * k))]);
     }
+    const y = top + 0.012;
+    for (let i = 0; i < pts.length; i++) {
+      const [x1, z1] = pts[i];
+      const [x2, z2] = pts[(i + 1) % pts.length];
+      pos.push(0, y, 0, x2, y, z2, x1, y, z1);
+    }
+    const geo = new THREE.BufferGeometry();
+    geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    geo.computeVertexNormals();
+    const m = new THREE.Mesh(geo, SNOW_MAT);
+    m.receiveShadow = true;
     return m;
   }
 
-  /** Boden je nach Wetter: Rasen; nass (je stärker der Regen, desto dunkler und glänzender); Schnee (dünn = fleckig) */
+  /** Boden je nach Wetter: Rasen; nass (je stärker der Regen, desto dunkler und glänzender) */
   private weatherGround() {
     const o = this.outdoor;
-    const snow = Scene3D.step(o?.snow);
+    // Schnee liegt als eigener Fleck auf und vor der Terrasse (snowPatch); der Rasen wird nur nass
     const wet = Scene3D.step(o?.wet);
-    const key = snow ? `s${snow}` : wet ? `w${wet}` : '';
+    const key = wet ? `w${wet}` : '';
     if (!key) return this.lawnMaterial();
     let m = this.groundMats.get(key);
     if (!m) {
-      if (snow) {
-        m = new THREE.MeshPhysicalMaterial({ map: this.lawnTexture(snow), roughness: 0.95, color: '#ffffff' });
-      } else {
+      {
         const w = (this.lawnMaterial() as THREE.MeshPhysicalMaterial).clone();
         w.color.set('#ffffff').lerp(new THREE.Color('#7f8a7d'), wet);
         w.roughness = 1 - 0.55 * wet;
@@ -934,10 +922,10 @@ export class Scene3D {
     // Nebel (nur im normalen Bild; das fotorealistische bekommt Dunst über den Himmel)
     const fog = o?.fog ?? 0;
     this.scene.fog = fog > 0.05 ? new THREE.Fog(this.skyLook.bottom.clone(), 6, 140 - fog * 120) : null;
-    const snow = Scene3D.step(o?.snow);
+    const patch = this.lawn ? Math.round(Math.max(0, Math.min(1, o?.snow ?? 0)) * 10) : 0;
     const groundMat = this.lawn ? this.weatherGround() : null;
-    if (snow !== this.roofSnow) {
-      this.roofSnow = snow;
+    if (patch !== this.patchLevel) {
+      this.patchLevel = patch;
       this.build();
     } else if (groundMat && this.ground.material !== groundMat && this.ground.material !== this.groundPlain) this.ground.material = groundMat;
     this.updateSun(store.project);
@@ -948,14 +936,13 @@ export class Scene3D {
   /** Rasen: feine Grünfläche aus einer kleinen, gekachelten Textur (funktioniert auch im Pathtracer) */
   private lawnMaterial() {
     if (this.groundLawn) return this.groundLawn;
-    this.groundLawn = new THREE.MeshPhysicalMaterial({ map: this.lawnTexture(0), roughness: 1, color: '#ffffff' });
+    this.groundLawn = new THREE.MeshPhysicalMaterial({ map: this.lawnTexture(), roughness: 1, color: '#ffffff' });
     return this.groundLawn;
   }
 
-  /** Rasen-Textur; snow 0 … 1: Schneeflecken, die mit der Schneehöhe zu einer geschlossenen Decke zusammenwachsen */
-  private lawnTexture(snow: number) {
-    // mit Schnee: größere Kachel (512 px auf 10 m statt 256 px auf 2,5 m), damit sich die Flecken nicht sichtbar wiederholen
-    const S = snow > 0 ? 512 : 256;
+  /** Rasen-Textur (kleine Kachel, fein gesprenkelt) */
+  private lawnTexture() {
+    const S = 256;
     const c = document.createElement('canvas');
     c.width = c.height = S;
     const g = c.getContext('2d')!;
@@ -963,35 +950,83 @@ export class Scene3D {
     g.fillRect(0, 0, S, S);
     let seed = 7;
     const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
-    for (let i = 0; i < (S === 512 ? 36000 : 9000); i++) {
+    for (let i = 0; i < 9000; i++) {
       const v = rnd();
       g.fillStyle = v < 0.45 ? '#5d8f39' : v < 0.8 ? '#426b27' : v < 0.95 ? '#6fa043' : '#7a8f3a';
       g.fillRect(rnd() * S, rnd() * S, 1 + rnd() * 2, 2 + rnd() * 4);
     }
-    if (snow > 0) {
-      // Schnee: nahtloses Rauschen – dünn nur Flecken, ab voller Stufe fast geschlossen mit etwas Gras darunter
-      const img = g.getImageData(0, 0, S, S);
-      const d = img.data;
-      const thr = 1.02 - snow * 0.9;
-      for (let y = 0; y < S; y++) {
-        for (let x = 0; x < S; x++) {
-          const n = fbmTile(x / S, y / S, 4);
-          const a = smooth(thr - 0.06, thr + 0.06, n) * (0.8 + 0.2 * snow);
-          const k = (y * S + x) * 4;
-          const sh = 236 + ((x * 7 + y * 13) % 14);
-          d[k] += (sh - d[k]) * a;
-          d[k + 1] += (sh + 3 - d[k + 1]) * a;
-          d[k + 2] += (sh + 10 - d[k + 2]) * a;
-        }
-      }
-      g.putImageData(img, 0, 0);
-    }
     const tex = new THREE.CanvasTexture(c);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
-    tex.repeat.setScalar(S === 512 ? 12 : 48);
+    tex.repeat.setScalar(48);
     tex.anisotropy = 8;
     return tex;
+  }
+
+  /**
+   * Schnee: ein Fleck auf und vor der Terrasse (weg vom Haus), der mit der Schneehöhe wächst – wenig Schnee etwa
+   * Terrassengröße, ab voller Stufe der ganze Garten. Unregelmäßiger Rand, außen ein halbdurchsichtiger Saum.
+   */
+  private snowPatch: THREE.Group | null = null;
+  private updateSnowPatch() {
+    if (this.snowPatch) {
+      this.scene.remove(this.snowPatch);
+      this.snowPatch.traverse((o) => (o as THREE.Mesh).geometry?.dispose());
+      this.snowPatch = null;
+    }
+    const level = this.patchLevel / 10;
+    if (!level || !this.ground.visible) return;
+    const h = store.house;
+    const inner = h.floors.filter((f) => f.kind !== 'outdoor').flatMap((f) => f.walls.flatMap((w) => [w.a, w.b]));
+    if (!inner.length) return;
+    const bb = (pts: Vec2[]) => ({ x0: Math.min(...pts.map((q) => q.x)), x1: Math.max(...pts.map((q) => q.x)), y0: Math.min(...pts.map((q) => q.y)), y1: Math.max(...pts.map((q) => q.y)) });
+    const hb = bb(inner);
+    const hc = { x: (hb.x0 + hb.x1) / 2, y: (hb.y0 + hb.y1) / 2 };
+    const terrace = h.floors.flatMap((f) => f.rooms).find((r) => r.polygon && r.polygon.length >= 3 && (r.kind === 'terrace' || /terrass/i.test(r.name)));
+    let c: Vec2;
+    let ext: number;
+    if (terrace?.polygon) {
+      const tb = bb(terrace.polygon);
+      const tc = { x: (tb.x0 + tb.x1) / 2, y: (tb.y0 + tb.y1) / 2 };
+      ext = Math.max(tb.x1 - tb.x0, tb.y1 - tb.y0);
+      const dx = tc.x - hc.x;
+      const dy = tc.y - hc.y;
+      const len = Math.hypot(dx, dy) || 1;
+      c = { x: tc.x + (dx / len) * ext * 0.35, y: tc.y + (dy / len) * ext * 0.35 };
+    } else {
+      ext = 400;
+      c = { x: hc.x, y: hb.y1 + 300 };
+    }
+    // Radius in cm: klein ≈ Terrasse, groß = ganzer Garten
+    const R = ext * 0.3 + level * ext * 1.6 + level ** 3 * 2600;
+    const ring = (rad: number, seed: number) => {
+      const pts: THREE.Vector3[] = [];
+      for (let i = 0; i < 120; i++) {
+        const a = (i / 120) * Math.PI * 2;
+        const k = 1 + 0.16 * Math.sin(3 * a + 1 + seed) + 0.09 * Math.sin(5 * a + 2.3 + seed) + 0.05 * Math.sin(11 * a + 0.7) + 0.025 * Math.sin(23 * a + seed);
+        pts.push(new THREE.Vector3((c.x + Math.cos(a) * rad * k) * M, 0, (c.y + Math.sin(a) * rad * k) * M));
+      }
+      return pts;
+    };
+    const disc = (pts: THREE.Vector3[], y: number, mat: THREE.Material) => {
+      const pos: number[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        const b = pts[(i + 1) % pts.length];
+        pos.push(c.x * M, y, c.y * M, b.x, y, b.z, a.x, y, a.z);
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.computeVertexNormals();
+      const m = new THREE.Mesh(geo, mat);
+      m.receiveShadow = true;
+      return m;
+    };
+    const g = new THREE.Group();
+    g.add(disc(ring(R, 0), 0.014, SNOW_MAT));
+    g.add(disc(ring(R * 1.12, 0.6), 0.011, SNOW_FRINGE));
+    this.scene.add(g);
+    this.snowPatch = g;
   }
 
   updateSelection() {
