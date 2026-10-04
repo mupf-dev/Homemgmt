@@ -1,7 +1,8 @@
 // Möbelarten als Daten („Objektbibliothek“): Eine Möbelart beschreibt entweder einen Korpus aus Spalten und Elementen
 // (Schublade, Tür mit Böden, Klappe, offenes Fach, Kühl-/Gefrierfach) – daraus entstehen 3D-Modell und Fächer – oder
 // ein 3D-Modell (.glb) mit eingezeichneten Fächern. Format: zuhause-objekt/1 (JSON), geteilt per Datei oder über den
-// Community-Katalog (Ordner library/ im Repository). Wird von App und Server gleichermaßen genutzt.
+// Community-Katalog (Repo mupf-dev/homemgmt-object-library; dort liegt eine Kopie dieser Datei zum Prüfen – bei
+// Formatänderungen mitziehen). Wird von App und Server gleichermaßen genutzt.
 
 import type { MaterialSlot } from './types.ts';
 

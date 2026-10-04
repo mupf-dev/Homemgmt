@@ -9,9 +9,9 @@ const os = require('node:os');
 const path = require('node:path');
 const { startServer, client } = require('./helpers.cjs');
 
-// Katalog wie raw.githubusercontent.com: Kopie von library/ (die Tests ändern Versionen)
+// Katalog wie auf GitHub Pages: Kopie des Testkatalogs (die Tests ändern Versionen)
 const catDir = fs.mkdtempSync(path.join(os.tmpdir(), 'zuhause-katalog-'));
-fs.cpSync(path.join(__dirname, '..', 'library'), catDir, { recursive: true });
+fs.cpSync(path.join(__dirname, 'fixtures', 'katalog'), catDir, { recursive: true });
 let catSrv;
 let catUrl;
 let srv;

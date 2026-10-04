@@ -8,8 +8,9 @@ Klappen, Kühl- und Gefrierfächern – oder ein eigenes 3D-Modell (.glb) mit ei
 Fach als Rahmen; **jedes Fach wird ein Lagerplatz**. Vorlagen (Regal, Vorratsschrank, Kommode, Unterschrank,
 Kleiderschrank, Oberschrank) als Ausgangspunkt.
 
-**Community-Katalog** im Ordner `library/` des Repos: Möbelarten installieren und aktualisieren, eigene exportieren
-(`.zuhause-objekt.json`) und per Pull Request beisteuern – ohne Server und ohne Schlüssel. Start mit Würfelregal 4×4,
+**Community-Katalog** im eigenen Repo [homemgmt-object-library](https://github.com/mupf-dev/homemgmt-object-library) mit
+Galerie auf GitHub Pages: Möbelarten installieren und aktualisieren, eigene exportieren (`.zuhause-objekt.json`) und per
+Pull Request beisteuern – automatisch geprüft, ohne Server und ohne Schlüssel. Start mit Würfelregal 4×4,
 Schuhschrank, Apothekerschrank, Werkzeugwagen und Bad-Hängeschrank.
 
 Installierte Möbelarten stehen beim Planen unter „Möbel“. Das Haus behält eine **Kopie** jeder verwendeten Möbelart –

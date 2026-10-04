@@ -65,8 +65,10 @@ Höhenverhältnissen der Auszüge, Böden hinter Türen, Kühl- und Gefrierfäch
 Fächer (`objectCompartments`) und Katalog-Symbol. Möbel tragen `type: "obj:<id>"`. Die Bibliothek liegt auf dem Server
 (Tabelle `object_types`, Quelle eigene/importiert/community); das **Haus hält eine Kopie** jeder verwendeten Möbelart
 (`House.objectTypes`), damit Bibliotheksänderungen keine Adressen verschieben – neue Versionen nur auf Wunsch.
-Community-Katalog: `library/index.json` (`zuhause-katalog/1`) im GitHub-Repo, Beiträge per Pull Request, gelesen über
-`OBJECT_CATALOG_URL` ohne Schlüssel. Die eingebauten Möbel bleiben im Code (bestehende Adressen stabil); die Vorlagen im
+Community-Katalog: eigenes Repo [`homemgmt-object-library`](https://github.com/mupf-dev/homemgmt-object-library) (eigene
+Lizenz, Beiträge per Pull Request, automatische Prüfung); eine GitHub Action erzeugt `index.json` (`zuhause-katalog/1`),
+Vorschaubilder und Galerie auf GitHub Pages, gelesen über `OBJECT_CATALOG_URL` ohne Schlüssel. Der Katalog prüft mit
+einer Kopie von `model/objects.ts` – bei Formatänderungen mitziehen. Die eingebauten Möbel bleiben im Code (bestehende Adressen stabil); die Vorlagen im
 Editor bilden sie als Korpus nach.
 
 **Normalisieren** (`model/house.ts`, `normalizeHouse`): erkennt Räume, vergibt eindeutige Lager-Kürzel (Kürzel anderer

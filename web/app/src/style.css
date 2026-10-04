@@ -1073,7 +1073,7 @@ body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
 .ob-row .l-main small { white-space: normal; }
 .ob-desc { font-style: italic; }
 .ob-icon { flex: none; width: 60px; height: 40px; color: var(--ink-soft); display: grid; place-items: center; }
-.ob-icon svg { width: 100%; height: 100%; }
+.ob-icon svg, .ob-icon img { width: 100%; height: 100%; object-fit: contain; }
 .ob-icon svg.i { width: 24px; height: 24px; color: var(--accent); }
 .ob-icon.big { width: 90px; height: 60px; }
 .ob-acts { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; }

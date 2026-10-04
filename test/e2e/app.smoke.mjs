@@ -21,12 +21,12 @@ function chromePath() {
   return undefined; // playwright-core sucht selbst
 }
 let failed = false;
-// Community-Katalog der Objektbibliothek: lokal aus library/ statt von GitHub
+// Community-Katalog der Objektbibliothek: lokal (Testkatalog) statt von GitHub Pages
 const { createServer } = await import('node:http');
 const { readFile } = await import('node:fs/promises');
 const libSrv = createServer(async (req, res) => {
   try {
-    res.end(await readFile(join(ROOT, 'library', decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\.\./g, ''))));
+    res.end(await readFile(join(ROOT, 'test', 'fixtures', 'katalog', decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\.\./g, ''))));
   } catch {
     res.statusCode = 404;
     res.end();

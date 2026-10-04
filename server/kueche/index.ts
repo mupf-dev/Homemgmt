@@ -271,14 +271,14 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     }
   });
 
-  // --- Objektbibliothek: Möbelarten als Daten, eigener Bestand und Community-Katalog (Ordner library/ im Repository) ---
+  // --- Objektbibliothek: Möbelarten als Daten, eigener Bestand und Community-Katalog (eigenes Repo homemgmt-object-library, veröffentlicht über GitHub Pages) ---
   // Lesen: alle Angemeldeten (auch Wandterminals); Ändern und Installieren: wer planen darf (Admins immer)
   const requirePlanner = (req: Request, res: Response, next: NextFunction) => {
     const a = req.auth;
     if (a?.via !== 'session' || (a.person.role !== 'admin' && !a.person.can_plan)) return res.status(403).json({ error: 'Die Objektbibliothek ändern nur Personen mit dem Recht „Haus planen“.' });
     next();
   };
-  const CATALOG_URL = (process.env.OBJECT_CATALOG_URL || 'https://raw.githubusercontent.com/mupf-dev/Homemgmt/main/library/').replace(/\/?$/, '/');
+  const CATALOG_URL = (process.env.OBJECT_CATALOG_URL || 'https://mupf-dev.github.io/homemgmt-object-library/').replace(/\/?$/, '/');
   type ObjRow = { id: string; data: string; source: string; source_url: string | null; hidden: number; updated_at: string };
   const objRow = (r: ObjRow) => ({ object: JSON.parse(r.data) as ObjectType, source: r.source, sourceUrl: r.source_url, hidden: !!r.hidden, updatedAt: r.updated_at });
   const getObj = (id: string) => db().prepare('SELECT * FROM object_types WHERE id = ?').get(id) as ObjRow | undefined;
@@ -330,7 +330,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     res.json({ ok: true });
   });
 
-  // Community-Katalog: index.json im Ordner library/ des Repositorys (ohne Konto/Schlüssel), 30 Min. zwischengespeichert
+  // Community-Katalog: index.json auf GitHub Pages (ohne Konto/Schlüssel), 30 Min. zwischengespeichert
   let catalogCache: { at: number; data: any } | null = null;
   const fetchCatalog = async () => {
     if (catalogCache && Date.now() - catalogCache.at < 30 * 60000) return catalogCache.data;
@@ -352,7 +352,8 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
           return {
             id: String(o.id), name: str(o.name, 60), group: str(o.group, 40), version: str(o.version, 20), author: str(o.author, 60),
             license: str(o.license, 40), description: str(o.description, 500), file: str(o.file, 200),
-            preview: o.preview ? CATALOG_URL + str(o.preview, 200) : null,
+            preview: o.preview && /^[\w./-]+\.svg$/.test(String(o.preview)) && !String(o.preview).includes('..') ? CATALOG_URL + String(o.preview) : null,
+            places: Number.isFinite(o.places) ? Number(o.places) : null,
             installed: have ? have.object.version : null,
             update: !!have && have.source === 'community' && compareVersions(String(o.version), have.object.version) > 0,
           };
