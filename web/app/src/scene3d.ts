@@ -1008,16 +1008,16 @@ export class Scene3D {
       }
       return pts;
     };
+    // Grundriss des Hauses (Erdgeschoss) aussparen – der Schnee bleibt draußen
+    const ground = h.floors.filter((f) => f.kind === 'floor').sort((a, b) => Math.abs(a.elevation) - Math.abs(b.elevation))[0];
+    const foot = ground ? floorPolygon(floorView(h, ground)) : [];
     const disc = (pts: THREE.Vector3[], y: number, mat: THREE.Material) => {
-      const pos: number[] = [];
-      for (let i = 0; i < pts.length; i++) {
-        const a = pts[i];
-        const b = pts[(i + 1) % pts.length];
-        pos.push(c.x * M, y, c.y * M, b.x, y, b.z, a.x, y, a.z);
-      }
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      geo.computeVertexNormals();
+      // Form in x/−z zeichnen und flach legen (Normale nach oben)
+      const shape = new THREE.Shape(pts.map((q) => new THREE.Vector2(q.x, -q.z)));
+      if (foot.length >= 3) shape.holes.push(new THREE.Path(foot.map((q) => new THREE.Vector2(q.x * M, -q.y * M))));
+      const geo = new THREE.ShapeGeometry(shape, 1);
+      geo.rotateX(-Math.PI / 2);
+      geo.translate(0, y, 0);
       const m = new THREE.Mesh(geo, mat);
       m.receiveShadow = true;
       return m;
