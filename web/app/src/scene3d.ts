@@ -62,6 +62,55 @@ function fbm(x: number, y: number) {
   }
   return s / 0.97;
 }
+// --- Flächen abziehen (Schneefleck minus Haus): konvexe Hülle, Halbebenen-Schnitt, Differenz konvexer Polygone ---
+type P2 = [number, number];
+const cross2 = (a: P2, b: P2, c: P2) => (b[0] - a[0]) * (c[1] - a[1]) - (b[1] - a[1]) * (c[0] - a[0]);
+/** konvexe Hülle (gegen den Uhrzeigersinn) */
+function hull(pts: P2[]): P2[] {
+  const p = [...pts].sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+  const lower: P2[] = [];
+  const upper: P2[] = [];
+  for (const q of p) {
+    while (lower.length >= 2 && cross2(lower[lower.length - 2], lower[lower.length - 1], q) <= 0) lower.pop();
+    lower.push(q);
+  }
+  for (const q of p.reverse()) {
+    while (upper.length >= 2 && cross2(upper[upper.length - 2], upper[upper.length - 1], q) <= 0) upper.pop();
+    upper.push(q);
+  }
+  return [...lower.slice(0, -1), ...upper.slice(0, -1)];
+}
+/** Polygon an der Geraden a→b schneiden: links (inside) oder rechts davon behalten */
+function clipHalf(poly: P2[], a: P2, b: P2, inside: boolean): P2[] {
+  const out: P2[] = [];
+  const side = (q: P2) => (inside ? 1 : -1) * cross2(a, b, q);
+  for (let i = 0; i < poly.length; i++) {
+    const p = poly[i];
+    const q = poly[(i + 1) % poly.length];
+    const sp = side(p);
+    const sq = side(q);
+    if (sp >= 0) out.push(p);
+    if ((sp >= 0) !== (sq >= 0)) {
+      const t = sp / (sp - sq);
+      out.push([p[0] + (q[0] - p[0]) * t, p[1] + (q[1] - p[1]) * t]);
+    }
+  }
+  return out;
+}
+const area2 = (poly: P2[]) => poly.reduce((s, p, i) => s + cross2([0, 0], p, poly[(i + 1) % poly.length]), 0) / 2;
+/** konvexes Polygon a minus konvexes Polygon h (gegen den Uhrzeigersinn) – disjunkte konvexe Stücke */
+function diffConvex(a: P2[], h: P2[]): P2[][] {
+  const pieces: P2[][] = [];
+  let rest = a;
+  for (let i = 0; i < h.length && rest.length >= 3; i++) {
+    const e0 = h[i];
+    const e1 = h[(i + 1) % h.length];
+    const out = clipHalf(rest, e0, e1, false);
+    if (out.length >= 3 && Math.abs(area2(out)) > 1e-6) pieces.push(out);
+    rest = clipHalf(rest, e0, e1, true);
+  }
+  return pieces;
+}
 const smooth = (a: number, b: number, x: number) => {
   const t = Math.max(0, Math.min(1, (x - a) / (b - a)));
   return t * t * (3 - 2 * t);
@@ -1008,16 +1057,34 @@ export class Scene3D {
       }
       return pts;
     };
-    // Grundriss des Hauses (Erdgeschoss) aussparen – der Schnee bleibt draußen
-    const ground = h.floors.filter((f) => f.kind === 'floor').sort((a, b) => Math.abs(a.elevation) - Math.abs(b.elevation))[0];
-    const foot = ground ? floorPolygon(floorView(h, ground)) : [];
+    // Hausfläche (konvexe Hülle aller Wände der Innen-Etagen, etwas größer) abziehen – der Schnee bleibt draußen
+    const houseHull = hull(inner.map((q) => [q.x * M, q.y * M] as P2));
+    const hx = houseHull.reduce((s2, q) => s2 + q[0], 0) / houseHull.length;
+    const hz = houseHull.reduce((s2, q) => s2 + q[1], 0) / houseHull.length;
+    const cutout: P2[] = houseHull.map((q) => {
+      const dx = q[0] - hx;
+      const dz = q[1] - hz;
+      const d = Math.hypot(dx, dz) || 1;
+      return [q[0] + (dx / d) * 0.05, q[1] + (dz / d) * 0.05];
+    });
     const disc = (pts: THREE.Vector3[], y: number, mat: THREE.Material) => {
-      // Form in x/−z zeichnen und flach legen (Normale nach oben)
-      const shape = new THREE.Shape(pts.map((q) => new THREE.Vector2(q.x, -q.z)));
-      if (foot.length >= 3) shape.holes.push(new THREE.Path(foot.map((q) => new THREE.Vector2(q.x * M, -q.y * M))));
-      const geo = new THREE.ShapeGeometry(shape, 1);
-      geo.rotateX(-Math.PI / 2);
-      geo.translate(0, y, 0);
+      // Fleck als Fächer aus Dreiecken um die Mitte; jedes Dreieck minus Hausfläche
+      const center: P2 = [c.x * M, c.y * M];
+      const pos: number[] = [];
+      for (let i = 0; i < pts.length; i++) {
+        const a = pts[i];
+        const b = pts[(i + 1) % pts.length];
+        let tri: P2[] = [center, [a.x, a.z], [b.x, b.z]];
+        if (area2(tri) < 0) tri = [center, [b.x, b.z], [a.x, a.z]];
+        for (const piece of diffConvex(tri, cutout)) {
+          const poly = area2(piece) < 0 ? [...piece].reverse() : piece;
+          // Dreiecksfächer, so gedreht, dass die Fläche von oben sichtbar ist
+          for (let k = 1; k < poly.length - 1; k++) pos.push(poly[0][0], y, poly[0][1], poly[k + 1][0], y, poly[k + 1][1], poly[k][0], y, poly[k][1]);
+        }
+      }
+      const geo = new THREE.BufferGeometry();
+      geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+      geo.computeVertexNormals();
       const m = new THREE.Mesh(geo, mat);
       m.receiveShadow = true;
       return m;
