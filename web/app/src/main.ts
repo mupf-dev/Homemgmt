@@ -3332,7 +3332,7 @@ $('#locationBtn').addEventListener('click', () => openLocation());
 plan.north = () => store.house.settings.location?.north ?? null;
 
 /** Draußen wie echt (Wandterminal): Sonne aus Ort und Uhrzeit, Bewölkung/Regen aus dem Wetter – jede Minute neu */
-let outdoorWeather: { at: number; data: any } | null = null;
+let outdoorWeather: { at: number; data: any; q: string } | null = null;
 async function updateOutdoor(force = false) {
   const t = terminal();
   const loc = store.house.settings.location;
@@ -3341,13 +3341,16 @@ async function updateOutdoor(force = false) {
     if (view.outdoor) view.setOutdoor(null);
     return;
   }
-  if (force || !outdoorWeather || Date.now() - outdoorWeather.at > 15 * 60000) {
-    const q = loc ? `?lat=${loc.lat}&lon=${loc.lon}&place=${encodeURIComponent(loc.label ?? '')}` : '';
+  // neu abfragen: alle 15 Min., bei geänderter Lage sofort, nach einem Fehlschlag nach einer Minute
+  const q = loc ? `?lat=${loc.lat}&lon=${loc.lon}&place=${encodeURIComponent(loc.label ?? '')}` : '';
+  const due = !outdoorWeather || outdoorWeather.q !== q || Date.now() - outdoorWeather.at > (outdoorWeather.data ? 15 : 1) * 60000;
+  // ohne Lage und ohne Postleitzahl gibt es kein Wetter (z. B. bevor der Hausplan geladen ist)
+  if ((force || due) && (loc || t.settings.plz)) {
     const data = await fetch(`/api/weather${q}`, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
-    outdoorWeather = { at: Date.now(), data };
+    outdoorWeather = { at: Date.now(), data, q };
     setTermWeather(data ? `${data.temperature} °C · ${data.text}` : '');
   }
-  const w = outdoorWeather.data;
+  const w = outdoorWeather?.data ?? null;
   const sun = loc ? sunPosition(new Date(), loc.lat, loc.lon) : null;
   const night = sun ? sun.altitude < -3 : (() => { const h = new Date().getHours(); return h < 7 || h >= 20; })();
   // Wetter über dem Bild (Regen, Schnee, Dunst, Gewitter) – auch ohne Lage des Hauses (Wetter dann per Postleitzahl)
@@ -3430,9 +3433,10 @@ const frames = (n: number) => new Promise<void>((r) => { const f = () => (n-- <=
 /** Bild des Hauses neu rechnen: erst schnell, dann fotorealistisch (höchstens 30 s, danach ruht die Grafik) */
 /** Detailgrad des fotorealistischen Bildes: Proben, Zeitlimit, Rechenauflösung (Terminal-Einstellung) */
 const QUALITY = {
-  draft: { samples: 32, ms: 15000, scale: 0.5 },
-  normal: { samples: 64, ms: 30000, scale: 0.6 },
-  high: { samples: 256, ms: 90000, scale: 1 },
+  // Proben bis „fertig“, Zeitlimit, Rechenauflösung, Mindestproben – darunter bleibt das normale 3D-Bild (kein Rauschen)
+  draft: { samples: 24, ms: 60000, scale: 0.5, min: 10 },
+  normal: { samples: 64, ms: 120000, scale: 0.6, min: 24 },
+  high: { samples: 256, ms: 300000, scale: 1, min: 64 },
 } as const;
 const REST_KEY = 'zh.rest';
 let restKey = '';
@@ -3512,9 +3516,16 @@ async function paintRest(key: string) {
       }
       progress.hidden = true;
       const done = !rest.hidden && !document.hidden;
-      if (done) {
+      if (done && ptSamples >= q.min) {
         img.src = view.screenshot();
         rememberRest(img.src, key);
+      } else if (done) {
+        // Grafik zu langsam: sauberes normales 3D-Bild statt verrauschtem Zwischenstand
+        await view.setPathTracing(false);
+        await frames(3);
+        img.src = view.screenshot();
+        rememberRest(img.src, key);
+        console.info(`Fotorealistisch: nur ${ptSamples} von mind. ${q.min} Proben in ${q.ms / 1000} s – normales Bild verwendet`);
       } else restKey = ''; // abgebrochen: beim nächsten Mal neu
       await view.setPathTracing(false);
       view.ptScale = 1;
@@ -3614,10 +3625,11 @@ function showLightning(r: { strikes: { km: number; bearing: number; age_s: numbe
   // Ruhezustand: Hinweis und Karte, sobald es in 100 km blitzt
   const box = document.querySelector<HTMLElement>('#rest .rest-storm');
   if (!box) return;
-  box.hidden = !r.strikes.length;
+  // nur bei Blitzen in der Nähe (bis 50 km, letzte 15 Min.) – sonst ausgeblendet
+  box.hidden = r.level === 0;
   box.dataset.level = String(r.level);
   box.querySelector('.storm-title')!.textContent = title || 'Blitze in der Ferne';
-  box.querySelector('.storm-text')!.textContent = text || `${r.strikes.length} Blitze in der letzten Stunde (bis 100 km)`;
+  box.querySelector('.storm-text')!.textContent = text;
   drawRadar(box.querySelector('canvas')!, r.strikes, loc.north);
 }
 /** Blitzkarte: Haus in der Mitte, Norden oben, Ringe 10/25/50 km, Punkte nach Alter */
@@ -3720,7 +3732,7 @@ if (projectParam) {
   view, plan, store, sync, rest: () => idleNow(),
   // für Klicktests: Wetter und Blitze vorgeben
   weather: (w: any) => {
-    outdoorWeather = { at: Date.now(), data: w };
+    outdoorWeather = { at: Date.now(), data: w, q: (() => { const l = store.house.settings.location; return l ? `?lat=${l.lat}&lon=${l.lon}&place=${encodeURIComponent(l.label ?? '')}` : ''; })() };
     return updateOutdoor();
   },
   lightning: showLightning,
