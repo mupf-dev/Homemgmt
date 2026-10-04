@@ -117,3 +117,57 @@ test('Arbeitsplatte mit Küchenzeile: eine durchgehende Platte mit dem Unterschr
   assert.equal(Math.round(runs.get('u').v1 * 100), 30 + 30 + 3);
   C.setLibraryObjects([]);
 });
+
+// Waschmaschine und Trockner unter Arbeitsplatte (Beispiel aus dem Format)
+const geraete = (extra = {}) => ({
+  format: 'zuhause-objekt/1', id: 'eigene.wasch-trocken', name: 'Waschmaschine und Trockner', group: 'Hauswirtschaft', version: '1.0',
+  size: { width: 120, depth: 65, height: 90, elevation: 0 }, snapToWall: true,
+  build: { type: 'korpus', plinth: 0, board: 1.8, back: false, countertop: { thickness: 4, overhang: 2, join: true },
+    columns: [{ size: 1, elements: [{ kind: 'washer', size: 1, ...extra }] }, { size: 1, elements: [{ kind: 'dryer', size: 1 }] }] },
+});
+
+test('Geräte: washer und dryer werden angenommen, Böden nicht', () => {
+  assert.equal(M.ELEMENT_KINDS.washer, 'Waschmaschine');
+  assert.equal(M.ELEMENT_KINDS.dryer, 'Trockner');
+  const t = M.validateObjectType(geraete());
+  assert.deepEqual(t.build.columns.map((c) => c.elements[0].kind), ['washer', 'dryer']);
+  assert.throws(() => M.validateObjectType(geraete({ shelves: 2 })), /Waschmaschine hat keine Böden/);
+  assert.throws(() => M.validateObjectType({ ...geraete(), build: { ...geraete().build, columns: [{ size: 1, elements: [{ kind: 'spuelmaschine', size: 1 }] }] } }), /unbekannte Art/);
+});
+
+test('Geräte: je zwei Fächer – Blende oben, Trommel darunter', () => {
+  const t = M.validateObjectType(geraete());
+  const c = places(t);
+  assert.equal(c.length, 4);
+  assert.equal(M.objectCompartmentCount(t), 4);
+  assert.deepEqual(c.map((x) => [x.label, x.kind]), [
+    ['Links · Waschmittelfach', 'drawer'], ['Links · Waschmaschine', 'door'],
+    ['Rechts · Kondenswasserbehälter', 'drawer'], ['Rechts · Trockner', 'door'],
+  ]);
+  // unter der Arbeitsplatte: Korpus bis 90 − 4 − 1,8; Blende 13 cm, Trommel darunter bis zum Boden
+  const [blende, trommel] = c;
+  assert.ok(Math.abs(blende.y1 - (90 - 4 - 1.8)) < 1e-9);
+  assert.ok(Math.abs(blende.y1 - blende.y0 - 13) < 1e-9);
+  assert.equal(trommel.y1, blende.y0);
+  assert.ok(Math.abs(trommel.y0 - 1.8) < 1e-9);
+  // eigene Bezeichnung benennt nur die Trommel
+  const named = places(M.validateObjectType(geraete({ label: 'Waschmaschine Bosch' })));
+  assert.deepEqual(named.slice(0, 2).map((x) => x.label), ['Links · Waschmittelfach', 'Links · Waschmaschine Bosch']);
+  // niedriges Gerät: Blende höchstens 30 % der Höhe
+  const klein = geraete();
+  klein.size.height = 30;
+  delete klein.build.countertop;
+  const k = places(M.validateObjectType(klein))[0];
+  assert.ok(Math.abs(k.y1 - k.y0 - (30 - 3.6) * 0.3) < 1e-9);
+});
+
+test('Geräte: Säule und Grenze von 99 Fächern zählen zwei Fächer je Gerät', () => {
+  const saeule = M.validateObjectType({ ...geraete(), build: { type: 'korpus', plinth: 0, board: 1.8, back: false,
+    columns: [{ size: 1, elements: [{ kind: 'dryer', size: 1 }, { kind: 'washer', size: 1 }] }] } });
+  assert.deepEqual(places(saeule).map((x) => x.label), ['Kondenswasserbehälter', 'Trockner', 'Waschmittelfach', 'Waschmaschine']);
+  // 12 Spalten × 4 Geräte = 96 Fächer erlaubt, × 5 = 120 nicht
+  const viele = (n) => ({ ...geraete(), size: { width: 800, depth: 65, height: 400, elevation: 0 },
+    build: { type: 'korpus', plinth: 0, board: 1.8, back: false, columns: Array.from({ length: 12 }, () => ({ size: 1, elements: Array.from({ length: n }, () => ({ kind: 'washer', size: 1 })) })) } });
+  assert.equal(M.objectCompartmentCount(M.validateObjectType(viele(4))), 96);
+  assert.throws(() => M.validateObjectType(viele(5)), /Zu viele Fächer \(höchstens 99\)/);
+});
