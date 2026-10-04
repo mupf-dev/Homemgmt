@@ -9,6 +9,7 @@ Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – a
 [![Node.js ≥ 22.18](https://img.shields.io/badge/Node.js-%E2%89%A5%2022.18-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org)
 [![Docker](https://img.shields.io/badge/Docker-bereit-2496ED?logo=docker&logoColor=white)](#mit-docker-empfohlen)
 [![MCP](https://img.shields.io/badge/MCP-Server-6B4FBB)](#ki-assistent-und-mcp-server)
+[![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/Website-mupf--dev.github.io-E8692E)](https://mupf-dev.github.io/Homemgmt/)
 
 [Funktionen](#funktionen) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
@@ -281,6 +282,14 @@ three-gpu-pathtracer.
 Die übrigen Endpunkte (Lager, Buchungen, Konto, Assistent, Backups) stehen in
 [docs/LAGER.md](docs/LAGER.md#api-für-eigene-erweiterungen). API-Schlüssel (`Authorization: Bearer hlk_…`) funktionieren
 auch für die REST-API.
+
+## Lizenz
+
+[GNU Affero General Public License v3.0](LICENSE). Du darfst Zuhause nutzen, verändern und weitergeben. Wer eine
+veränderte Fassung weitergibt oder als Online-Dienst anbietet, muss den Quellcode unter derselben Lizenz offenlegen.
+
+Der Hausplaner ist aus dem [Küchenplaner 3D](https://github.com/mupf-dev/kitchen-planner-3d) hervorgegangen
+([Live-Demo](https://kuechenplaner.miefda.org/)).
 
 ## Danksagung
 
