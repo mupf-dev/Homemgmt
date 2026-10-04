@@ -6,6 +6,7 @@ import { prefs, savePrefs, type Prefs } from '../prefs';
 import { compartments } from '../model/storage.ts';
 import { api, esc, expiryTag, relDate, type ApiItem, type LagerCtx } from './core';
 import type { View } from './views';
+import { bindTaskRows, openTaskEditor, taskRow, upcoming, type TaskList } from './tasks';
 
 /** Belegte und alle Fächer je Etage (aus Hausplan und Lagerinhalt) */
 function floorFill(ctx: LagerCtx) {
@@ -37,6 +38,7 @@ export const viewHome: View = async (el, ctx) => {
     </div>
     <div class="ov-cards">
       <section class="ov-card" id="ov-shop"><div class="ov-h">${ic('cart')}<h2>Einkaufsliste</h2><a href="#/einkauf">Öffnen</a></div><div class="ov-rows"><p class="hint">Lade …</p></div></section>
+      <section class="ov-card" id="ov-tasks"><div class="ov-h">${ic('check')}<h2>Aufgaben</h2><button class="link" id="ov-task-new" title="Neue Aufgabe">${ic('plus')}</button><a href="#/aufgaben">Alle</a></div><div class="ov-rows"><p class="hint">Lade …</p></div></section>
       <section class="ov-card" id="ov-exp"><div class="ov-h">${ic('clock')}<h2>Läuft bald ab</h2><a href="#/haltbarkeit">Alle</a></div><div class="ov-rows"><p class="hint">Lade …</p></div></section>
       <section class="ov-card" id="ov-house"><div class="ov-h">${ic('layers')}<h2>Haus</h2><a href="#/haus">Öffnen</a></div><div class="ov-rows"></div></section>
       <section class="ov-card" id="ov-moves"><div class="ov-h">${ic('users')}<h2>Zuletzt bewegt</h2></div><div class="ov-rows"><p class="hint">Lade …</p></div></section>
@@ -61,6 +63,20 @@ export const viewHome: View = async (el, ctx) => {
     );
   };
   shop();
+
+  // Aufgaben: überfällig, heute und die nächsten 7 Tage (meine zuerst); abhaken direkt hier
+  const tasks = async () => {
+    const list = await api<TaskList>('GET', '/api/tasks').catch(() => null);
+    const box = rows('ov-tasks');
+    if (!list) return void (box.innerHTML = '');
+    const soon = upcoming(list, 7, u.id);
+    box.innerHTML = soon.length
+      ? soon.slice(0, 6).map((t) => taskRow(ctx, t, list.today, { compact: true })).join('') + (soon.length > 6 ? `<a class="ov-more" href="#/aufgaben">und ${soon.length - 6} weitere</a>` : '')
+      : `<p class="hint">Diese Woche ist nichts fällig.</p>`;
+    bindTaskRows(ctx, box, list.open, tasks);
+  };
+  tasks();
+  el.querySelector('#ov-task-new')!.addEventListener('click', () => openTaskEditor(ctx, null, tasks));
 
   api<ApiItem[]>('GET', '/api/expiring?days=30').then((list) => {
     rows('ov-exp').innerHTML = list.length
@@ -90,6 +106,7 @@ export const viewMore: View = (el, ctx) => {
   const tile = (href: string, icon: IconName, title: string, sub: string) => `<a class="ov-tile" href="${href}">${ic(icon)}<b>${title}</b><small>${sub}</small></a>`;
   el.innerHTML = `<h1>Mehr</h1>
     <div class="ov-tiles">
+      ${tile('#/aufgaben', 'check', 'Aufgaben', 'Was im Haushalt zu tun ist')}
       ${tile('#/haltbarkeit', 'clock', 'Haltbarkeit', 'Was bald abläuft')}
       ${tile('#/assistent', 'spark', 'Assistent', 'Fragen und buchen in normaler Sprache')}
       ${tile('#/auswertung', 'chart', 'Auswertung', 'Verbrauch, Heatmap im Haus')}

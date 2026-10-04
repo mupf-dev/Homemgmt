@@ -84,6 +84,13 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
     html: `<p>Ein Gegenstand wird zum Behälter über „Bearbeiten → Behälter“. In seiner Detailansicht: „Gegenstand hineinlegen“, „Neuen Gegenstand hinein einbuchen“ oder „Einräumen per Scan“. Der Inhalt hat immer den Platz des Behälters und wandert beim Umlagern mit.</p>`,
   },
   {
+    id: 'aufgaben', title: 'Aufgaben',
+    html: `<ul><li>Unter <b>Mehr → Aufgaben</b> (und auf der Übersicht): was im Haushalt zu tun ist – mit Termin, <b>Wiederholung</b> (täglich, wöchentlich, alle 3 Monate … oder ein eigener Rhythmus) und optional einer <b>Person</b>.</li>
+      <li>Eine Aufgabe kann an einem <b>Fach</b> hängen, z. B. „Filter Dunstabzug tauschen“ am Hochschrank – ein Klick auf die Adresse zeigt es im Haus.</li>
+      <li><b>Abhaken</b>: einmalige Aufgaben sind erledigt, wiederkehrende rücken auf den nächsten Termin – nach festem Rhythmus (verpasste Termine werden übersprungen) oder „ab Erledigung“. Versehentlich abgehakt? „Rückgängig“ in der Meldung.</li>
+      <li>Am <b>Wandterminal</b> stehen die Aufgaben links in der Navigation; abhaken mit „Wer bucht?“. Fällige Aufgaben zeigt auch der Ruhezustand. Anlegen und Ändern geht in der App.</li></ul>`,
+  },
+  {
     id: 'einkauf', title: 'Einkaufsliste und Preise',
     html: `<ul><li>Verbrauchsmaterial kommt beim Entnehmen automatisch auf die Liste; freie Einträge („Milch“) oben hinzufügen.</li>
       <li>Kreis = gekauft; „einbuchen“ bucht auf den bisherigen Platz, „einlagern“ legt freie Einträge in einem gewählten Fach als Gegenstand an.</li>

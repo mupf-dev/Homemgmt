@@ -252,6 +252,36 @@ try {
   await page.goto(base + '/#/haus');
   await page.waitForFunction(() => !document.body.classList.contains('mode-lager'));
 
+  step('Aufgaben: wiederkehrend, zugeordnet, an einem Fach; auf der Übersicht abhaken und rückgängig');
+  await page.goto(base + '/#/aufgaben');
+  await page.click('#tkNew');
+  await page.fill('.tk-form [name="title"]', 'Filter Dunstabzug tauschen');
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('sv-SE');
+  await page.fill('.tk-form [name="due_on"]', yesterday);
+  await page.selectOption('.tk-form [name="assignee_id"]', { label: 'Ben' });
+  await page.selectOption('.tk-form [name="repeat"]', '3month');
+  await page.click('#tkPick');
+  await page.click('.pp-btn >> nth=0');
+  console.log('  Ort:', (await page.innerText('#tkPlace')).replace(/\s+/g, ' '));
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('.tk-row:has-text("Filter Dunstabzug")');
+  await page.click('#tkNew');
+  await page.fill('.tk-form [name="title"]', 'Müll rausbringen');
+  await page.selectOption('.tk-form [name="repeat"]', 'week');
+  await page.click('.modal [data-ok]');
+  await page.waitForSelector('.tk-row:has-text("Müll rausbringen")');
+  console.log('  Gruppen:', await page.$$eval('.tk-h', (h) => h.map((x) => x.textContent.replace(/\s+/g, ' ').trim())));
+  console.log('  Filter:', (await page.innerText('.tk-row:has-text("Filter") .tk-meta')).replace(/\s+/g, ' '));
+  await shot('07a-aufgaben');
+  await page.goto(base + '/#/lager');
+  await page.waitForSelector('#ov-tasks .tk-row:has-text("Müll")');
+  await page.click('#ov-tasks .tk-row:has-text("Müll") [data-tick]');
+  await page.waitForSelector('.toast:has-text("wieder fällig")');
+  console.log('  Abgehakt:', (await page.textContent('.toast')).replace(/\s+/g, ' '));
+  await page.click('.toast button:has-text("Rückgängig")');
+  await page.waitForFunction(async () => (await (await fetch('/api/tasks')).json()).open.find((t) => t.title === 'Müll rausbringen').due_today);
+  await shot('07b-uebersicht-aufgaben');
+
   step('Anleitung');
   await page.goto(base + '/#/hilfe');
   await page.waitForSelector('.help section');
@@ -457,6 +487,16 @@ try {
   const last = await page.evaluate(async () => (await (await fetch('/api/movements/recent?limit=1')).json())[0]);
   console.log('  Buchung:', last.quantity, last.item, 'von', last.person);
   if (last.person !== 'Ben') throw new Error('Buchung nicht der gewählten Person zugeordnet');
+  // Aufgaben am Terminal: Navigation links, abhaken mit „Wer bucht?“ (Ben ist noch gewählt)
+  await p4.click('#rail a[data-r="#/aufgaben"]');
+  await p4.waitForSelector('.tk-row:has-text("Filter Dunstabzug")');
+  console.log('  Terminal-Aufgaben:', await p4.locator('.tk-row').count(), '| Neue Aufgabe sichtbar:', await p4.isVisible('#tkNew'));
+  await p4.screenshot({ path: `${DIR}/13b-terminal-aufgaben.png` });
+  await p4.click('.tk-row:has-text("Filter Dunstabzug") [data-tick]');
+  await p4.waitForSelector('.toast:has-text("erledigt")');
+  const log = await page.evaluate(async () => (await (await fetch('/api/tasks')).json()).done[0]);
+  console.log('  Erledigt am Terminal:', log.title, 'von', log.done_by_name);
+  if (log.done_by_name !== 'Ben') throw new Error('Aufgabe nicht der gewählten Person zugeordnet');
   await p4.evaluate(() => window.__zuhause.rest());
   await p4.waitForSelector('#rest:not([hidden])', { timeout: 10000 });
   await p4.waitForTimeout(2500);

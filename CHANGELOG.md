@@ -2,6 +2,11 @@
 
 ## Unveröffentlicht
 
+**Aufgaben** (Mehr → Aufgaben, Karte auf der Übersicht): einmalig oder **wiederkehrend** (täglich, wöchentlich, alle
+3 Monate, jährlich oder eigener Rhythmus – nach festem Plan oder ab Erledigung), einer **Person** zugeordnet und optional
+an einem **Fach** („Filter Dunstabzug tauschen“ → im Haus zeigen). Abhaken mit „Rückgängig“; zuletzt erledigt mit wer und
+wann. Am **Wandterminal** in der Navigation, abhaken mit „Wer bucht?“; der Ruhezustand zeigt, was heute fällig ist.
+
 **Arbeitsplatte für Möbelarten** (Objektbibliothek): Korpus-Möbelarten können oben eine Arbeitsplatte tragen – z. B.
 Waschmaschine unter Arbeitsplatte, Hauswirtschaftszeile, Kochinsel. Stärke, Überstand vorne und Material im Editor
 einstellbar; mit „mit Küchenzeile verbinden“ wird sie Teil der Küchenzeile, die Maserung läuft über angrenzende

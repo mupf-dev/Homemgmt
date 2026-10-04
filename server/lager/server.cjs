@@ -120,6 +120,35 @@ function openDatabase() {
     db.exec('CREATE INDEX IF NOT EXISTS idx_items_wloc ON items(warehouse_id, col, row)');
   }
 
+  // Aufgaben des Haushalts: einmalig oder wiederkehrend, optional einer Person zugeordnet und an ein Fach gehängt
+  db.exec(`
+    CREATE TABLE IF NOT EXISTS tasks (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      title TEXT NOT NULL,
+      note TEXT NOT NULL DEFAULT '',
+      assignee_id INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+      due_on TEXT,
+      repeat_unit TEXT CHECK (repeat_unit IN ('day', 'week', 'month', 'year')),
+      repeat_every INTEGER NOT NULL DEFAULT 1 CHECK (repeat_every BETWEEN 1 AND 366),
+      repeat_from_done INTEGER NOT NULL DEFAULT 0,
+      warehouse_id INTEGER REFERENCES warehouses(id) ON DELETE SET NULL,
+      col TEXT,
+      row INTEGER,
+      created_by INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+      created_at TEXT NOT NULL DEFAULT (datetime('now')),
+      done_at TEXT,
+      done_by INTEGER REFERENCES persons(id) ON DELETE SET NULL
+    );
+    CREATE INDEX IF NOT EXISTS idx_tasks_open ON tasks(done_at, due_on);
+    CREATE TABLE IF NOT EXISTS task_log (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      task_id INTEGER NOT NULL REFERENCES tasks(id) ON DELETE CASCADE,
+      person_id INTEGER REFERENCES persons(id) ON DELETE SET NULL,
+      due_on TEXT,
+      done_at TEXT NOT NULL DEFAULT (datetime('now'))
+    );
+    CREATE INDEX IF NOT EXISTS idx_task_log ON task_log(task_id, done_at);`);
+
   // Migration: Verbrauchsmaterial und Einkaufsliste
   {
     if (!db.prepare('PRAGMA table_info(items)').all().some((c) => c.name === 'consumable')) {
@@ -420,6 +449,7 @@ const TERMINAL_WRITES = [
   ['POST', /^\/api\/(movements|shopping)\/\d+\/(undo|restock)$/],
   ['PATCH', /^\/api\/shopping\/\d+$/],
   ['DELETE', /^\/api\/shopping\/\d+$/],
+  ['POST', /^\/api\/tasks\/\d+\/(done|undo)$/],
 ];
 
 // Einfache Bremse gegen Passwort-Raten: nach 5 Fehlversuchen zunehmend lange Sperre
@@ -1810,6 +1840,109 @@ route('DELETE', '/api/shopping/:id', (p) => {
   getShopping(p.id);
   db.prepare('DELETE FROM shopping WHERE id = ?').run(p.id);
   return { ok: true };
+});
+
+// ---------- Aufgaben ----------
+// Wiederholung: alle n Tage/Wochen/Monate/Jahre – nach Plan (ab Fälligkeit, verpasste Termine werden übersprungen)
+// oder ab Erledigung. Erledigen schreibt ins Protokoll (task_log); „rückgängig“ stellt den alten Stand her.
+const { TASK_UNITS, localDate, nextDue } = require('./recur.cjs');
+const TASK_SELECT = `SELECT t.*, a.name AS assignee, a.color AS assignee_color, d.name AS done_by_name,
+    w.code AS wh_code, w.name AS wh_name, pl.name AS place_name
+  FROM tasks t LEFT JOIN persons a ON a.id = t.assignee_id LEFT JOIN persons d ON d.id = t.done_by
+  LEFT JOIN warehouses w ON w.id = t.warehouse_id
+  LEFT JOIN places pl ON pl.warehouse_id = t.warehouse_id AND pl.col = t.col AND pl.row = t.row`;
+function getTask(id) {
+  const t = db.prepare(`${TASK_SELECT} WHERE t.id = ?`).get(Number(id));
+  if (!t) throw new HttpError(404, 'Aufgabe nicht gefunden.');
+  return t;
+}
+/** Eingaben prüfen; partial = nur übergebene Felder (Ändern) */
+function taskFields(body, partial = false) {
+  const f = {};
+  const has = (k) => !partial || body[k] !== undefined;
+  if (has('title')) {
+    f.title = String(body.title ?? '').trim();
+    if (!f.title) throw new HttpError(400, 'Bitte einen Titel angeben.');
+    if (f.title.length > 120) throw new HttpError(400, 'Titel ist zu lang (höchstens 120 Zeichen).');
+  }
+  if (has('note')) f.note = String(body.note ?? '').trim().slice(0, 1000);
+  if (has('assignee_id')) {
+    const a = body.assignee_id ? Number(body.assignee_id) : null;
+    if (a && !db.prepare('SELECT 1 FROM persons WHERE id = ? AND archived = 0').get(a)) throw new HttpError(400, 'Diese Person gibt es nicht.');
+    f.assignee_id = a;
+  }
+  if (has('due_on')) f.due_on = body.due_on ? expiryDate(body.due_on) : null;
+  if (has('repeat_unit')) {
+    const u = body.repeat_unit || null;
+    if (u && !TASK_UNITS.includes(u)) throw new HttpError(400, 'Wiederholung: täglich, wöchentlich, monatlich oder jährlich.');
+    f.repeat_unit = u;
+  }
+  if (has('repeat_every')) {
+    const n = Number(body.repeat_every ?? 1);
+    if (!Number.isInteger(n) || n < 1 || n > 366) throw new HttpError(400, 'Wiederholung: alle 1 bis 366 Einheiten.');
+    f.repeat_every = n;
+  }
+  if (has('repeat_from_done')) f.repeat_from_done = body.repeat_from_done ? 1 : 0;
+  if (has('place')) {
+    const pl = body.place;
+    if (!pl) Object.assign(f, { warehouse_id: null, col: null, row: null });
+    else {
+      const loc = normalizeLocation(pl.col, pl.row);
+      if (!db.prepare('SELECT 1 FROM warehouses WHERE id = ?').get(Number(pl.warehouse_id))) throw new HttpError(400, 'Dieses Lager gibt es nicht.');
+      Object.assign(f, { warehouse_id: Number(pl.warehouse_id), ...loc });
+    }
+  }
+  return f;
+}
+route('GET', '/api/tasks', (_p, _b, qs) => {
+  const today = localDate();
+  const open = db.prepare(`${TASK_SELECT} WHERE t.done_at IS NULL ORDER BY t.due_on IS NULL, t.due_on, t.title COLLATE NOCASE`).all();
+  const done = db.prepare(`SELECT l.id AS log_id, l.done_at, l.due_on, t.id, t.title, t.repeat_unit, p.name AS done_by_name
+    FROM task_log l JOIN tasks t ON t.id = l.task_id LEFT JOIN persons p ON p.id = l.person_id
+    ORDER BY l.done_at DESC, l.id DESC LIMIT ?`).all(Math.min(100, Number(qs.get('done') ?? 20) || 20));
+  return { today, open: open.map((t) => ({ ...t, overdue: !!t.due_on && t.due_on < today, due_today: t.due_on === today })), done };
+});
+route('POST', '/api/tasks', (_p, body, _qs, ctx) => {
+  if (ctx.via === 'terminal') throw new HttpError(403, 'Aufgaben legt man in der App an.');
+  const f = { note: '', assignee_id: null, due_on: null, repeat_unit: null, repeat_every: 1, repeat_from_done: 0, warehouse_id: null, col: null, row: null, ...taskFields(body) };
+  if (f.repeat_unit && !f.due_on) f.due_on = localDate();
+  const { lastInsertRowid } = db.prepare(`INSERT INTO tasks (title, note, assignee_id, due_on, repeat_unit, repeat_every, repeat_from_done, warehouse_id, col, row, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`).run(f.title, f.note, f.assignee_id, f.due_on, f.repeat_unit, f.repeat_every, f.repeat_from_done, f.warehouse_id, f.col, f.row, ctx.person.id || null);
+  return getTask(lastInsertRowid);
+});
+route('PATCH', '/api/tasks/:id', (p, body) => {
+  const cur = getTask(p.id);
+  const f = taskFields(body, true);
+  const next = { ...cur, ...f };
+  if (next.repeat_unit && !next.due_on) f.due_on = localDate();
+  const keys = Object.keys(f);
+  if (keys.length) db.prepare(`UPDATE tasks SET ${keys.map((k) => `${k} = ?`).join(', ')} WHERE id = ?`).run(...keys.map((k) => f[k]), cur.id);
+  return getTask(cur.id);
+});
+route('DELETE', '/api/tasks/:id', (p) => {
+  getTask(p.id);
+  db.prepare('DELETE FROM tasks WHERE id = ?').run(Number(p.id));
+  return { ok: true };
+});
+// Erledigen: einmalige Aufgabe ist danach erledigt, wiederkehrende rückt auf den nächsten Termin
+route('POST', '/api/tasks/:id/done', (p, _body, _qs, ctx) => {
+  const t = getTask(p.id);
+  if (t.done_at) throw new HttpError(409, 'Diese Aufgabe ist schon erledigt.');
+  const who = ctx.person.id || null;
+  const log = db.prepare('INSERT INTO task_log (task_id, person_id, due_on) VALUES (?, ?, ?)').run(t.id, who, t.due_on).lastInsertRowid;
+  if (t.repeat_unit) db.prepare('UPDATE tasks SET due_on = ? WHERE id = ?').run(nextDue(t), t.id);
+  else db.prepare("UPDATE tasks SET done_at = datetime('now'), done_by = ? WHERE id = ?").run(who, t.id);
+  return { task: getTask(t.id), log_id: Number(log) };
+});
+// Rückgängig: letzter Eintrag im Protokoll
+route('POST', '/api/tasks/:id/undo', (p) => {
+  const t = getTask(p.id);
+  const last = db.prepare('SELECT * FROM task_log WHERE task_id = ? ORDER BY id DESC LIMIT 1').get(t.id);
+  if (!last) throw new HttpError(409, 'Nichts rückgängig zu machen.');
+  db.prepare('DELETE FROM task_log WHERE id = ?').run(last.id);
+  if (t.repeat_unit) db.prepare('UPDATE tasks SET due_on = ? WHERE id = ?').run(last.due_on, t.id);
+  else db.prepare('UPDATE tasks SET done_at = NULL, done_by = NULL WHERE id = ?').run(t.id);
+  return getTask(t.id);
 });
 
 // Erledigte Einträge aufräumen

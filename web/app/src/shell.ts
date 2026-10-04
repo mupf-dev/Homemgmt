@@ -51,7 +51,7 @@ export function initShell() {
   rail.id = 'rail';
   rail.className = 'sh-rail';
   rail.setAttribute('aria-label', 'Navigation');
-  const R: [string, string, IconName][] = [['#/haus', 'Haus', 'plan'], ['#/suche', 'Suchen', 'search'], ['#/einkauf', 'Einkauf', 'cart'], ['#/haltbarkeit', 'Haltbarkeit', 'clock']];
+  const R: [string, string, IconName][] = [['#/haus', 'Haus', 'plan'], ['#/suche', 'Suchen', 'search'], ['#/einkauf', 'Einkauf', 'cart'], ['#/aufgaben', 'Aufgaben', 'check'], ['#/haltbarkeit', 'Haltbarkeit', 'clock']];
   rail.innerHTML = R.map(([h, l, i]) => `<a href="${h}" data-r="${h}">${ic(i)}<span>${l}</span>${h === '#/einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('');
   document.body.prepend(top);
   document.body.appendChild(tabs);
