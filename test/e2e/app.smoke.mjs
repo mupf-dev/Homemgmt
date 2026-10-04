@@ -26,7 +26,10 @@ const { createServer } = await import('node:http');
 const { readFile } = await import('node:fs/promises');
 const libSrv = createServer(async (req, res) => {
   try {
-    res.end(await readFile(join(ROOT, 'test', 'fixtures', 'katalog', decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\.\./g, ''))));
+    const path = decodeURIComponent(new URL(req.url, 'http://x').pathname).replace(/\.\./g, '');
+    const body = await readFile(join(ROOT, 'test', 'fixtures', 'katalog', path));
+    res.setHeader('content-type', path.endsWith('.svg') ? 'image/svg+xml' : path.endsWith('.json') ? 'application/json' : 'application/octet-stream');
+    res.end(body);
   } catch {
     res.statusCode = 404;
     res.end();
@@ -314,7 +317,23 @@ try {
   await page.click('#planStart');
   await page.waitForFunction(() => document.body.classList.contains('haus-plan'));
   await page.click('[data-drawer="catalog"]');
+  // Online-Bibliothek öffnet mit den Community-Möbeln: Karte anklicken installiert und startet das Platzieren
   await page.click('#modelLibrary');
+  await page.waitForSelector('.ml-card[data-id="community.schuhschrank-klappen"]');
+  console.log('  Community im Planer:', await page.textContent('#mlCount'), '| Gruppen:', await page.$$eval('#mlCats [data-cat]', (b) => b.map((x) => x.textContent).join(', ')));
+  console.log('  Karte Kallax:', (await page.textContent('.ml-card[data-id="community.kallax-4x4"] .ml-tags')).trim());
+  await shot('07h0-community-im-planer');
+  await page.click('.ml-card[data-id="community.schuhschrank-klappen"]');
+  await page.waitForFunction(() => window.__zuhause.plan.tool === 'place', null, { timeout: 15000 });
+  {
+    const bx = await page.locator('#plan canvas').boundingBox();
+    await page.mouse.click(bx.x + bx.width * 0.7, bx.y + bx.height * 0.35);
+  }
+  await page.waitForFunction(() => window.__zuhause.store.floor.items.some((x) => x.type === 'obj:community.schuhschrank-klappen'));
+  console.log('  Schuhschrank gesetzt, installiert:', await page.evaluate(() => fetch('/api/objects').then((r) => r.json()).then((d) => d.objects.map((o) => o.object.id).join(', '))));
+  await page.keyboard.press('Escape');
+  await page.click('#modelLibrary');
+  await page.click('#mlSource [data-src="polyhaven"]');
   await page.click('#mlCats [data-cat="sitzen"]');
   await page.waitForSelector('.ml-card[data-id="ArmChair_01"]', { timeout: 30000 });
   console.log('  Treffer Sitzmöbel:', await page.locator('.ml-card').count());

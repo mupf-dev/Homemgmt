@@ -1118,3 +1118,7 @@ body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
   .grid4 { grid-template-columns: 1fr 1fr; }
 }
 .ob-ct { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }
+.ml-noimg { display: grid; place-items: center; aspect-ratio: 1; background: var(--panel-2); border-radius: 6px; color: var(--ink-soft); }
+.ml-noimg svg.i { width: 32px; height: 32px; }
+.ml-tags { display: flex; flex-wrap: wrap; gap: 4px; }
+.ml-tags .tag { margin: 0; }

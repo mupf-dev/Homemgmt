@@ -52,6 +52,11 @@ test('Community-Katalog: alle Beispiele gelistet und installierbar', async () =>
   const r = await admin.get('/api/objects/community');
   assert.equal(r.status, 200, JSON.stringify(r.data));
   assert.equal(r.data.objects.length, 5);
+  // Angaben für die Karten im Planer: Vorschaubild, Maße, Fächerzahl
+  const k = r.data.objects.find((o) => o.id === 'community.kallax-4x4');
+  assert.match(k.preview, /vorschau\/kallax-4x4\.svg$/);
+  assert.deepEqual(k.size, [147, 39, 147]);
+  assert.equal(k.places, 16);
   for (const o of r.data.objects) {
     const i = await admin.post('/api/objects/community/install', { id: o.id });
     assert.equal(i.status, 200, `${o.id}: ${JSON.stringify(i.data)}`);
