@@ -12,7 +12,7 @@ Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – a
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/Website-mupf--dev.github.io-E8692E)](https://mupf-dev.github.io/Homemgmt/)
 
-[Funktionen](#funktionen) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
+[Funktionen](#funktionen) · [Ein echtes Haus](#ein-echtes-haus) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
 
 <img src="site/img/haus-3d.webp" alt="Das Erdgeschoss in 3D, Möbel nach Füllstand eingefärbt, im Dunkelmodus" width="900">
 
@@ -97,6 +97,38 @@ Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **ein
 - **Assistent in der App** per Text, Sprache oder Foto: *„3 Dosen Tomaten auf Keller B2, haltbar bis 05/2027“* –
   bucht selbst, jede Buchung mit „rückgängig“. Jede OpenAI-kompatible Schnittstelle (z. B. OpenRouter).
 - **MCP-Server** für KI-Assistenten wie Claude: suchen, ein-/ausbuchen, umlagern, Einkaufsliste – angemeldet per API-Schlüssel
+
+## Ein echtes Haus
+
+Zuhause ist für ein echtes Einfamilienhaus entstanden – mit Keller, Erdgeschoss, Obergeschoss, Dachboden und
+Außenbereich. Diese Bilder zeigen den Plan dieses Hauses (Stand einer früheren Version der Oberfläche).
+
+<table>
+<tr>
+<td width="50%"><img src="site/img/praxis-aussen.webp" alt="Das Haus von außen in 3D: Satteldach, große Fenster, Carport und Terrasse"></td>
+<td width="50%"><img src="site/img/praxis-eg-3d.webp" alt="Das Erdgeschoss als 3D-Schnitt mit Küche, Treppe und Wohnbereich"></td>
+</tr>
+<tr>
+<td><b>Außen:</b> Satteldach, Fenster, Carport und Terrasse – alle Etagen übereinander.</td>
+<td><b>Erdgeschoss:</b> Küchenzeile mit Hochschränken, Kochinsel, Treppe und Wohnbereich.</td>
+</tr>
+<tr>
+<td><img src="site/img/praxis-og-3d.webp" alt="Das Obergeschoss als 3D-Schnitt über dem Erdgeschoss mit Bad, Galerie und Schlafzimmer"></td>
+<td><img src="site/img/praxis-kueche.webp" alt="Blick in die Küche: grifflose Hochschränke, dunkle Arbeitsplatte mit Unterbauspüle, Holzboden"></td>
+</tr>
+<tr>
+<td><b>Obergeschoss:</b> „Bis hier“ zeigt die Etage samt allem darunter.</td>
+<td><b>Küche:</b> grifflose Fronten, Durchgang in Schrankoptik, Steinarbeitsplatte.</td>
+</tr>
+<tr>
+<td><img src="site/img/praxis-grundriss.webp" alt="Grundriss des Erdgeschosses, nachgezeichnet über dem Bauplan, daneben die 3D-Ansicht"></td>
+<td><img src="site/img/praxis-keller-lager.webp" alt="Keller mit Abstellraum und Regalen, in 3D nach Füllstand eingefärbt"></td>
+</tr>
+<tr>
+<td><b>Grundriss:</b> über dem eingescannten Bauplan nachgezeichnet, Räume als Lager.</td>
+<td><b>Keller:</b> Regale im Abstellraum als Lagerplätze, nach Füllstand eingefärbt.</td>
+</tr>
+</table>
 
 ## Installation
 

@@ -130,6 +130,11 @@ pre .c { color: #9a9288; }
 footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
 footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
 footer a { color: var(--muted); }
+.gallery { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 720px) { .gallery { grid-template-columns: repeat(2, 1fr); } }
+.gallery figure { margin: 0; background: var(--card); border: 1px solid var(--line); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.gallery figcaption { padding: 12px 16px; font-size: 14px; color: var(--muted); }
+.gallery figcaption b { color: var(--text); }
 </style>
 </head>
 <body>
@@ -140,6 +145,7 @@ footer a { color: var(--muted); }
     <nav class="links">
       <a href="#so-gehts">So geht's</a>
       <a href="#funktionen">Funktionen</a>
+      <a href="#echtes-haus">Ein echtes Haus</a>
       <a href="#installation">Installation</a>
       <a href="#anleitung">Anleitung</a>
     </nav>
@@ -237,7 +243,22 @@ footer a { color: var(--muted); }
     </div>
   </section>
 
-  <section class="alt">
+  <section id="echtes-haus" class="alt">
+    <div class="wrap">
+      <h2>Ein echtes Haus</h2>
+      <p class="sub">Zuhause ist für ein echtes Einfamilienhaus entstanden – Keller, zwei Wohnetagen, Dachboden und Außenbereich. So sieht dessen Plan aus.</p>
+      <div class="gallery">
+        <figure><img src="img/praxis-aussen.webp" alt="Das Haus von außen in 3D mit Satteldach, Carport und Terrasse"><figcaption><b>Außen</b> · Satteldach, Carport und Terrasse</figcaption></figure>
+        <figure><img src="img/praxis-eg-3d.webp" alt="Das Erdgeschoss als 3D-Schnitt mit Küche, Treppe und Wohnbereich"><figcaption><b>Erdgeschoss</b> · Küche, Treppe und Wohnbereich</figcaption></figure>
+        <figure><img src="img/praxis-og-3d.webp" alt="Das Obergeschoss als 3D-Schnitt über dem Erdgeschoss"><figcaption><b>Obergeschoss</b> · „Bis hier“ zeigt alles darunter mit</figcaption></figure>
+        <figure><img src="img/praxis-kueche.webp" alt="Blick in die Küche mit grifflosen Hochschränken und Steinarbeitsplatte"><figcaption><b>Küche</b> · grifflos, Durchgang in Schrankoptik</figcaption></figure>
+        <figure><img src="img/praxis-grundriss.webp" alt="Grundriss des Erdgeschosses über dem Bauplan, daneben 3D"><figcaption><b>Grundriss</b> · über dem Bauplan nachgezeichnet</figcaption></figure>
+        <figure><img src="img/praxis-keller-lager.webp" alt="Keller mit Regalen, nach Füllstand eingefärbt"><figcaption><b>Keller</b> · Regale als Lagerplätze</figcaption></figure>
+      </div>
+    </div>
+  </section>
+
+  <section>
     <div class="wrap">
       <h2>Und außerdem</h2>
       <p class="sub">Alles, was ein Haushalt zum Wiederfinden braucht.</p>
@@ -252,7 +273,7 @@ footer a { color: var(--muted); }
     </div>
   </section>
 
-  <section id="installation">
+  <section id="installation" class="alt">
     <div class="wrap">
       <h2>Installation</h2>
       <p class="sub">Ein Node-Prozess, eine SQLite-Datei. Läuft auf dem NAS, einem Raspberry Pi oder dem Heimserver.</p>
@@ -295,7 +316,7 @@ npm run test:e2e    <span class="c"># Klicktest im Browser</span></code></pre>
     </div>
   </section>
 
-  <section id="anleitung" class="alt">
+  <section id="anleitung">
     <div class="wrap">
       <h2>Anleitung</h2>
       <p class="sub">Die wichtigsten Abläufe in Kürze. Das vollständige Handbuch steht im Repository.</p>
