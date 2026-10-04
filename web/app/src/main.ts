@@ -2,7 +2,9 @@ import './style.css';
 import { store, uid } from './state';
 import { Plan2D, type Tool } from './plan2d';
 import { Scene3D } from './scene3d';
-import { CATALOG, getEntry, type CatalogEntry } from './model/catalog.ts';
+import { CATALOG, getEntry, libraryEntries, libraryObject, type CatalogEntry } from './model/catalog.ts';
+import { compareVersions, objectCompartmentCount, OBJ_PREFIX } from './model/objects.ts';
+import { loadLibrary, objectIcon } from './objectlib';
 import {
   adjustCanvas, adjustHex, allMaterials, CATEGORY_LABELS, hasAdjust, isTextured, LIBRARY, MATCH_FRONT, materialAspect, readImageFile, SLOT_LABELS, slotMaterialDef, swatchStyle,
 } from './materials';
@@ -731,6 +733,7 @@ function syncSettings() {
 
 function catalogIcon(e: CatalogEntry) {
   const k = e.kind;
+  if (e.object) return objectIcon(e.object);
   const s = 'stroke="currentColor" fill="none" stroke-width="1.4"';
   if (k === 'wall' || k === 'shelf' || k === 'hood') {
     if (k === 'hood') return `<svg viewBox="0 0 60 40"><path d="M26 2h8v18h14l4 8H8l4-8h14z" ${s}/></svg>`;
@@ -759,14 +762,16 @@ function catalogIcon(e: CatalogEntry) {
 }
 
 function renderCatalog() {
-  const groups = [...new Set(CATALOG.map((c) => c.group))].filter((g) => !g.startsWith('_'));
+  // eingebaute Möbel und Möbelarten aus der Objektbibliothek (gleiche Gruppe → gemeinsam)
+  const all = [...CATALOG, ...libraryEntries()];
+  const groups = [...new Set(all.map((c) => c.group))].filter((g) => !g.startsWith('_'));
   $('#catalog').innerHTML = groups
     .map(
-      (g) => `<div class="cat-group"><h3>${g}</h3><div class="catalog">${CATALOG.filter((c) => c.group === g)
-        .map((c) => `<button class="cat-item" data-type="${c.id}">${catalogIcon(c)}<span>${c.name}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
+      (g) => `<div class="cat-group"><h3>${esc(g)}</h3><div class="catalog">${all.filter((c) => c.group === g)
+        .map((c) => `<button class="cat-item${c.object ? ' cat-obj' : ''}" data-type="${esc(c.id)}" title="${c.object ? esc(`${c.object.name} · Objektbibliothek, Version ${c.object.version}`) : ''}">${catalogIcon(c)}<span>${esc(c.name)}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
         .join('')}</div></div>`,
     )
-    .join('');
+    .join('') + `<p class="cat-lib"><a class="link" href="#/objekte">${ic('box')}Objektbibliothek – weitere Möbelarten</a></p>`;
   document.querySelectorAll<HTMLElement>('.cat-item').forEach((b) =>
     b.addEventListener('click', () => {
       document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', x === b));
@@ -776,6 +781,7 @@ function renderCatalog() {
   );
 }
 renderCatalog();
+document.addEventListener('zh-objects', () => renderCatalog());
 
 // ---------------------------------------------------------------------------
 // Möbel & Deko: 3D-Modelle aus der Online-Bibliothek (Poly Haven CC0, FurniMesh) oder eigene .glb
@@ -2041,9 +2047,18 @@ function renderProps() {
         <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">${ic('tag')}Etiketten / QR-Schilder für die Fächer</a>
         ${roomOf(store.floor, it) ? '' : '<p class="hint">Steht in keinem Raum – die Plätze gehören zum Lager der Etage. Mit „Raum festlegen“ einen Raum anlegen.</p>'}`
       : '';
+    // Möbelart aus der Objektbibliothek: Kopie im Haus; neuere Version in der Bibliothek nur auf Wunsch übernehmen
+    const obj = e.object;
+    const libObj = obj && libraryObject(obj.id);
+    const newer = !!(obj && libObj && compareVersions(libObj.version, obj.version) > 0);
+    const objInfo = obj
+      ? `<div class="obj-info">${ic('box')}<div><b>${esc(obj.name)}</b><small>Objektbibliothek · Version ${esc(obj.version)}${obj.author ? ` · ${esc(obj.author)}` : ''}</small>
+        ${newer ? `<button class="btn mini primary" data-act="objUpdate" title="Die Bibliothek hat eine neuere Version dieser Möbelart">Version ${esc(libObj!.version)} übernehmen</button>` : ''}</div></div>`
+      : '';
     el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? 'Möbel &amp; Deko (3D-Modell)' : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
       ${comps.length ? `<div class="row"><label title="Name im Lager, z. B. „Vorratsschrank“ oder „Besteckschublade“">Eigener Name</label><input type="text" data-key="label" value="${esc(it.label ?? '')}" placeholder="${esc(e.name)}" maxlength="40" style="width:160px" /></div>` : ''}
       ${lv ? `<div class="row"><label>${lv.label}</label><select data-key="levels" style="width:160px">${Array.from({ length: lv.max - lv.min + 1 }, (_, i) => lv.min + i).map((n) => `<option value="${n}" ${levelsOf(it, e.kind) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
+      ${objInfo}
       ${e.kind === 'model' && it.model ? `<div class="model-info">${it.model.thumb ? `<img src="${esc(it.model.thumb)}" alt="" />` : ''}<div><b>${esc(it.model.name)}</b><small>${esc(it.model.license ?? '')}</small>${it.model.size ? `<button class="btn mini" data-act="modelSize" title="Auf die Originalmaße zurücksetzen">Originalmaße ${it.model.size.join(' × ')} cm</button>` : ''}</div></div>
         <div class="row"><label for="mprop">Seitenverhältnis beibehalten</label><input type="checkbox" id="mprop" checked /></div>` : ''}
       ${num('Breite', 'width', it.width)}
@@ -2121,6 +2136,17 @@ function renderProps() {
       }),
     );
     el.querySelectorAll<HTMLElement>('[data-fach]').forEach((b) => b.addEventListener('click', () => openFach(it.id, +b.dataset.fach!)));
+    el.querySelector('[data-act="objUpdate"]')?.addEventListener('click', () => {
+      if (!obj || !libObj) return;
+      const users = store.house.floors.flatMap((f) => f.items).filter((x) => x.type === OBJ_PREFIX + obj.id).length;
+      const before = objectCompartmentCount(obj);
+      const after = objectCompartmentCount(libObj);
+      const warn = before !== after ? `\n\nAchtung: Die Fächerzahl ändert sich von ${before} auf ${after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.` : '';
+      if (!confirm(`„${obj.name}“ auf Version ${libObj.version} bringen? Das betrifft ${users === 1 ? 'dieses Möbel' : `alle ${users} Möbel dieser Art`} im Haus.${warn}`)) return;
+      store.house.objectTypes = { ...(store.house.objectTypes ?? {}), [obj.id]: structuredClone(libObj) };
+      store.commit();
+      toast(`Version ${libObj.version} übernommen.`);
+    });
     el.querySelector('[data-act="modelSize"]')?.addEventListener('click', () => {
       const s = it.model!.size!;
       Object.assign(it, { width: s[0], depth: s[1], height: s[2] });
@@ -2404,6 +2430,7 @@ const account = new Account(shell.accountEl, {
     if (shareToken) return;
     updatePlanButton();
     await sync.start(!!u || !!account.terminal);
+    if (u || account.terminal) void loadLibrary().catch(() => {});
     lager.render();
   },
   importPlan,
@@ -2475,6 +2502,7 @@ const lager = initLager(
 if (!shareToken)
   account.refresh().then(async (u) => {
     await sync.start(!!u || !!account.terminal);
+    if (u || account.terminal) void loadLibrary().catch(() => {});
     lager.render();
   });
 else lager.render();

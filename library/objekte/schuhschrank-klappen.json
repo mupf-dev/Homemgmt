@@ -1,0 +1,49 @@
+{
+  "format": "zuhause-objekt/1",
+  "id": "community.schuhschrank-klappen",
+  "name": "Schuhschrank mit 2 Klappen",
+  "group": "Diele",
+  "version": "1.0",
+  "author": "Zuhause",
+  "license": "CC0-1.0",
+  "description": "Flacher Schuhschrank: oben eine Schublade, darunter zwei Kippklappen.",
+  "size": {
+    "width": 80,
+    "depth": 24,
+    "height": 100,
+    "elevation": 0,
+    "widths": [
+      50,
+      80
+    ]
+  },
+  "snapToWall": true,
+  "build": {
+    "type": "korpus",
+    "plinth": 0,
+    "board": 1.6,
+    "back": true,
+    "columns": [
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "drawer",
+            "size": 0.35,
+            "label": "Schublade (Schlüssel)"
+          },
+          {
+            "kind": "flap",
+            "size": 1,
+            "label": "Klappe oben"
+          },
+          {
+            "kind": "flap",
+            "size": 1,
+            "label": "Klappe unten"
+          }
+        ]
+      }
+    ]
+  }
+}

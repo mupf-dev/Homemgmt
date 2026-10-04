@@ -5,6 +5,8 @@
 import type { Floor, FloorKind, House, Item, MaterialSlot, Project, Room, Vec2 } from './types.ts';
 import { compartments, colName } from './storage.ts';
 import { pointInPolygon, polygonCentroid, roomPolygon, wallFaces } from './rooms.ts';
+import { libraryObject, setHouseObjects } from './catalog.ts';
+import { OBJ_PREFIX, validateObjectType, type ObjectType } from './objects.ts';
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -50,6 +52,8 @@ export function projectToFloor(p: Project, over: Partial<Floor> = {}): Floor {
 export function migrateHouse(raw: any): House {
   if (raw && raw.version === 2 && Array.isArray(raw.floors)) {
     const h = raw as House;
+    // Möbelarten des Hauses sofort bekannt machen (Fächer, 3D), auch bevor normalisiert wird
+    setHouseObjects(h.objectTypes);
     return {
       version: 2,
       name: h.name || 'Mein Zuhause',
@@ -58,6 +62,7 @@ export function migrateHouse(raw: any): House {
       customMaterials: h.customMaterials ?? [],
       uv: h.uv,
       settings: { ...DEFAULT_SETTINGS, ...(h.settings ?? {}) },
+      ...(h.objectTypes && Object.keys(h.objectTypes).length ? { objectTypes: h.objectTypes } : {}),
     };
   }
   const p = (raw ?? {}) as Project;
@@ -149,7 +154,30 @@ export const storageKey = (floor: Floor, room: Room | null) => (room ? `room:${r
  *   gespeicherter Stand) behalten Möbel, die im selben Raum bleiben, Vorrang vor hinzugekommenen; fehlende Buchstaben
  *   werden von dort übernommen – so ändern sich Adressen nur, wenn ein Möbel wirklich umzieht.
  */
+/**
+ * Möbelarten aus der Bibliothek im Haus führen: fehlende Kopien aus der Bibliothek übernehmen (beim Platzieren),
+ * nicht mehr verwendete entfernen, ungültige verwerfen. Danach sind sie für Fächer und 3D bekannt.
+ */
+export function syncHouseObjects(house: House) {
+  const used = new Set(house.floors.flatMap((f) => f.items.map((it) => it.type)).filter((t) => t.startsWith(OBJ_PREFIX)).map((t) => t.slice(OBJ_PREFIX.length)));
+  const next: Record<string, ObjectType> = {};
+  for (const id of used) {
+    const have = house.objectTypes?.[id];
+    let t: ObjectType | undefined;
+    try {
+      t = have ? validateObjectType(have) : libraryObject(id);
+    } catch {
+      t = undefined;
+    }
+    if (t) next[id] = t;
+  }
+  if (Object.keys(next).length) house.objectTypes = next;
+  else delete house.objectTypes;
+  setHouseObjects(house.objectTypes);
+}
+
 export function normalizeHouse(house: House, reserved: Set<string> = new Set(), previous?: House | null) {
+  syncHouseObjects(house);
   const taken = new Set(reserved);
   const claim = (want: string | undefined, name: string) => {
     let c = String(want ?? '').toUpperCase();

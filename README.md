@@ -54,6 +54,9 @@ Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **ein
 - **Wände** mit Fang und Maßen, Türen, Fenster, Treppen; Grundriss als Bild hochladen und nachzeichnen
 - **Räume** per Klick in eine umschlossene Fläche – jeder Raum wird ein Lager mit Kürzel (Küche → `KU`)
 - **Möbelkatalog**: Küchenschränke, Regale, Schwerlastregal, Vorrats- und Kleiderschrank, Sideboard, Kommode, Werkbank
+- **Objektbibliothek**: eigene Möbelarten im Editor bauen (Spalten, Schubladen, Türen mit Böden, offene Fächer – oder
+  ein eigenes 3D-Modell mit Fächern) und aus dem **Community-Katalog** ([`library/`](library/)) installieren; jedes Fach
+  wird ein Lagerplatz
 - **3D-Modelle** von [Poly Haven](https://polyhaven.com) (CC0) und FurniMesh suchen und einsetzen, eigene `.glb` hochladen
 - **3D-Ansicht** mit PBR-Materialien, Tageslicht nach Uhrzeit, **fotorealistischem Pathtracing** und **Begehen** wie
   im Spiel (inklusive Treppen zwischen den Etagen)
@@ -295,6 +298,7 @@ Das vollständige Handbuch für alle Lagerfunktionen steht in **[docs/LAGER.md](
 | `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatische Backups |
 | `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | KI-Assistent (sonst unter *Verwaltung → Assistent*) |
 | `LIGHTNING` | – | `0` schaltet die Live-Blitze (Blitzortung.org) für Wandterminals ab |
+| `OBJECT_CATALOG_URL` | `https://raw.githubusercontent.com/mupf-dev/Homemgmt/main/library/` | Community-Katalog der Objektbibliothek (eigener Fork oder lokaler Spiegel) |
 
 Weitere Variablen (z. B. `MCP_ALLOWED_ORIGINS`, `PUBLIC_URL`) stehen in [docs/LAGER.md](docs/LAGER.md).
 
@@ -370,6 +374,10 @@ three-gpu-pathtracer.
 | GET | `/api/house` | Hausplan `{house, version, can_edit, reserved}` |
 | PUT | `/api/house` | Speichern `{house, base_version}` → normalisierter Plan, Abgleich mit dem Lager; 409 bei veraltetem Stand |
 | GET | `/api/house/storage` | Alle Plan-Plätze mit Adresse und Inhalt |
+| GET | `/api/objects` | Objektbibliothek: installierte Möbelarten (`zuhause-objekt/1`) |
+| PUT / PATCH / DELETE | `/api/objects/:id` | Möbelart speichern, aus-/einblenden, löschen (Recht „Haus planen“) |
+| POST | `/api/objects/import` | Möbelart aus Datei übernehmen (`{object, replace?}`) |
+| GET / POST | `/api/objects/community`, `/api/objects/community/install` | Community-Katalog lesen, Möbelart installieren/aktualisieren |
 
 Die übrigen Endpunkte (Lager, Buchungen, Konto, Assistent, Backups) stehen in
 [docs/LAGER.md](docs/LAGER.md#api-für-eigene-erweiterungen). API-Schlüssel (`Authorization: Bearer hlk_…`) funktionieren

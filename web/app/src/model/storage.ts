@@ -3,7 +3,8 @@
 // die 3D-Modelle (models.ts), damit „Schublade 2“ im Lager genau die zweite Schublade im Bild ist.
 // Maße in cm, lokal zum Möbel: x quer (links → rechts), y Höhe über Unterkante des Möbels, z Tiefe (Front = +depth/2).
 
-import { getEntry, type ItemKind } from './catalog.ts';
+import { getEntry, objectOf, type ItemKind } from './catalog.ts';
+import { objectCompartments } from './objects.ts';
 import type { Item, Project } from './types.ts';
 
 export type CompartmentKind = 'drawer' | 'shelf' | 'door' | 'open' | 'cold' | 'freezer' | 'surface';
@@ -72,6 +73,12 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
   let list: Omit<Compartment, 'row'>[] = [];
 
   switch (kind) {
+    case 'custom': {
+      // Möbelart aus der Bibliothek: Fächer aus ihrer Beschreibung (Maße in cm, Unterkante = 0 wie hier)
+      const t = objectOf(it.type);
+      list = t ? objectCompartments(t, W, D, H).map((c) => ({ label: c.label, kind: c.kind, x0: c.x0, x1: c.x1, y0: c.y0, y1: c.y1, z0: c.z0, z1: c.z1 })) : [];
+      break;
+    }
     case 'base':
     case 'hob': {
       const y0 = P;

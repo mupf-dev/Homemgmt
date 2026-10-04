@@ -59,6 +59,16 @@ ihn enthält – verschiebt man Wände, folgt der Raum.
 Höhenverhältnissen der Auszüge, Böden hinter Türen, Kühl- und Gefrierfächer, offene Regalböden, Ablageflächen.
 „Schublade 2“ im Lager ist die zweite Schublade im Bild.
 
+**Objektbibliothek** (`model/objects.ts`): Möbelarten als Daten im Format `zuhause-objekt/1` – entweder ein **Korpus**
+(Sockel, Plattenstärke, Spalten mit Elementen: Schublade, Tür mit Böden, offen, Klappe, Kühl-/Gefrierfach) oder ein
+**3D-Modell** mit Fächern als Bereiche (0…1 je Achse). Aus derselben Beschreibung entstehen 3D-Möbel (`buildKorpus`),
+Fächer (`objectCompartments`) und Katalog-Symbol. Möbel tragen `type: "obj:<id>"`. Die Bibliothek liegt auf dem Server
+(Tabelle `object_types`, Quelle eigene/importiert/community); das **Haus hält eine Kopie** jeder verwendeten Möbelart
+(`House.objectTypes`), damit Bibliotheksänderungen keine Adressen verschieben – neue Versionen nur auf Wunsch.
+Community-Katalog: `library/index.json` (`zuhause-katalog/1`) im GitHub-Repo, Beiträge per Pull Request, gelesen über
+`OBJECT_CATALOG_URL` ohne Schlüssel. Die eingebauten Möbel bleiben im Code (bestehende Adressen stabil); die Vorlagen im
+Editor bilden sie als Korpus nach.
+
 **Normalisieren** (`model/house.ts`, `normalizeHouse`): erkennt Räume, vergibt eindeutige Lager-Kürzel (Kürzel anderer
 Lager sind reserviert) und Spaltenbuchstaben je Raum. Möbel, die im Raum bleiben, behalten ihre Buchstaben vorrangig –
 Adressen ändern sich nur, wenn ein Möbel wirklich umzieht. Läuft in der App bei jeder Änderung (Anzeige) und auf dem

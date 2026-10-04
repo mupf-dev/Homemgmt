@@ -4,7 +4,8 @@
 
 import type { Floor, House, Item, Opening, Project, Selection, Wall } from './model/types.ts';
 import { getEntry } from './model/catalog.ts';
-import { emptyHouse, floorView, makeFloor, migrateHouse, normalizeHouse, uid as makeId } from './model/house.ts';
+import { setHouseObjects } from './model/catalog.ts';
+import { emptyHouse, floorView, makeFloor, migrateHouse, normalizeHouse, syncHouseObjects, uid as makeId } from './model/house.ts';
 
 const STORAGE_KEY = 'zuhause.house.v2';
 const OLD_KEY = 'kuechenplaner.project.v1';
@@ -158,6 +159,8 @@ class Store {
 
   /** Schließt eine Aktion ab: Normalisieren + Undo-Schritt + Speichern + Benachrichtigen */
   commit() {
+    // Möbelarten aus der Bibliothek, die gerade platziert wurden, als Kopie ins Haus übernehmen
+    syncHouseObjects(this.house);
     this.normalize();
     const snap = this.snapshot();
     const changed = this.undoStack[this.undoStack.length - 1] !== snap;
@@ -173,6 +176,7 @@ class Store {
 
   private restore(snap: string) {
     this.house = JSON.parse(snap);
+    setHouseObjects(this.house.objectTypes);
     if (!this.house.floors.some((f) => f.id === this.floorId)) this.floorId = groundFloorId(this.house);
     this.validateSelection();
     this.floorListeners.forEach((l) => l());

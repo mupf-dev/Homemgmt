@@ -1,0 +1,56 @@
+{
+  "format": "zuhause-katalog/1",
+  "name": "Zuhause Community-Katalog",
+  "objects": [
+    {
+      "id": "community.kallax-4x4",
+      "name": "Regal 4×4 (Würfelregal)",
+      "group": "Schränke & Regale",
+      "version": "1.0",
+      "author": "Zuhause",
+      "license": "CC0-1.0",
+      "description": "Würfelregal mit 16 gleich großen Fächern (je 33 × 33 cm), z. B. für Kisten und Körbe.",
+      "file": "objekte/kallax-4x4.json"
+    },
+    {
+      "id": "community.schuhschrank-klappen",
+      "name": "Schuhschrank mit 2 Klappen",
+      "group": "Diele",
+      "version": "1.0",
+      "author": "Zuhause",
+      "license": "CC0-1.0",
+      "description": "Flacher Schuhschrank: oben eine Schublade, darunter zwei Kippklappen.",
+      "file": "objekte/schuhschrank-klappen.json"
+    },
+    {
+      "id": "community.apothekerschrank",
+      "name": "Apothekerschrank 30",
+      "group": "Küche",
+      "version": "1.0",
+      "author": "Zuhause",
+      "license": "CC0-1.0",
+      "description": "Schmaler Hochschrank mit Vollauszug und fünf Ablagen – jede Ablage ist ein eigener Lagerplatz.",
+      "file": "objekte/apothekerschrank.json"
+    },
+    {
+      "id": "community.werkzeugwagen",
+      "name": "Werkzeugwagen 7 Schubladen",
+      "group": "Werkstatt",
+      "version": "1.0",
+      "author": "Zuhause",
+      "license": "CC0-1.0",
+      "description": "Werkstattwagen: offene Ablage oben, sieben Schubladen (flach bis tief).",
+      "file": "objekte/werkzeugwagen.json"
+    },
+    {
+      "id": "community.bad-haengeschrank",
+      "name": "Bad-Hängeschrank",
+      "group": "Bad",
+      "version": "1.0",
+      "author": "Zuhause",
+      "license": "CC0-1.0",
+      "description": "Zweitüriger Hängeschrank fürs Bad mit je drei Böden.",
+      "file": "objekte/bad-haengeschrank.json"
+    }
+  ]
+}

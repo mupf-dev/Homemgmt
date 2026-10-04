@@ -1,4 +1,5 @@
 import type { FrontStyle, MaterialSlot } from './types.ts';
+import { OBJ_PREFIX, type ObjectType } from './objects.ts';
 
 export type ItemKind =
   | 'base'
@@ -27,7 +28,9 @@ export type ItemKind =
   | 'dresser'
   | 'workbench'
   | 'stairs'
-  | 'model';
+  | 'model'
+  /** Möbelart aus der Objektbibliothek (Daten statt Code, siehe objects.ts) */
+  | 'custom';
 
 export interface CatalogEntry {
   id: string;
@@ -47,6 +50,8 @@ export interface CatalogEntry {
   widths?: number[];
   /** Voreingestellte Materialien dieses Elements */
   materials?: Partial<Record<MaterialSlot, string>>;
+  /** Möbelart aus der Bibliothek */
+  object?: ObjectType;
 }
 
 const BASE_WIDTHS = [30, 40, 45, 50, 60, 80, 90, 100, 120];
@@ -88,6 +93,53 @@ export const CATALOG: CatalogEntry[] = [
   { id: 'pendant', name: 'Pendelleuchte', group: 'Einrichtung', kind: 'pendant', width: 30, depth: 30, height: 30, elevation: 170, snapToWall: false },
 ];
 
+// ---------------------------------------------------------------------------
+// Möbelarten aus der Objektbibliothek. Das Haus führt eine Kopie jeder verwendeten Möbelart (house.objectTypes) –
+// sie hat Vorrang, damit bestehende Möbel und ihre Lagerplätze sich nicht ungefragt ändern. Die Bibliothek liefert die
+// Möbelarten zum Neu-Platzieren.
+
+const houseObjects = new Map<string, ObjectType>();
+const libraryObjects = new Map<string, ObjectType>();
+/** Entwurf im Editor (Vorschau, noch nicht gespeichert) – Typ „obj:~vorschau“ */
+let previewObject: ObjectType | null = null;
+export const PREVIEW_TYPE = OBJ_PREFIX + '~vorschau';
+export function setPreviewObject(t: ObjectType | null) {
+  previewObject = t;
+}
+
+const entryOf = (t: ObjectType): CatalogEntry => ({
+  id: OBJ_PREFIX + t.id, name: t.name, group: t.group, kind: 'custom',
+  width: t.size.width, depth: t.size.depth, height: t.size.height, elevation: t.size.elevation,
+  snapToWall: t.snapToWall, widths: t.size.widths, materials: t.materials, object: t,
+});
+
+/** Möbelarten des Hauses (aus house.objectTypes) bekannt machen */
+export function setHouseObjects(defs: Record<string, ObjectType> | undefined) {
+  houseObjects.clear();
+  for (const [id, t] of Object.entries(defs ?? {})) houseObjects.set(id, t);
+}
+/** Möbelarten der Bibliothek (zum Platzieren) bekannt machen */
+export function setLibraryObjects(list: ObjectType[]) {
+  libraryObjects.clear();
+  for (const t of list) libraryObjects.set(t.id, t);
+}
+export const libraryObject = (id: string) => libraryObjects.get(id);
+export const libraryEntries = () => [...libraryObjects.values()].map(entryOf);
+/** Möbelart eines Möbels (Kopie im Haus, sonst Bibliothek) */
+export function objectOf(type: string): ObjectType | undefined {
+  if (!type.startsWith(OBJ_PREFIX)) return undefined;
+  if (type === PREVIEW_TYPE) return previewObject ?? undefined;
+  const id = type.slice(OBJ_PREFIX.length);
+  return houseObjects.get(id) ?? libraryObjects.get(id);
+}
+
+/** Unbekannte Möbelart (z. B. gelöscht): neutraler Kasten ohne Fächer */
+const UNKNOWN: CatalogEntry = { id: 'obj:?', name: 'Unbekannte Möbelart', group: '', kind: 'custom', width: 60, depth: 60, height: 80, elevation: 0, snapToWall: false };
+
 export function getEntry(type: string): CatalogEntry {
+  if (type.startsWith(OBJ_PREFIX)) {
+    const t = objectOf(type);
+    return t ? entryOf(t) : { ...UNKNOWN, id: type };
+  }
   return CATALOG.find((c) => c.id === type) ?? CATALOG[0];
 }

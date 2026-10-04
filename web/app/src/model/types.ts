@@ -282,4 +282,6 @@ export interface House {
   customMaterials: MaterialDef[];
   uv?: Partial<Record<MaterialSlot, UVSettings>>;
   settings: Project['settings'];
+  /** Kopien der verwendeten Möbelarten aus der Objektbibliothek (Kennung → Möbelart) */
+  objectTypes?: Record<string, import('./objects.ts').ObjectType>;
 }

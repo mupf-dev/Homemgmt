@@ -1,0 +1,67 @@
+{
+  "format": "zuhause-objekt/1",
+  "id": "community.werkzeugwagen",
+  "name": "Werkzeugwagen 7 Schubladen",
+  "group": "Werkstatt",
+  "version": "1.0",
+  "author": "Zuhause",
+  "license": "CC0-1.0",
+  "description": "Werkstattwagen: offene Ablage oben, sieben Schubladen (flach bis tief).",
+  "size": {
+    "width": 70,
+    "depth": 46,
+    "height": 95,
+    "elevation": 0
+  },
+  "snapToWall": true,
+  "build": {
+    "type": "korpus",
+    "plinth": 12,
+    "board": 1.5,
+    "back": true,
+    "columns": [
+      {
+        "size": 1,
+        "elements": [
+          {
+            "kind": "open",
+            "size": 0.8,
+            "label": "Ablage oben"
+          },
+          {
+            "kind": "drawer",
+            "size": 0.6
+          },
+          {
+            "kind": "drawer",
+            "size": 0.6
+          },
+          {
+            "kind": "drawer",
+            "size": 0.6
+          },
+          {
+            "kind": "drawer",
+            "size": 0.8
+          },
+          {
+            "kind": "drawer",
+            "size": 0.8
+          },
+          {
+            "kind": "drawer",
+            "size": 1.2
+          },
+          {
+            "kind": "drawer",
+            "size": 1.2
+          }
+        ]
+      }
+    ]
+  },
+  "materials": {
+    "carcass": "lack-anthracite",
+    "front": "lack-terracotta"
+  }
+}
