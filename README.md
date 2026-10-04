@@ -1,118 +1,235 @@
-# Zuhause
+<div align="center">
 
-Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz. Zuhause vereint **Heimlager**
-(`inventory`, inkl. `inventory-3d`) und den **Küchenplaner 3D**: ein Server, eine Datenbank, ein Konto.
-Wie und warum: [ARCHITEKTUR.md](ARCHITEKTUR.md).
+# 🏠 Zuhause
 
-| Teil | Adresse | Handbuch |
-|------|---------|----------|
-| **Haus**: Hausplaner (Etagen, Räume, Möbel, Materialien, Pathtracing) mit Lager im Plan | `/#/haus` | diese Datei, [docs/KUECHE.md](docs/KUECHE.md) |
-| **Lager** (Scannen, Ein-/Ausbuchen, Suchen, Einkaufsliste, Haltbarkeit, Assistent, Auswertung, Etiketten, Verwaltung – auch auf dem Handy) | `/#/lager` | unten |
-| MCP-Server für KI-Assistenten | Port 3100, `/mcp` | [docs/LAGER.md](docs/LAGER.md#mcp-server-ki-assistenten) |
+**Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz.**
 
-Benötigt **Node.js ≥ 22.18** (eingebautes `node:sqlite`, TypeScript ohne Build auf dem Server).
+Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – am PC, auf dem Handy und am Wandtablet.
 
-## Starten
+[![Node.js ≥ 22.18](https://img.shields.io/badge/Node.js-%E2%89%A5%2022.18-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org)
+[![Docker](https://img.shields.io/badge/Docker-bereit-2496ED?logo=docker&logoColor=white)](#mit-docker-empfohlen)
+[![MCP](https://img.shields.io/badge/MCP-Server-6B4FBB)](#ki-assistent-und-mcp-server)
+[![Website](https://img.shields.io/badge/Website-mupf--dev.github.io-E8692E)](https://mupf-dev.github.io/Homemgmt/)
+
+[Funktionen](#funktionen) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
+
+<img src="site/img/haus-3d.webp" alt="Das Erdgeschoss in 3D, Möbel nach Füllstand eingefärbt, im Dunkelmodus" width="900">
+
+</div>
+
+## Worum geht's?
+
+Wo liegen die Batterien? Ist noch Spülmittel da? Was läuft diese Woche ab? **Zuhause** beantwortet das, indem es dein
+Haus abbildet: Du zeichnest Etagen, Wände und Räume, stellst Möbel hinein – und jedes Fach, jede Schublade wird
+automatisch ein **Lagerplatz** mit eigener Adresse (`KU-C2` = Küche, Möbel C, Fach 2). Gegenstände buchst du per
+Klick, QR-Scan, Sprache oder KI-Assistent ein und aus. Die Suche „Wo liegt …?“ lässt die Treffer im Haus aufleuchten.
+
+Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **eine** SQLite-Datei, keine Cloud.
+
+## Funktionen
+
+<table>
+<tr>
+<td width="50%"><img src="site/img/plan-fach.webp" alt="Grundriss der Küche, ein Fach ist ausgewählt und zeigt seinen Inhalt"></td>
+<td width="50%"><img src="site/img/fach-3d.webp" alt="3D-Ansicht der Küche, eine Schublade ist hervorgehoben"></td>
+</tr>
+<tr>
+<td><b>Lager im Plan:</b> Möbel antippen zeigt die Fächer, ein Fach seinen Inhalt – einbuchen, entnehmen, umlagern.</td>
+<td><b>Lager in 3D:</b> Fächer nach Füllstand, Haltbarkeit oder Bewegung (Heatmap) eingefärbt.</td>
+</tr>
+<tr>
+<td><img src="site/img/planen-bibliothek.webp" alt="Planungsmodus mit Möbelkatalog, Grundriss und 3D-Vorschau nebeneinander"></td>
+<td><img src="site/img/suche.webp" alt="Suche nach Testgabel, Treffer ist im Grundriss markiert"></td>
+</tr>
+<tr>
+<td><b>Hausplaner:</b> Wände zeichnen oder Grundriss nachzeichnen, Möbelkatalog, 3D-Modelle aus Online-Bibliotheken.</td>
+<td><b>„Wo liegt …?“:</b> Suche über alle Lager, Treffer leuchten im Haus auf.</td>
+</tr>
+</table>
+
+### 🏗️ Haus planen
+
+- **Etagen** – Erdgeschoss, Obergeschoss, Keller, Dachgeschoss und Außenbereich, die Etage darunter als Zeichenhilfe
+- **Wände** mit Fang und Maßen, Türen, Fenster, Treppen; Grundriss als Bild hochladen und nachzeichnen
+- **Räume** per Klick in eine umschlossene Fläche – jeder Raum wird ein Lager mit Kürzel (Küche → `KU`)
+- **Möbelkatalog**: Küchenschränke, Regale, Schwerlastregal, Vorrats- und Kleiderschrank, Sideboard, Kommode, Werkbank
+- **3D-Modelle** von [Poly Haven](https://polyhaven.com) (CC0) und FurniMesh suchen und einsetzen, eigene `.glb` hochladen
+- **3D-Ansicht** mit PBR-Materialien, Tageslicht nach Uhrzeit, **fotorealistischem Pathtracing** und **Begehen** wie
+  im Spiel (inklusive Treppen zwischen den Etagen)
+- **Lage des Hauses**: Adresse oder Koordinaten und Nordrichtung – die Sonne steht wie draußen
+
+### 📦 Lager
+
+- **Ein-/Ausbuchen, Umlagern, Rückgängig** mit vollständigem Verlauf je Gegenstand
+- **QR-Scan** mit der Handykamera: Fach-Code + Gegenstand = einbuchen, Gegenstand zweimal = ausbuchen
+- **Etiketten & QR-Schilder** zum Drucken – oder als 3D-Druckmodell (STL/3MF, auch mehrfarbig)
+- **Einkaufsliste**: Verbrauchsmaterial landet beim Ausbuchen automatisch drauf, teilen per WhatsApp
+- **Haltbarkeit** mit Warnungen, **Behälter** (Kiste in der Werkzeugkiste), **Fotos** je Gegenstand
+- **Auswertung**, **Export/Import** als Excel, **automatische Backups**
+- **Offline-fest**: Buchungen bei schlechtem WLAN werden vorgemerkt und automatisch nachgebucht
+
+### 📱 Für den ganzen Haushalt
+
+<table>
+<tr>
+<td align="center" width="25%"><img src="site/img/handy-uebersicht.webp" alt="Startseite auf dem Handy" width="190"></td>
+<td align="center" width="25%"><img src="site/img/handy-blatt.webp" alt="Fach-Details auf dem Handy als Blatt von unten" width="190"></td>
+<td align="center" width="25%"><img src="site/img/terminal-wer-bucht.webp" alt="Wandterminal: Auswahl, wer bucht" width="190"></td>
+<td align="center" width="25%"><img src="site/img/terminal-ruhe.webp" alt="Wandterminal im Ruhezustand mit Uhr und Haus" width="190"></td>
+</tr>
+<tr>
+<td align="center">Handy: Übersicht</td>
+<td align="center">Handy: Fach</td>
+<td align="center">Wandterminal: „Wer bucht?“</td>
+<td align="center">Wandterminal: Ruhezustand</td>
+</tr>
+</table>
+
+- **Mehrere Personen** mit Anmeldung per Kachel + PIN/Passwort oder E-Mail, Recht „Haus planen“ pro Person
+- **Als App installierbar** (PWA), am Handy mit Leiste unten und Scannen in der Mitte
+- **Wandterminals**: Tablet an der Wand ohne persönliche Anmeldung, Ruhezustand mit Uhr, Wetter und Einkaufsliste
+- **Einstellungen pro Person**: Startseite, 2D/3D, Hell/Dunkel, Schriftgröße
+
+### 🤖 KI-Assistent und MCP-Server
+
+- **Assistent in der App** per Text, Sprache oder Foto: *„3 Dosen Tomaten auf Keller B2, haltbar bis 05/2027“* –
+  bucht selbst, jede Buchung mit „rückgängig“. Jede OpenAI-kompatible Schnittstelle (z. B. OpenRouter).
+- **MCP-Server** für KI-Assistenten wie Claude: suchen, ein-/ausbuchen, umlagern, Einkaufsliste – angemeldet per API-Schlüssel
+
+## Installation
+
+### Mit Docker (empfohlen)
 
 ```bash
-npm install
-npm run dev                  # Entwicklung: ein Prozess, App mit Vite-HMR → http://localhost:3000
-npm run build && npm start   # Betrieb: App gebaut nach dist/app
-npm test                     # 86 Tests, jeder mit eigenem Server und frischer Datenbank
-npm run typecheck            # App und Server
-npm run test:e2e             # Klicktest im Browser (einmalig: npm install --no-save playwright-core)
+git clone https://github.com/mupf-dev/Homemgmt.git
+cd Homemgmt
+docker compose up -d --build
 ```
 
-Beim ersten Start mit leerer Datenbank zeigt die App die Ersteinrichtung (Person antippen oder neu anlegen, Passwort –
-diese Person wird Admin). Danach meldet man sich per Kachel + Passwort/PIN oder mit E-Mail an.
+Danach läuft die App unter **http://localhost:3000** (MCP-Server: Port 3100). Die Daten liegen im Volume `zuhause-data`
+(`/data` im Container: `zuhause.db`, `backups/`, `library/`). Einstellungen nimmst du in der
+[`docker-compose.yml`](docker-compose.yml) vor – die wichtigsten stehen dort schon auskommentiert.
 
-## Hausplan und Lager
+### Ohne Docker
 
-1. **Etagen:** Reiter oben (+ legt Obergeschoss, Keller, Dachgeschoss oder Außenbereich an, auf Wunsch mit den Außenwänden
-   der aktuellen Etage). Die Etage darunter erscheint im Plan gestrichelt.
-2. **Wände** zeichnen oder einen Grundriss hochladen und nachzeichnen (wie im Küchenplaner).
-3. **Räume:** „Raum festlegen“ und in eine umschlossene Fläche klicken. Jeder Raum wird ein **Lager** mit Kürzel
-   (Küche → `KU`), eigener Bodenbelag möglich.
-4. **Möbel** aus dem Katalog setzen – Küchenschränke, Regale, Schwerlastregal, Vorrats- und Kleiderschrank, Sideboard,
-   Kommode, Werkbank. Jedes Möbel mit Fächern bekommt einen **Buchstaben** (im Plan am Möbel), jedes Fach einen
-   **Lagerplatz**: `KU-B2` = Küche, Möbel B, Fach 2 („Unterschrank Auszüge 60 · Schublade 3 (unten)“).
-5. In 3D **Lager** einschalten: Fächer sind nach Füllstand gefärbt (blau leer, grün belegt, orange läuft ab, rot
-   abgelaufen). Fach anklicken → Inhalt, einbuchen, entnehmen, vorhandenen Gegenstand hierher umlagern.
-6. Oben **„Wo liegt …?“** sucht im ganzen Lager und lässt die Treffer im Haus aufleuchten.
+Benötigt **Node.js ≥ 22.18** (eingebautes `node:sqlite`, TypeScript läuft auf dem Server ohne Build).
 
-Der Hausplan wird automatisch gespeichert (Admins) und von allen geteilt; Benutzer sehen ihn und buchen, ändern ihn aber
-nicht. Zieht ein Möbel in einen anderen Raum, wandern Plätze und Gegenstände mit. Entfernte Fächer mit Inhalt bleiben
-als Platz erhalten. Plan-Plätze sind normale Lagerplätze: Suche, Scan, QR-Etiketten, Einkaufsliste, MCP und Assistent
-kennen sie.
+```bash
+git clone https://github.com/mupf-dev/Homemgmt.git
+cd Homemgmt
+npm install
+npm run build && npm start     # → http://localhost:3000
+```
 
-## Lager in der App
+### Erster Start
 
-`/#/lager` (auf dem Handy startet die App direkt dort; als App installierbar): **Scannen** (Fach-Code + Gegenstand =
-einbuchen, Gegenstand zweimal = ausbuchen), **Einbuchen** und **Ausbuchen**, **Suchen**, **Einkaufsliste**,
-**Haltbarkeit**, Gegenstand mit Foto, Verlauf und Rückgängig, **Assistent** (Text, Sprache, Foto – kennt Fächer beim
-Namen: „Küche Kühlschrank oben“), **Auswertung** mit Heatmap im Haus, **Etiketten & QR-Schilder** (Druck oder 3MF) und
-**Verwaltung** (Personen, Lager, API-Schlüssel, Backups, Assistent, Export/Import). Orte werden über den Hausplan gewählt
-(Etage → Raum → Möbel → Fach) und beschrieben; **„Im Haus zeigen“** springt in den Planer und lässt das Fach leuchten.
-QR-Etiketten (`/q/…`) öffnen die App. Für die Kamera braucht es HTTPS (`npm run cert` oder Reverse Proxy).
+Bei leerer Datenbank zeigt die App die **Ersteinrichtung**: „Neue Person“ antippen, Name und Passwort vergeben – diese
+Person wird **Admin**. Danach meldet man sich per Kachel + Passwort/PIN oder mit E-Mail an. Weitere Personen legst du
+unter *Mehr → Verwaltung → Personen* an; Selbst-Registrierung ist standardmäßig aus.
 
-## Bestehende Daten übernehmen
+> [!TIP]
+> Für den **Kamera-Scan** auf dem Handy braucht der Browser HTTPS. Im Heimnetz genügt `npm run cert` (selbst signiertes
+> Zertifikat, App dann unter `https://<rechner>:3443`), dauerhaft ist ein [Reverse Proxy](#hinter-einem-reverse-proxy) besser.
+
+## Anleitung
+
+### 1. Haus anlegen
+
+1. **Haus** öffnen → **Planen** (nur am PC). Oben die Etagen-Reiter, **+** legt Obergeschoss, Keller, Dachgeschoss
+   oder Außenbereich an.
+2. **Wände** zeichnen – oder unter *Etage → Grundriss-Vorlage* einen Scan/ein Foto des Grundrisses hochladen, Maßstab
+   kalibrieren und nachzeichnen. Für einfache Räume: *Wände aus Maßen*.
+3. **Raum festlegen** und in eine umschlossene Fläche klicken. Jeder Raum wird ein **Lager** mit Kürzel.
+4. **Möbel** aus dem Katalog setzen; Schränke docken an Wände und Nachbarn an (`R` dreht, `Alt` platziert frei).
+   Jedes Möbel mit Fächern bekommt einen **Buchstaben**, jedes Fach einen **Lagerplatz**: `KU-B2`.
+5. **Fertig** – der Plan wird automatisch gespeichert und mit allen geteilt.
+
+### 2. Dinge einlagern und finden
+
+- **Ansehen** ist der Normalfall: Möbel antippen → Fächer, Fach antippen → Inhalt, **Einbuchen** oder **− 1** zum Entnehmen.
+- In 3D färbt **Lager** die Fächer nach Füllstand: blau leer, grün belegt, orange läuft ab, rot abgelaufen.
+- **„Wo liegt …?“** oben durchsucht alle Lager; Treffer leuchten im Grundriss und in 3D, Etagen mit Treffern bekommen einen Punkt.
+- Am Handy: **Scannen** in der Mitte der Leiste. Erst den Fach-Code, dann den Gegenstand scannen = einbuchen;
+  denselben Gegenstand zweimal = ausbuchen. Unbekannte, vorgedruckte Etiketten legen einen neuen Gegenstand an.
+
+### 3. Etiketten drucken
+
+*Mehr → Etiketten & QR-Schilder*: Etiketten für Fächer, Gegenstände oder **leere Etiketten** zum Vorab-Aufkleben (groß
+7 × 3,6 cm oder klein 5 × 2,5 cm). In der Platz- und Objektansicht erzeugt **3D-Druck** ein QR-Schild als STL oder
+mehrfarbiges 3MF – komplett im Browser.
+
+### 4. Einkaufsliste und Haltbarkeit
+
+Gegenstände als **Verbrauchsmaterial** markieren – beim Ausbuchen landen sie auf der **Einkaufsliste**. Dort
+abhaken – oder gekauft und gleich wieder an den bisherigen Platz einbuchen. Mit **Haltbarkeitsdatum** erscheinen sie rechtzeitig unter *Läuft bald ab*.
+
+### 5. Wandterminal einrichten
+
+*Verwaltung → Wandterminals → Wandterminal anlegen*: Hoch- oder Querformat wählen, dann den **Einrichtungslink** (oder seinen QR-Code) am Tablet öffnen. Das
+Terminal braucht keine persönliche Anmeldung; beim Buchen fragt es **„Wer bucht?“**. Ohne Bedienung wechselt es in den
+Ruhezustand – mit **Lage des Hauses** (*Planen → ⋯*) samt Sonne, Himmel und Wetter wie draußen.
+
+### 6. KI-Assistent und MCP-Server
+
+**Assistent:** *Verwaltung → Assistent* – Adresse einer OpenAI-kompatiblen Schnittstelle (Standard
+`https://openrouter.ai/api/v1`), Modell (mit Tool Calling, für Fotos mit Bildern) und API-Schlüssel eintragen,
+*Verbindung testen*. Der Schlüssel bleibt auf dem Server.
+
+**MCP:** *Verwaltung → API-Schlüssel* einen Schlüssel anlegen („Lesen und buchen“ oder „Nur lesen“), dann z. B. in
+Claude Code:
+
+```bash
+claude mcp add --transport http zuhause http://localhost:3100/mcp --header "Authorization: Bearer hlk_…"
+```
+
+Das vollständige Handbuch für alle Lagerfunktionen steht in **[docs/LAGER.md](docs/LAGER.md)**, der Planer in
+[docs/KUECHE.md](docs/KUECHE.md), Hintergründe in [ARCHITEKTUR.md](ARCHITEKTUR.md) und Neuerungen im [CHANGELOG](CHANGELOG.md).
+
+## Betrieb
+
+### Umgebungsvariablen
+
+| Variable | Standard | Bedeutung |
+|----------|----------|-----------|
+| `PORT` | `3000` | HTTP-Port |
+| `HTTPS_PORT` | `3443` | HTTPS (nur mit Zertifikat in `CERT_DIR`, `npm run cert`), `0` = aus |
+| `DB_PATH` | `data/zuhause.db` | Datenbank; Backups und Texturen liegen daneben |
+| `MCP_PORT` / `MCP_HOST` / `MCP_PUBLIC_URL` | `3100` / `0.0.0.0` / – | MCP-Server (`MCP_PORT=0` = aus) |
+| `TRUST_PROXY` | – | `1` hinter einem Reverse Proxy (Secure-Cookie, echte Client-IP) |
+| `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatische Backups |
+| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | KI-Assistent (sonst unter *Verwaltung → Assistent*) |
+
+Weitere Variablen (z. B. `MCP_ALLOWED_ORIGINS`, `PUBLIC_URL`) stehen in [docs/LAGER.md](docs/LAGER.md).
+
+### Hinter einem Reverse Proxy
+
+Für den dauerhaften Betrieb mit HTTPS (Caddy, nginx, Traefik …) die App auf Port 3000 weiterleiten und `TRUST_PROXY=1`
+setzen. Den MCP-Server nur bei Bedarf veröffentlichen und dort das Puffern ausschalten (Caddy `flush_interval -1`,
+nginx `proxy_buffering off`). Details: [docs/LAGER.md](docs/LAGER.md#hinter-einem-reverse-proxy-empfohlen).
+
+### Backups und Passwort vergessen
+
+Backups entstehen automatisch (Standard alle 24 h, 14 werden behalten) und lassen sich unter *Verwaltung → Backups*
+anlegen, herunterladen und wiederherstellen. Passwort zurücksetzen:
+
+```bash
+npm run reset-password -- anna                                             # ohne Docker
+docker compose exec zuhause node scripts/reset-password.cjs anna           # mit Docker
+```
+
+### Bestehende Daten übernehmen
+
+Aus den Vorgängerprojekten **Heimlager** und **Küchenplaner** (die Quellen werden nur gelesen):
 
 ```bash
 npm run migrate -- --lager ../inventory/data/lager.db --kueche ../küchenplaner/data/kuechenplaner.db
 ```
 
-Die Quellen werden nur gelesen. Konten mit gleicher E-Mail oder gleichem Namen werden zu einer Person (sonst
-`--map mail@example.de=Name`). Küchenplanungen und importierte Texturen kommen mit; in der App holt das Kontomenü
-**„Gespeicherte Planungen übernehmen“** eine Planung als Etage ins Haus.
+Konten mit gleicher E-Mail oder gleichem Namen werden zu einer Person (sonst `--map mail@example.de=Name`). In der App
+holt das Kontomenü **„Gespeicherte Planungen übernehmen“** eine Küchenplanung als Etage ins Haus. Für den Hausgrundriss
+eines laufenden Heimlagers gibt es `npm run import-prod` (siehe Kopf von [`scripts/import-prod.ts`](scripts/import-prod.ts)).
 
-**Haus aus „Haus einrichten“ und Küchenplanung übernehmen** (z. B. die Produktivstände):
-
-```bash
-# Haus-Grundriss des Lagers (lesend, API-Schlüssel genügt) und Exportdatei des Küchenplaners
-curl -H "Authorization: Bearer hlk_…" https://lager.example.de/api/site > data/prod/site.json
-npm run import-prod -- --site data/prod/site.json --kueche "data/prod/Haus 1 – EG Küche.kueche.json" [--dry]
-```
-
-Wände werden aus den Raumgrenzen abgeleitet, offen verbundene Räume behalten ihren Umriss, die Küchenplanung ersetzt
-Wände, Öffnungen und Einbauten ihrer Etage (gleicher Ursprung). Vorher wird die Datenbank gesichert.
-
-## Konto
-
-Ein Konto für alles: die **Personen** des Lagers. Anmeldung per **Kachel + Passwort/PIN** oder **E-Mail + Passwort** –
-dieselbe Sitzung gilt überall. Admins verwalten Personen unter Verwaltung → Personen und Registrierung,
-Freigabe ebenda. Selbst-Registrierung ist standardmäßig aus.
-
-## API (Haus)
-
-| Methode | Pfad | Zweck |
-|---------|------|-------|
-| GET | `/api/house` | Hausplan `{house, version, can_edit, reserved}` |
-| PUT | `/api/house` | Speichern `{house, base_version}` (Admins) → normalisierter Plan, Abgleich mit dem Lager; 409 bei veraltetem Stand |
-| GET | `/api/house/storage` | Alle Plan-Plätze mit Adresse und Inhalt |
-
-Die übrigen Endpunkte (Lager, Buchungen, Konto, Assistent, Backups) stehen in [docs/LAGER.md](docs/LAGER.md#api-für-eigene-erweiterungen).
-
-## Aufbau
-
-```
-server/index.ts            Einstieg: Express, Module, HTTPS, MCP
-server/lager/              Modul Lager (aus Heimlager): Konto, Lager, Buchungen, Assistent, MCP, Backups
-server/haus/               Modul Haus: Hausplan speichern, Abgleich mit dem Lager
-server/kueche/             Modul Planungen: gespeicherte Planungen, Benutzerverwaltung, Materialbibliothek
-web/app/src/model/         Hausmodell für App und Server: Typen, Katalog, Geometrie, Räume, Fächer, Normalisierung
-web/app/src/               App: Editor (plan2d), 3D (scene3d, models, materials), Zustand, Server-Abgleich, Konto
-scripts/                   migrate.ts, reset-password.cjs, make-cert.sh, make-icons.cjs
-test/                      node:test (je Datei ein eigener Server), e2e/ Klicktest im Browser
-docs/                      Handbücher und Changelogs der Ursprungsprojekte
-```
-
-## Docker
-
-```bash
-docker compose up -d --build     # App: :3000, MCP: :3100
-```
-
-Daten im Volume `/data` (`zuhause.db`, `backups/`, `library/`). Migrierte Datenbank hineinkopieren:
+Eine migrierte Datenbank in den Docker-Container kopieren:
 
 ```bash
 docker compose create
@@ -122,14 +239,48 @@ docker compose run --rm -u root --entrypoint chown zuhause -R node:node /data
 docker compose up -d
 ```
 
-## Umgebungsvariablen
+## Entwicklung
 
-| Variable | Standard | Bedeutung |
-|----------|----------|-----------|
-| `PORT` | `3000` | HTTP-Port |
-| `HTTPS_PORT` | `3443` | HTTPS (nur mit Zertifikat in `CERT_DIR`, `npm run cert`), `0` = aus |
-| `DB_PATH` | `data/zuhause.db` | Datenbank; Backups und Texturen liegen daneben |
-| `MCP_PORT` / `MCP_HOST` / `MCP_PUBLIC_URL` | `3100` / `0.0.0.0` / – | MCP-Server |
-| `TRUST_PROXY` | – | `1` hinter einem Reverse Proxy (Secure-Cookie, echte Client-IP) |
-| `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatische Backups |
-| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | KI-Assistent (sonst unter Administration → Assistent) |
+```bash
+npm run dev          # ein Prozess, App mit Vite-HMR → http://localhost:3000
+npm test             # API-Tests, jeder mit eigenem Server und frischer Datenbank
+npm run typecheck    # App und Server
+npm run test:e2e     # Klicktest im Browser (einmalig: npm install --no-save playwright-core)
+```
+
+### Aufbau
+
+```
+server/index.ts            Einstieg: Express, Module, HTTPS, MCP
+server/lager/              Lager: Konto, Lager, Buchungen, Assistent, MCP, Backups
+server/haus/               Haus: Hausplan speichern, Abgleich mit dem Lager
+server/kueche/             Planungen, Benutzerverwaltung, Materialbibliothek
+web/app/src/model/         Hausmodell für App und Server: Typen, Katalog, Geometrie, Räume, Fächer
+web/app/src/               App: Editor (plan2d), 3D (scene3d, models, materials), Zustand, Konto
+scripts/                   migrate, reset-password, make-cert, make-icons, import-prod
+test/                      node:test, e2e/ Klicktest im Browser
+docs/                      Handbücher und Changelogs der Ursprungsprojekte
+site/                      Projekt-Website (GitHub Pages) und Screenshots
+```
+
+**Technik:** Express 5, eingebautes `node:sqlite`, TypeScript (Server per Type Stripping ohne Build), Vite, three.js,
+three-gpu-pathtracer.
+
+### API (Haus)
+
+| Methode | Pfad | Zweck |
+|---------|------|-------|
+| GET | `/api/house` | Hausplan `{house, version, can_edit, reserved}` |
+| PUT | `/api/house` | Speichern `{house, base_version}` → normalisierter Plan, Abgleich mit dem Lager; 409 bei veraltetem Stand |
+| GET | `/api/house/storage` | Alle Plan-Plätze mit Adresse und Inhalt |
+
+Die übrigen Endpunkte (Lager, Buchungen, Konto, Assistent, Backups) stehen in
+[docs/LAGER.md](docs/LAGER.md#api-für-eigene-erweiterungen). API-Schlüssel (`Authorization: Bearer hlk_…`) funktionieren
+auch für die REST-API.
+
+## Danksagung
+
+Bodentexturen und 3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0) ·
+[three.js](https://threejs.org) · [three-gpu-pathtracer](https://github.com/gkjohnson/three-gpu-pathtracer) ·
+[qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT) · [jsQR](https://github.com/cozmo/jsQR) (Apache-2.0) ·
+Ort und Wetter über [OpenStreetMap](https://www.openstreetmap.org) und [Open-Meteo](https://open-meteo.com)

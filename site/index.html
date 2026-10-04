@@ -1,0 +1,338 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Zuhause – Haus planen, Dinge finden</title>
+<meta name="description" content="Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz. Selbst gehosteter Hausplaner mit Heimlager, QR-Scan, Einkaufsliste, Wandterminal und KI-Assistent.">
+<meta property="og:title" content="Zuhause – Haus planen, Dinge finden">
+<meta property="og:description" content="Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz.">
+<meta property="og:image" content="img/haus-3d.webp">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E0662D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 10.5 12 3l9 7.5'/><path d='M5 9.5V21h14V9.5'/><path d='M10 21v-6h4v6'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #faf8f5; --bg-alt: #f2eee8; --card: #ffffff; --text: #1f1d1a; --muted: #6b655d; --line: #e5dfd6;
+  --accent: #e0662d; --accent-ink: #b84a17; --accent-soft: #fbe6da; --code-bg: #1f1d1a; --code-text: #f4efe8;
+  --shadow: 0 1px 2px rgba(40,30,20,.06), 0 8px 30px rgba(40,30,20,.08);
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #181716; --bg-alt: #1f1e1c; --card: #242320; --text: #f1ede7; --muted: #a59e94; --line: #34322e;
+    --accent: #f07a3f; --accent-ink: #ff9a66; --accent-soft: #3a2619; --code-bg: #0f0e0d; --code-text: #f4efe8;
+    --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #181716; --bg-alt: #1f1e1c; --card: #242320; --text: #f1ede7; --muted: #a59e94; --line: #34322e;
+  --accent: #f07a3f; --accent-ink: #ff9a66; --accent-soft: #3a2619; --code-bg: #0f0e0d; --code-text: #f4efe8;
+  --shadow: 0 1px 2px rgba(0,0,0,.3), 0 8px 30px rgba(0,0,0,.35);
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--text); font: 16px/1.6 Inter, system-ui, -apple-system, "Segoe UI", sans-serif; -webkit-font-smoothing: antialiased; }
+img { max-width: 100%; height: auto; display: block; }
+.install > *, .feature > * { min-width: 0; }
+a { color: var(--accent-ink); }
+code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .88em; }
+:not(pre) > code { background: var(--accent-soft); color: var(--accent-ink); padding: .1em .4em; border-radius: 5px; }
+.wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
+@media (min-width: 720px) { .wrap { padding: 0 32px; } }
+
+/* Kopf */
+header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
+header.top .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
+.brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; }
+.brand svg { width: 22px; height: 22px; color: var(--accent); }
+nav.links { display: none; gap: 22px; margin-left: auto; }
+nav.links a { color: var(--muted); text-decoration: none; font-weight: 500; font-size: 15px; }
+nav.links a:hover { color: var(--text); }
+.gh { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; padding: 7px 14px; border: 1px solid var(--line); border-radius: 9px; color: var(--text); text-decoration: none; font-weight: 600; font-size: 14px; background: var(--card); }
+.gh svg { width: 17px; height: 17px; }
+@media (min-width: 860px) { nav.links { display: flex; } .gh { margin-left: 0; } }
+
+/* Hero */
+.hero { padding: 64px 0 40px; text-align: center; }
+.eyebrow { display: inline-block; font-size: 13px; font-weight: 600; letter-spacing: .02em; color: var(--accent-ink); background: var(--accent-soft); padding: 5px 12px; border-radius: 99px; margin-bottom: 20px; }
+h1 { font-size: clamp(34px, 6vw, 60px); line-height: 1.08; letter-spacing: -.03em; margin: 0 auto 18px; max-width: 16ch; font-weight: 800; }
+h1 em { font-style: normal; color: var(--accent); }
+.lead { font-size: clamp(17px, 2.2vw, 20px); color: var(--muted); max-width: 640px; margin: 0 auto 30px; }
+.cta { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+.btn { display: inline-flex; align-items: center; gap: 8px; padding: 12px 22px; border-radius: 10px; font-weight: 600; text-decoration: none; font-size: 15px; }
+.btn.primary { background: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.07); }
+.btn.ghost { border: 1px solid var(--line); color: var(--text); background: var(--card); }
+.shot { margin: 48px auto 0; border-radius: 14px; overflow: hidden; box-shadow: var(--shadow); border: 1px solid var(--line); max-width: 1040px; background: var(--card); }
+.shot .bar { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
+.shot .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
+
+/* Abschnitte */
+section { padding: 72px 0; }
+section.alt { background: var(--bg-alt); border-block: 1px solid var(--line); }
+h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -.02em; line-height: 1.2; margin: 0 0 12px; font-weight: 750; }
+.sub { color: var(--muted); font-size: 17px; max-width: 640px; margin: 0 0 40px; }
+.center { text-align: center; } .center .sub { margin-inline: auto; }
+
+/* So funktioniert's */
+.flow { display: grid; gap: 16px; grid-template-columns: 1fr; counter-reset: s; }
+@media (min-width: 760px) { .flow { grid-template-columns: repeat(4, 1fr); } }
+.flow div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; counter-increment: s; }
+.flow div::before { content: counter(s); display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%; background: var(--accent-soft); color: var(--accent-ink); font-weight: 700; font-size: 14px; margin-bottom: 12px; }
+.flow b { display: block; margin-bottom: 4px; }
+.flow span { color: var(--muted); font-size: 15px; }
+.addr { margin-top: 28px; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 15px; color: var(--muted); }
+.addr code { font-size: 17px; padding: .2em .55em; }
+
+/* Funktions-Zeilen */
+.feature { display: grid; gap: 28px; align-items: center; grid-template-columns: 1fr; margin-bottom: 72px; }
+.feature:last-child { margin-bottom: 0; }
+@media (min-width: 900px) { .feature { grid-template-columns: 5fr 7fr; gap: 56px; } .feature.flip > :first-child { order: 2; } }
+.feature h3 { font-size: 24px; letter-spacing: -.015em; margin: 0 0 10px; }
+.feature p { color: var(--muted); margin: 0 0 16px; }
+.feature ul { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+.feature li { padding-left: 26px; position: relative; font-size: 15px; }
+.feature li::before { content: ""; position: absolute; left: 2px; top: .45em; width: 14px; height: 14px; border-radius: 50%; background: var(--accent-soft); box-shadow: inset 0 0 0 4px var(--accent-soft), inset 0 0 0 7px var(--accent); }
+.feature figure { margin: 0; border-radius: 12px; overflow: hidden; border: 1px solid var(--line); box-shadow: var(--shadow); background: var(--card); }
+.phones { display: flex; gap: 14px; justify-content: center; }
+.phones figure { flex: 1 1 0; max-width: 230px; border-radius: 22px; }
+
+/* Kacheln */
+.grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
+@media (min-width: 980px) { .grid { grid-template-columns: repeat(3, 1fr); } }
+.tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 22px; }
+.tile svg { width: 26px; height: 26px; color: var(--accent); margin-bottom: 12px; }
+.tile h4 { margin: 0 0 6px; font-size: 17px; }
+.tile p { margin: 0; color: var(--muted); font-size: 15px; }
+
+/* Installation */
+.tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+.tabs button { font: inherit; font-weight: 600; font-size: 14px; padding: 8px 16px; border-radius: 9px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; }
+.tabs button[aria-selected="true"] { background: var(--accent); border-color: var(--accent); color: #fff; }
+.panel[hidden] { display: none; }
+pre { background: var(--code-bg); color: var(--code-text); padding: 20px 22px; border-radius: 12px; overflow-x: auto; margin: 0 0 14px; line-height: 1.7; position: relative; }
+pre .c { color: #9a9288; }
+.copy { position: absolute; top: 10px; right: 10px; font: 600 12px Inter, sans-serif; background: rgba(255,255,255,.1); color: var(--code-text); border: 0; border-radius: 6px; padding: 5px 10px; cursor: pointer; }
+.copy:hover { background: rgba(255,255,255,.18); }
+.install { display: grid; gap: 32px; grid-template-columns: 1fr; }
+@media (min-width: 900px) { .install { grid-template-columns: 7fr 5fr; gap: 48px; } }
+.note { background: var(--card); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 10px; padding: 16px 18px; font-size: 15px; color: var(--muted); }
+.note b { color: var(--text); }
+.steps { margin: 0; padding: 0; list-style: none; display: grid; gap: 14px; }
+.steps li { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; font-size: 15px; }
+.steps li b { display: block; margin-bottom: 2px; }
+
+footer { padding: 40px 0 56px; color: var(--muted); font-size: 14px; border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; gap: 12px 28px; justify-content: space-between; }
+footer a { color: var(--muted); }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="wrap">
+    <a class="brand" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>Zuhause</a>
+    <nav class="links">
+      <a href="#so-gehts">So geht's</a>
+      <a href="#funktionen">Funktionen</a>
+      <a href="#installation">Installation</a>
+      <a href="#anleitung">Anleitung</a>
+    </nav>
+    <a class="gh" href="https://github.com/mupf-dev/Homemgmt"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
+  </div>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="wrap">
+      <span class="eyebrow">Selbst gehostet · Open Source · ohne Cloud</span>
+      <h1>Das ganze Haus planen. <em>Alles darin finden.</em></h1>
+      <p class="lead">Zeichne dein Haus in 2D und 3D – jedes Fach jedes Möbels wird automatisch ein Lagerplatz. Einbuchen per Klick, QR-Scan oder Sprache, und „Wo liegt …?“ zeigt dir die Schublade.</p>
+      <div class="cta">
+        <a class="btn primary" href="#installation">Installieren</a>
+        <a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt">Quellcode ansehen</a>
+      </div>
+      <div class="shot">
+        <div class="bar"><i></i><i></i><i></i></div>
+        <img src="img/haus-3d.webp" width="1500" height="900" alt="Das Erdgeschoss in 3D mit Küche; Möbel sind nach Füllstand eingefärbt, rechts die Raumliste">
+      </div>
+    </div>
+  </div>
+
+  <section id="so-gehts" class="alt">
+    <div class="wrap center">
+      <h2>Vom Grundriss zur Schublade</h2>
+      <p class="sub">Zuhause verbindet einen Hausplaner mit einer Lagerverwaltung. Der Plan ist das Lager.</p>
+      <div class="flow" style="text-align:left">
+        <div><b>Etagen & Wände</b><span>Zeichnen oder einen Grundriss hochladen und nachzeichnen.</span></div>
+        <div><b>Räume</b><span>Ein Klick in die Fläche – jeder Raum wird ein Lager mit Kürzel.</span></div>
+        <div><b>Möbel</b><span>Aus dem Katalog setzen. Jedes Fach bekommt eine Adresse.</span></div>
+        <div><b>Einlagern</b><span>Fach antippen, einbuchen – oder Fach-Code und Gegenstand scannen.</span></div>
+      </div>
+      <p class="addr"><code>KU-C2</code> = <span>Küche</span> · <span>Möbel C</span> · <span>Fach 2</span></p>
+    </div>
+  </section>
+
+  <section id="funktionen">
+    <div class="wrap">
+      <div class="feature">
+        <div>
+          <h3>Das Lager lebt im Plan</h3>
+          <p>Kein Abtippen von Regalnummern: Möbel antippen zeigt die Fächer, ein Fach zeigt seinen Inhalt – direkt neben dem Grundriss.</p>
+          <ul>
+            <li>Einbuchen, entnehmen, umlagern, rückgängig</li>
+            <li>Haltbarkeit mit Schnellwahl und Warnung</li>
+            <li>Zieht ein Möbel um, wandert der Inhalt mit</li>
+          </ul>
+        </div>
+        <figure><img src="img/plan-fach.webp" width="1500" height="900" alt="Grundriss der Küche, Fach KU-C1 ist ausgewählt und zeigt eine Testgabel mit Haltbarkeitsdatum"></figure>
+      </div>
+
+      <div class="feature flip">
+        <div>
+          <h3>Wo liegt …?</h3>
+          <p>Eine Suche über alle Räume und Lager. Die Treffer leuchten im Grundriss und in 3D auf, Etagen mit Treffern bekommen einen Punkt.</p>
+          <ul>
+            <li>Suche nach Name, Code, Fach oder Kategorie</li>
+            <li>Heatmap: was wird oft bewegt, was liegt nur herum?</li>
+            <li>Färbung nach Füllstand und Haltbarkeit</li>
+          </ul>
+        </div>
+        <figure><img src="img/fach-3d.webp" width="1500" height="900" alt="3D-Ansicht der Küche, eine Schublade ist hervorgehoben, der Rest halbtransparent"></figure>
+      </div>
+
+      <div class="feature">
+        <div>
+          <h3>Ein echter Hausplaner</h3>
+          <p>Hervorgegangen aus einem Küchenplaner: Wände mit Fang und Maßen, prozedurale Schrankmodelle, PBR-Materialien und fotorealistisches Pathtracing.</p>
+          <ul>
+            <li>Keller bis Dachgeschoss, Außenbereich, Treppen</li>
+            <li>3D-Möbel von Poly Haven und FurniMesh, eigene .glb</li>
+            <li>Begehen wie im Spiel – auch die Treppe hinauf</li>
+          </ul>
+        </div>
+        <figure><img src="img/planen-bibliothek.webp" width="1500" height="900" alt="Planungsmodus: Möbelkatalog links, Grundriss in der Mitte, 3D-Vorschau der Küche rechts"></figure>
+      </div>
+
+      <div class="feature flip">
+        <div>
+          <h3>Am Handy und an der Wand</h3>
+          <p>Als App installierbar, mit Scannen in der Mitte der Leiste. Ein Tablet an der Wand wird zum Terminal für alle – mit „Wer bucht?“ und einem Ruhezustand, in dem die Sonne wie draußen steht.</p>
+          <ul>
+            <li>Mehrere Personen, Anmeldung per Kachel + PIN</li>
+            <li>Buchungen ohne WLAN werden nachgeholt</li>
+            <li>Ruhezustand mit Uhr, Wetter und Einkaufsliste</li>
+          </ul>
+        </div>
+        <div class="phones">
+          <figure><img src="img/handy-uebersicht.webp" width="390" height="844" alt="Startseite auf dem Handy mit Schnellaktionen, Einkaufsliste und Ablaufendem"></figure>
+          <figure><img src="img/terminal-ruhe.webp" width="744" height="1133" alt="Wandterminal im Ruhezustand: Haus auf Rasen, große Uhr, Einkaufsliste"></figure>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="alt">
+    <div class="wrap">
+      <h2>Und außerdem</h2>
+      <p class="sub">Alles, was ein Haushalt zum Wiederfinden braucht.</p>
+      <div class="grid">
+        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 14v.01M14 20h.01M17 20h4v-3"/></svg><h4>QR-Scan</h4><p>Fach-Code, dann Gegenstand = einbuchen. Gegenstand zweimal = ausbuchen. Auch per Handscanner.</p></div>
+        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9V3h12v6"/><rect x="3" y="9" width="18" height="8" rx="2"/><path d="M7 14h10v7H7z"/></svg><h4>Etiketten & 3D-Druck</h4><p>Etiketten für Fächer und Dinge drucken – oder QR-Schilder als STL und mehrfarbiges 3MF.</p></div>
+        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg><h4>Einkaufsliste</h4><p>Verbrauchsmaterial landet beim Ausbuchen automatisch drauf. Teilen per WhatsApp.</p></div>
+        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/><path d="M10 10h.01M14 10h.01"/></svg><h4>KI-Assistent</h4><p>„3 Dosen Tomaten in den Keller, haltbar bis 05/2027“ – per Text, Sprache oder Foto. Jeder OpenAI-kompatible Anbieter.</p></div>
+        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3"/><path d="M8 12h8M12 8v8"/></svg><h4>MCP-Server</h4><p>Claude und andere KI-Assistenten suchen und buchen direkt im Lager – mit eigenem API-Schlüssel.</p></div>
+        <div class="tile"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg><h4>Backups & Export</h4><p>Automatische Backups, Wiederherstellen per Klick, Export und Import als Excel-Datei.</p></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="installation">
+    <div class="wrap">
+      <h2>Installation</h2>
+      <p class="sub">Ein Node-Prozess, eine SQLite-Datei. Läuft auf dem NAS, einem Raspberry Pi oder dem Heimserver.</p>
+      <div class="install">
+        <div>
+          <div class="tabs" role="tablist">
+            <button role="tab" aria-selected="true" data-tab="docker">Docker</button>
+            <button role="tab" aria-selected="false" data-tab="node">Node.js</button>
+            <button role="tab" aria-selected="false" data-tab="dev">Entwicklung</button>
+          </div>
+          <div class="panel" data-panel="docker">
+<pre><button class="copy">Kopieren</button><code>git clone https://github.com/mupf-dev/Homemgmt.git
+cd Homemgmt
+docker compose up -d --build
+<span class="c"># App: http://localhost:3000 · MCP: Port 3100</span></code></pre>
+          </div>
+          <div class="panel" data-panel="node" hidden>
+<pre><button class="copy">Kopieren</button><code><span class="c"># benötigt Node.js ≥ 22.18</span>
+git clone https://github.com/mupf-dev/Homemgmt.git
+cd Homemgmt
+npm install
+npm run build &amp;&amp; npm start
+<span class="c"># → http://localhost:3000</span></code></pre>
+          </div>
+          <div class="panel" data-panel="dev" hidden>
+<pre><button class="copy">Kopieren</button><code>npm install
+npm run dev         <span class="c"># Vite-HMR → http://localhost:3000</span>
+npm test            <span class="c"># API-Tests</span>
+npm run typecheck
+npm run test:e2e    <span class="c"># Klicktest im Browser</span></code></pre>
+          </div>
+          <div class="note"><b>Kamera-Scan braucht HTTPS.</b> Im Heimnetz reicht <code>npm run cert</code> (App dann unter Port 3443), dauerhaft ein Reverse Proxy mit <code>TRUST_PROXY=1</code>.</div>
+        </div>
+        <ol class="steps">
+          <li><b>Ersteinrichtung</b>Beim ersten Start „Neue Person“ antippen und ein Passwort vergeben – diese Person wird Admin.</li>
+          <li><b>Personen einladen</b>Unter Verwaltung → Personen weitere Mitbewohner anlegen, optional mit dem Recht „Haus planen“.</li>
+          <li><b>Backups</b>Laufen automatisch alle 24 Stunden, 14 werden behalten – einstellbar per Umgebungsvariable.</li>
+        </ol>
+      </div>
+    </div>
+  </section>
+
+  <section id="anleitung" class="alt">
+    <div class="wrap">
+      <h2>Anleitung</h2>
+      <p class="sub">Die wichtigsten Abläufe in Kürze. Das vollständige Handbuch steht im Repository.</p>
+      <div class="grid">
+        <div class="tile"><h4>1 · Haus anlegen</h4><p>Haus → <b>Planen</b>. Mit <b>+</b> Etagen anlegen, Wände zeichnen oder einen Grundriss hochladen und nachzeichnen.</p></div>
+        <div class="tile"><h4>2 · Räume festlegen</h4><p><b>Raum festlegen</b> und in eine umschlossene Fläche klicken. Name und Kürzel vergeben – fertig ist das Lager.</p></div>
+        <div class="tile"><h4>3 · Möbel stellen</h4><p>Schränke aus dem Katalog docken an Wände an. <code>R</code> dreht, <code>Alt</code> platziert frei. Jedes Möbel bekommt einen Buchstaben.</p></div>
+        <div class="tile"><h4>4 · Einbuchen</h4><p>Fach antippen, „Was kommt hinein?“ eintippen, <b>Einbuchen</b>. Am Handy geht's schneller per Scan.</p></div>
+        <div class="tile"><h4>5 · Etiketten kleben</h4><p>Mehr → <b>Etiketten &amp; QR-Schilder</b>: Fach-Etiketten drucken und anbringen, leere Etiketten für neue Dinge vorhalten.</p></div>
+        <div class="tile"><h4>6 · Wandterminal</h4><p>Verwaltung → <b>Wandterminals</b> → anlegen, den Einrichtungslink am Tablet öffnen. Fertig.</p></div>
+      </div>
+      <p style="margin-top:28px"><a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt/blob/main/docs/LAGER.md">Vollständiges Handbuch →</a></p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="wrap">
+    <span>Zuhause · <a href="https://github.com/mupf-dev/Homemgmt">github.com/mupf-dev/Homemgmt</a></span>
+    <span>Texturen &amp; Modelle: <a href="https://polyhaven.com">Poly Haven</a> (CC0) · 3D: <a href="https://threejs.org">three.js</a> · Wetter: <a href="https://open-meteo.com">Open-Meteo</a></span>
+  </div>
+</footer>
+
+<script>
+document.querySelectorAll('.tabs button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.tabs button').forEach(function (x) { x.setAttribute('aria-selected', x === b ? 'true' : 'false'); });
+    document.querySelectorAll('.panel').forEach(function (p) { p.hidden = p.dataset.panel !== b.dataset.tab; });
+  });
+});
+document.querySelectorAll('.copy').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var code = b.parentElement.querySelector('code').innerText.split('\n').filter(function (l) { return !/^\s*#/.test(l); })
+      .map(function (l) { return l.replace(/\s+#.*$/, ''); }).join('\n').trim();
+    navigator.clipboard && navigator.clipboard.writeText(code).then(function () { b.textContent = 'Kopiert ✓'; setTimeout(function () { b.textContent = 'Kopieren'; }, 1600); });
+  });
+});
+</script>
+</body>
+</html>
