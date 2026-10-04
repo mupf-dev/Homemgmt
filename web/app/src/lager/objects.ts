@@ -79,7 +79,7 @@ export const viewObjects: View = async (el, ctx, params) => {
   if (tab === 'community') {
     try {
       const c = await api<{ url: string; objects: any[] }>('GET', '/api/objects/community');
-      box.innerHTML = `<p class="hint">Möbelarten aus dem <a class="link" href="${GALLERY}" target="_blank" rel="noopener">Community-Katalog ${ic('external')}</a> – frei verwendbar. Eigene Möbelarten beisteuern: exportieren und als Pull Request im <a class="link" href="${REPO}" target="_blank" rel="noopener">Katalog-Repo ${ic('external')}</a> einreichen.</p>
+      box.innerHTML = `<p class="hint">Möbelarten aus dem <a class="link" href="${GALLERY}" target="_blank" rel="noopener">Community-Katalog ${ic('external')}</a> – frei verwendbar. Eigene Möbelarten beisteuern: exportieren und als Pull Request im <a class="link" href="${REPO}" target="_blank" rel="noopener">Katalog-Repo ${ic('external')}</a> einreichen. Beim Planen gibt es sie auch direkt unter „Möbel“ → <b>Online-Bibliothek</b>: auswählen installiert und setzt sie.</p>
         <div class="ob-list">${c.objects.map((o) => `<div class="ob-row" data-id="${esc(o.id)}">
           <span class="ob-icon">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : ic('box')}</span>
           <span class="l-main"><b>${esc(o.name)}</b><small>${esc(o.group)}${o.places ? ` · ${o.places} Fächer` : ''} · Version ${esc(o.version)}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(o.description)}</small>` : ''}</span>

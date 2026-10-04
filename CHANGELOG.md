@@ -18,6 +18,10 @@ zwei Lagerplätze: Waschmittelfach bzw. Kondenswasserbehälter und die Trommel.
 Schwarzglas und der Türring zu Chrom. Ohne Angabe bleibt die Front weiß wie bisher. Die Editor-Vorschau spiegelt jetzt
 eine Umgebung, Metall und Chrom sehen dort echt aus.
 
+**Community-Möbel im Planer:** Die Online-Bibliothek unter „Möbel“ hat als erste Quelle die Möbelarten aus dem
+Community-Katalog – neben Poly Haven und FurniMesh, mit Suche, Gruppen, Vorschaubild, Maßen und Fächerzahl. Auswählen
+installiert die Möbelart (bzw. bringt sie auf die neue Version) und startet direkt das Platzieren.
+
 ## 0.7.0 – 2026-10-04
 
 **Objektbibliothek** (Mehr → Objektbibliothek): Möbelarten wie Küchenschränke und Lagerregale als Daten statt im Code.

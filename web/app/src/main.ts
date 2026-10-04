@@ -157,7 +157,7 @@ app.innerHTML = `
 
   <section class="tab" id="tab-catalog">
     <div class="btn-col" style="margin-bottom:10px">
-      <button class="btn primary" id="modelLibrary" style="justify-content:center">${ICON.globe}Möbel &amp; Deko aus der Online-Bibliothek</button>
+      <button class="btn primary" id="modelLibrary" style="justify-content:center">${ICON.globe}Online-Bibliothek: Community-Möbel &amp; 3D-Modelle</button>
       <button class="btn" id="modelUpload" style="justify-content:center">${ICON.box}Eigenes 3D-Modell (.glb) hochladen</button>
       <input type="file" id="modelFile" accept=".glb,model/gltf-binary" hidden />
     </div>
@@ -790,8 +790,9 @@ const MODEL_CATS: [string, string][] = [['', 'Alle'], ['sitzen', 'Sitzmöbel'], 
 let modelAll = false;
 /** FurniMesh: realistische (KI-erzeugte) Möbel, nur Einrichtungs-Kategorien */
 const FM_CATS: [string, string][] = [['', 'Alle'], ['sofas', 'Sofas'], ['sitzen', 'Sitzmöbel'], ['tische', 'Tische'], ['betten', 'Betten'], ['schraenke', 'Schränke & Regale'], ['leuchten', 'Leuchten'], ['bad', 'Bad']];
-let modelSource: 'polyhaven' | 'furnimesh' = 'polyhaven';
+let modelSource: 'community' | 'polyhaven' | 'furnimesh' = 'community';
 const SOURCE_HINT = {
+  community: 'Möbelarten aus dem Community-Katalog – Schränke, Regale, Geräte mit Fächern: jedes Fach wird ein Lagerplatz. Beim Auswählen wird die Möbelart installiert (verwalten unter Mehr → Objektbibliothek).',
   polyhaven: 'Freie 3D-Modelle von Poly Haven (CC0) mit echten Maßen und Materialien. Beim Auswählen wird das Modell einmal auf den Server geladen.',
   furnimesh: 'Realistische, KI-erzeugte Möbel von FurniMesh – frei herunterladbar, aber ohne ausdrückliche Lizenz. Beim Auswählen wird das Modell geladen und verkleinert (dauert etwa 10 s); die Größe ist ein typischer Wert der Kategorie und lässt sich anpassen.',
 };
@@ -814,8 +815,8 @@ async function placeModel(model: NonNullable<Item['model']>) {
 function openModelLibrary() {
   if (!account.user) return toast('Für die Online-Bibliothek bitte anmelden.');
   const m = modal('Möbel & Deko – Online-Bibliothek', `
-    <form class="lib-search" id="mlForm"><input type="search" id="mlQ" placeholder="Suchen, z. B. Stuhl, Sofa, Lampe, Pflanze (oder englisch) …" value="${esc(modelState.q)}" /><button class="btn primary">Suchen</button></form>
-    <div class="seg" id="mlSource" style="margin:6px 0"><button type="button" data-src="polyhaven">Poly Haven</button><button type="button" data-src="furnimesh">FurniMesh</button></div>
+    <form class="lib-search" id="mlForm"><input type="search" id="mlQ" placeholder="Suchen …" value="${esc(modelState.q)}" /><button class="btn primary">Suchen</button></form>
+    <div class="seg" id="mlSource" style="margin:6px 0"><button type="button" data-src="community" title="Möbelarten mit Fächern (Lagerplätze)">Community-Möbel</button><button type="button" data-src="polyhaven">Poly Haven</button><button type="button" data-src="furnimesh">FurniMesh</button></div>
     <label class="row switch" id="mlAllRow" style="margin:4px 0"><input type="checkbox" id="mlAll" ${modelAll ? 'checked' : ''} /><span><b>Ohne Filter</b><small>Bei „Alle“ auch Garten, Natur, Werkzeug, Industrie und Requisiten zeigen</small></span></label>
     <p class="hint" id="mlCount"></p>
     <div class="chips" id="mlCats"></div>
@@ -827,9 +828,58 @@ function openModelLibrary() {
   const more = $<HTMLButtonElement>('#mlMore', m.el);
   let offset = 0;
   let seq = 0;
+  // Community-Katalog: einmal je Dialog laden, Suche und Gruppen im Browser
+  let community: { url: string; objects: any[] } | null = null;
+  const loadCommunity = async (append: boolean) => {
+    const my = seq;
+    community ??= await fetch('/api/objects/community', { credentials: 'same-origin' }).then(async (x) => {
+      const d = await x.json();
+      if (!x.ok) throw new Error(d.error ?? 'Community-Katalog nicht erreichbar.');
+      return d;
+    });
+    if (my !== seq) return;
+    const q = modelState.q.toLowerCase();
+    const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.group} ${o.description}`.toLowerCase().includes(q)));
+    const page = hits.slice(offset, offset + 48);
+    $('#mlCount', m.el).textContent = `${hits.length} Möbelarten`;
+    const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(o.name)}</b>
+      <small>${o.size ? `${o.size[0]} × ${o.size[1]} × ${o.size[2]} cm` : esc(o.group)}</small>
+      <span class="ml-tags">${o.places ? `<span class="tag">${o.places} Fächer</span>` : ''}${o.update ? `<span class="tag warn">neue Version ${esc(o.version)}</span>` : o.installed ? '<span class="tag ok">installiert</span>' : ''}</span></button>`).join('');
+    res.innerHTML = append ? res.innerHTML + html : html || '<p class="hint">Nichts gefunden.</p>';
+    offset += page.length;
+    more.hidden = offset >= hits.length;
+    res.querySelectorAll<HTMLElement>('.ml-card:not([data-bound])').forEach((b) => {
+      b.dataset.bound = '1';
+      b.addEventListener('click', async () => {
+        const o = community!.objects.find((x) => x.id === b.dataset.id)!;
+        b.classList.add('busy');
+        try {
+          // installieren bzw. aktualisieren, dann platzieren wie die eingebauten Möbel
+          if (!o.installed || o.update) await api('POST', '/api/objects/community/install', { id: o.id });
+          await loadLibrary();
+          m.close();
+          if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
+          document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.type === OBJ_PREFIX + o.id));
+          plan.setTool('place', OBJ_PREFIX + o.id);
+          toast(`${o.name}: zum Platzieren in den Grundriss klicken (R dreht).${o.installed ? '' : ' Jetzt auch im Katalog unter „Möbel“.'}`);
+        } catch (e) {
+          b.classList.remove('busy');
+          toast((e as Error).message);
+        }
+      });
+    });
+  };
   const load = async (append = false) => {
     const my = ++seq;
     if (!append) offset = 0;
+    if (modelSource === 'community') {
+      try {
+        await loadCommunity(append);
+      } catch (e) {
+        if (my === seq) res.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p>`;
+      }
+      return;
+    }
     try {
       const r = await fetch(`/api/library/models?q=${encodeURIComponent(modelState.q)}&cat=${modelState.cat}&all=${modelAll ? 1 : 0}&source=${modelSource}&limit=48&offset=${offset}`, { credentials: 'same-origin' }).then((x) => x.json());
       if (my !== seq) return;
@@ -865,31 +915,36 @@ function openModelLibrary() {
   });
   // Quelle: eigene Kategorien, „Ohne Filter“ nur bei Poly Haven
   const renderSource = () => {
-    const cats = modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
-    if (!cats.some(([k]) => k === modelState.cat)) modelState.cat = '';
+    const groups = [...new Set((community?.objects ?? []).map((o) => String(o.group)))].sort((a, b) => a.localeCompare(b, 'de'));
+    const cats: [string, string][] = modelSource === 'community' ? [['', 'Alle'], ...groups.map((g): [string, string] => [g, g])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
+    // Community-Gruppen sind erst nach dem Laden bekannt
+    if ((modelSource !== 'community' || community) && !cats.some(([k]) => k === modelState.cat)) modelState.cat = '';
     m.el.querySelectorAll<HTMLElement>('#mlSource [data-src]').forEach((x) => x.classList.toggle('on', x.dataset.src === modelSource));
     ($('#mlAllRow', m.el) as HTMLElement).hidden = modelSource !== 'polyhaven';
     $('#mlHint', m.el).textContent = SOURCE_HINT[modelSource];
     const chips = $('#mlCats', m.el);
-    chips.innerHTML = cats.map(([k, l]) => `<button type="button" data-cat="${k}" class="${modelState.cat === k ? 'on' : ''}">${l}</button>`).join('');
+    chips.innerHTML = cats.map(([k, l]) => `<button type="button" data-cat="${esc(k)}" class="${modelState.cat === k ? 'on' : ''}">${esc(l)}</button>`).join('');
     chips.querySelectorAll<HTMLElement>('[data-cat]').forEach((b) => b.addEventListener('click', () => {
       modelState.cat = b.dataset.cat!;
       chips.querySelectorAll('[data-cat]').forEach((x) => x.classList.toggle('on', x === b));
       load();
     }));
   };
+  const start = async () => {
+    renderSource();
+    await load();
+    if (modelSource === 'community' && community) renderSource();
+  };
   m.el.querySelectorAll<HTMLElement>('#mlSource [data-src]').forEach((b) => b.addEventListener('click', () => {
     modelSource = b.dataset.src as typeof modelSource;
-    renderSource();
-    load();
+    void start();
   }));
-  renderSource();
   more.addEventListener('click', () => load(true));
   $<HTMLInputElement>('#mlAll', m.el).addEventListener('change', (e) => {
     modelAll = (e.target as HTMLInputElement).checked;
     load();
   });
-  load();
+  void start();
 }
 $('#modelLibrary').addEventListener('click', openModelLibrary);
 $('#modelUpload').addEventListener('click', () => {
