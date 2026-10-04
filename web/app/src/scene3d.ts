@@ -691,6 +691,51 @@ export class Scene3D {
   }
 
   updateSelection() {
+    this.updateBox();
+    this.applyFocus();
+  }
+
+  /** Ansehen: das ausgewählte Möbel hervorheben, alles andere halbtransparent */
+  focusMode = false;
+  private faded = new Map<THREE.Material, THREE.Material>();
+  private fade(mat: THREE.Material) {
+    let f = this.faded.get(mat);
+    if (!f) {
+      f = mat.clone();
+      f.transparent = true;
+      f.opacity = 0.16 * mat.opacity;
+      f.depthWrite = false;
+      this.faded.set(mat, f);
+    }
+    return f;
+  }
+  private applyFocus() {
+    const s = store.selection;
+    const id = this.focusMode && !this.ptActive && !this.showroomMode && s?.kind === 'item' ? s.id : null;
+    let target: THREE.Object3D | undefined;
+    if (id) this.content.traverse((o) => {
+      if (!target && o.userData.itemId === id) target = o;
+    });
+    const inside = (o: THREE.Object3D | null) => {
+      for (; o; o = o.parent) if (o === target) return true;
+      return false;
+    };
+    this.content.traverse((o) => {
+      const m = o as THREE.Mesh;
+      if (!m.isMesh) return;
+      if (m.userData.origMat) {
+        m.material = m.userData.origMat;
+        delete m.userData.origMat;
+      }
+      if (target && !inside(m)) {
+        m.userData.origMat = m.material;
+        m.material = Array.isArray(m.material) ? m.material.map((x) => this.fade(x)) : this.fade(m.material);
+      }
+    });
+    this.dirty = true;
+  }
+
+  private updateBox() {
     const s = store.selection;
     this.selectionBox.visible = false;
     if (!s || this.ptActive || this.showroomMode) return;

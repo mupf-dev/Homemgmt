@@ -2955,6 +2955,8 @@ function setPlanning(on: boolean) {
   document.body.classList.toggle('haus-plan', on);
   document.body.classList.toggle('haus-view', !on);
   plan.viewOnly = !on;
+  view.focusMode = !on;
+  view.updateSelection();
   plan.setTool('select');
   viewFach = null;
   if (on) {
@@ -3138,6 +3140,13 @@ function renderViewPanel() {
 store.onFloor(() => {
   viewFach = null;
   renderViewPanel();
+  // Ansehen: Etage gewählt, während das ganze Haus zu sehen ist → „Bis hier“ auf diese Etage
+  if (document.body.classList.contains('haus-view') && !document.body.classList.contains('resting') && view.mode === 'house') {
+    view.mode = 'stack';
+    view.build();
+    view.setView('perspective');
+    document.querySelectorAll('#houseMode [data-h]').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.h === 'stack'));
+  }
 });
 store.subscribe(() => {
   if (!document.getElementById('viewPanel')?.contains(document.activeElement)) renderViewPanel();
