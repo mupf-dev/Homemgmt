@@ -36,6 +36,8 @@ export function objectIcon(t: ObjectType, w = 60, h = 40) {
   const X = (x: number) => (ox + (x + W / 2) * k).toFixed(1);
   const Y = (y: number) => (oy + (H - y) * k).toFixed(1);
   let d = `<rect x="${X(-W / 2)}" y="${Y(H)}" width="${(W * k).toFixed(1)}" height="${(H * k).toFixed(1)}" ${s}/>`;
+  const ct = t.build.countertop;
+  if (ct) d += `<rect x="${X(-W / 2 - 1)}" y="${Y(H)}" width="${((W + 2) * k).toFixed(1)}" height="${Math.max(1.5, ct.thickness * k).toFixed(1)}" fill="currentColor"/>`;
   for (const col of korpusLayout(t.build, W, H)) {
     for (const { el, y0, y1 } of col.elements) {
       d += `<rect x="${X(col.x0)}" y="${Y(y1)}" width="${((col.x1 - col.x0) * k).toFixed(1)}" height="${((y1 - y0) * k).toFixed(1)}" ${s}/>`;

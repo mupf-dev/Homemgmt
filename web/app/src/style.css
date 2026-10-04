@@ -1117,3 +1117,4 @@ body.resting .view-panel, body.resting #hausbar { visibility: hidden; }
   .ob-mrow { grid-template-columns: repeat(3, 1fr); }
   .grid4 { grid-template-columns: 1fr 1fr; }
 }
+.ob-ct { margin: 8px 0; display: flex; flex-direction: column; gap: 6px; }

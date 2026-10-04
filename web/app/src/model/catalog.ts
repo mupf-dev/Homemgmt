@@ -111,6 +111,8 @@ const entryOf = (t: ObjectType): CatalogEntry => ({
   id: OBJ_PREFIX + t.id, name: t.name, group: t.group, kind: 'custom',
   width: t.size.width, depth: t.size.depth, height: t.size.height, elevation: t.size.elevation,
   snapToWall: t.snapToWall, widths: t.size.widths, materials: t.materials, object: t,
+  // Arbeitsplatte als Teil der Küchenzeile: countertopRuns fasst sie mit angrenzenden Unterschränken zusammen
+  ...(t.build.type === 'korpus' && t.build.countertop?.join ? { countertop: true } : {}),
 });
 
 /** Möbelarten des Hauses (aus house.objectTypes) bekannt machen */

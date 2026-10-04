@@ -1,5 +1,13 @@
 # Changelog
 
+## Unveröffentlicht
+
+**Arbeitsplatte für Möbelarten** (Objektbibliothek): Korpus-Möbelarten können oben eine Arbeitsplatte tragen – z. B.
+Waschmaschine unter Arbeitsplatte, Hauswirtschaftszeile, Kochinsel. Stärke, Überstand vorne und Material im Editor
+einstellbar; mit „mit Küchenzeile verbinden“ wird sie Teil der Küchenzeile, die Maserung läuft über angrenzende
+Unterschränke weiter. Die Platte ist kein Fach, die Höhe bleibt die Gesamthöhe. Das Format bleibt `zuhause-objekt/1`
+(neues optionales Feld `build.countertop`); bestehende Möbelarten und ihre Lageradressen bleiben unverändert.
+
 ## 0.7.0 – 2026-10-04
 
 **Objektbibliothek** (Mehr → Objektbibliothek): Möbelarten wie Küchenschränke und Lagerregale als Daten statt im Code.

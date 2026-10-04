@@ -265,6 +265,9 @@ export function countertopRuns(project: Project): Map<string, CountertopRun> {
     const island = getEntry(it.type).kind === 'island';
     const backOver = island && it.islandBack === 'doors' ? 2 : 0;
     const ov = it.ctOverhang;
+    // Möbelart aus der Objektbibliothek: Überstand aus ihrer Beschreibung
+    const obj = getEntry(it.type).object?.build;
+    const front = ov?.f ?? (obj?.type === 'korpus' && obj.countertop ? obj.countertop.overhang : 2);
     return {
       it,
       rot: Math.round((((it.rotation * 180) / Math.PI) % 360 + 360) % 360),
@@ -274,7 +277,7 @@ export function countertopRuns(project: Project): Map<string, CountertopRun> {
       e0: along - it.width / 2 - (ov?.l ?? 0),
       e1: along + it.width / 2 + (ov?.r ?? 0),
       back: across - it.depth / 2 - backOver - (ov?.b ?? 0),
-      front: across + it.depth / 2 + (ov?.f ?? 2),
+      front: across + it.depth / 2 + front,
       across,
     };
   });

@@ -273,6 +273,16 @@ try {
   await page.evaluate(() => scrollTo(0, 0));
   await page.waitForTimeout(300);
   await shot('07g-objekt-editor');
+  // Arbeitsplatte: kein Fach, Fächerzahl bleibt; Material wählbar
+  const faecher = await page.textContent('#fa h3');
+  await page.check('[data-ct="on"]');
+  await page.check('[data-ct="join"]');
+  await page.waitForSelector('[data-m="countertop"]');
+  await page.waitForTimeout(400);
+  console.log('  mit Arbeitsplatte:', await page.textContent('#fa h3'), '| Material-Auswahl:', await page.locator('[data-m="countertop"]').count());
+  if ((await page.textContent('#fa h3')) !== faecher) throw new Error('Arbeitsplatte hat die Fächer verändert');
+  await page.evaluate(() => scrollTo(0, 0));
+  await shot('07g2-objekt-arbeitsplatte');
   await page.click('#save');
   await page.waitForSelector('.ob-row[data-id="eigene.speisekammer-regal"]');
   console.log('  Installiert:', await page.$$eval('.ob-row b', (b) => b.map((x) => x.textContent)));
