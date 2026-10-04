@@ -1,0 +1,24 @@
+{
+  "name": "Zuhause",
+  "short_name": "Zuhause",
+  "description": "Haus in 3D planen – jedes Fach ist ein Lagerplatz: scannen, ein- und ausbuchen, suchen, Einkaufsliste.",
+  "lang": "de",
+  "start_url": "/#/lager",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#f4f3f0",
+  "theme_color": "#d9622b",
+  "icons": [
+    { "src": "/app/icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "/app/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    { "name": "Scannen", "short_name": "Scannen", "url": "/#/scan", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Einbuchen", "short_name": "Einbuchen", "url": "/#/ein", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Suchen", "short_name": "Suchen", "url": "/#/suche", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Einkaufsliste", "short_name": "Einkauf", "url": "/#/einkauf", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
+    { "name": "Haus", "short_name": "Haus", "url": "/#/haus", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] }
+  ]
+}

@@ -1,0 +1,30 @@
+# Zuhause mit Docker Compose
+#   docker compose up -d --build
+# Lager: http://<server>:3000   ·   Küchenplaner: http://<server>:3000/kueche/   ·   MCP: http://<server>:3100/mcp
+services:
+  zuhause:
+    build: .
+    image: zuhause:latest
+    container_name: zuhause
+    restart: unless-stopped
+    ports:
+      - "3000:3000"   # Web-App (für die Kamera im Browser HTTPS nötig → Reverse Proxy)
+      - "3100:3100"   # MCP-Server (für KI-Assistenten, Anmeldung per API-Schlüssel)
+    environment:
+      TZ: Europe/Berlin
+      # Hinter einem Reverse Proxy mit HTTPS einschalten (Secure-Cookie, echte Client-IP):
+      # TRUST_PROXY: "1"
+      # Öffentliche Adresse des MCP-Servers (Anzeige in der App, erlaubter Origin):
+      # MCP_PUBLIC_URL: https://mcp.example.de
+      # MCP ausschalten:
+      # MCP_PORT: "0"
+      # Automatische Backups nach /data/backups (Standard: alle 24 h, 14 behalten):
+      # BACKUP_INTERVAL_HOURS: "24"
+      # BACKUP_KEEP: "14"
+    volumes:
+      - zuhause-data:/data
+      # Optional eigenes Zertifikat für HTTPS direkt im Container (key.pem + cert.pem), dann Port 3443 freigeben:
+      # - ./certs:/certs:ro
+
+volumes:
+  zuhause-data:

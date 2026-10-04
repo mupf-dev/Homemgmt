@@ -1,0 +1,19 @@
+{
+  // Server: läuft direkt per Node-Type-Stripping (kein Build) – nur erlaubte, „löschbare“ TS-Syntax
+  "compilerOptions": {
+    "target": "es2023",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "skipLibCheck": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "erasableSyntaxOnly": true,
+    "rewriteRelativeImportExtensions": false,
+    "noEmit": true,
+    "strict": true,
+    "noUnusedLocals": true
+  },
+  "include": ["server/**/*.ts", "scripts/**/*.ts"]
+}

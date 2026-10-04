@@ -1,0 +1,135 @@
+# Changelog
+
+## 0.5.0 – 2026-10-03
+
+**Begehen wie im Spiel:** durch das ganze Haus laufen – Wände und Möbel bremsen, Türen und Durchgänge sind offen,
+Schwellen bis ~30 cm werden überstiegen, **Treppen führen hinauf und hinunter in die anderen Etagen**. Anzeige von
+Etage und Raum, der Grundriss und die Etagenreiter laufen mit; beim Beenden kehrt die vorherige Ansicht zurück
+(`web/app/src/walker.ts`).
+
+**Möbel- und Einrichtungsbibliothek:** 3D-Modelle (glTF, CC0) von Poly Haven suchen und nach Kategorien filtern
+(Sitzen, Tische, Betten, Schränke, Leuchten, Pflanzen, Deko …), mit einem Klick ins Haus setzen, maßstäblich skalieren;
+eigene `.glb`-Dateien hochladen (`/api/library/models…`). Schalter **„Ohne Filter“** zeigt alle 521 Modelle (sonst 242
+Einrichtungsmodelle), neue Kategorien Werkzeug, Garten & Natur, Sonstiges; Suche auch mit deutschen Begriffen (Stuhl, Lampe …).
+Zweite Quelle **FurniMesh** (ohne Konto/API-Schlüssel): Tausende realistische, KI-erzeugte Möbel (Sofas, Sitzmöbel,
+Tische, Betten, Schränke, Leuchten, Bad) aus den öffentlichen Bibliotheksseiten; beim Übernehmen wird das GLB einmal
+geladen, von ~20 MB auf ~2–3 MB verkleinert (Texturen 1024 px JPEG, Geometrie ausgedünnt; `@gltf-transform`, `sharp`,
+`meshoptimizer`) und auf typische Maße der Kategorie skaliert. Keine ausdrückliche Lizenz – Quelle und Link stehen am Modell.
+
+**Haus-Ansicht:** keine Lücken mehr zwischen den Etagen, Treppen enden genau an der Etage darüber und schneiden ein
+Treppenloch in die Decke (Lochgröße = Grundfläche der Treppe), Dachboden-Wände bleiben unter dem Dach.
+
+**Planer:** Möbel können ein **Durchgang** sein (Front ohne Korpus, Öffnung in der Wand dahinter, keine Fächer) – so
+ist der Hochschrank in der Küche jetzt der Durchgang unter der Treppe. Treppen behalten beim Andocken per Drag & Drop
+ihre Drehung und rücken nur bündig an die Wand.
+
+**Objekte sperren (2D-Editor):** Wände, Fenster/Türen, Möbel und Räume per „Sperren“ oder Taste `L` festsetzen – nicht
+mehr auswählbar, verschiebbar oder löschbar (auch nicht über 3D-Klick oder die Raumliste), Ecken an gesperrten Wänden
+bleiben fest, Türen/Fenster lassen sich nicht in gesperrte Wände setzen. Schloss-Symbol im Grundriss; unter „Etage“ →
+„Gesperrt“ einzeln/alle entsperren und „Alle Wände sperren“. Rückgängig machbar, wird mit dem Haus gespeichert.
+
+**Lager:** Behälter beim Scannen befüllen und Gegenstände in Behälter legen, Preisrecherche in der Einkaufsliste,
+Anleitung in der App (`?`). Die alte Oberfläche (`/alt/`) ist entfernt. `npm run import-prod-items` übernimmt die
+produktiven Gegenstände samt Fach-Zuordnungen in den Hausplan (nur lesend, mit Sicherung).
+
+## 0.4.0 – 2026-10-03
+
+**Die App ist die Startseite** (`/`); die bisherige Lager-Oberfläche liegt unter `/alt/`, `/app/` und `/kueche/` leiten
+weiter, QR-Etiketten öffnen die App. Der frühere Service-Worker meldet sich ab. Eigenes App-Manifest (installierbar,
+Schnellzugriffe Scannen, Einbuchen, Suchen, Einkaufsliste, Haus).
+
+**Restliche Lagerfunktionen in der App**
+- Anmeldung per **Kachel + Passwort/PIN** und **Ersteinrichtung** direkt in der App (zusätzlich E-Mail)
+- **Assistent:** Text, Sprache, Foto (QR-Etiketten werden erkannt), Rückfrage ab 4 Buchungen, Rückgängig je Buchung,
+  Vorlesen, Kontext aus Gegenstand/Fach; genannte Plätze mit „Im Haus zeigen“
+- Assistent/MCP finden **Fächer beim Namen**: „Küche Kühlschrank oben“, „Vorratsregal Boden 2“ (wortweise über Fach,
+  Möbel, Raum und Lager); Anleitung fürs Modell kennt das Hausplan-Schema
+- **Auswertung** (Kennzahlen, meistgenutzt, wer bucht, lange nicht angefasst, ausverkauft) und **Heatmap im Haus**:
+  Füllstand, Bewegung (90 Tage), lange unberührt (`GET /api/house/stats`)
+- **Etiketten & QR-Schilder:** Fächer nach Etage/Raum/Möbel (auch direkt aus dem Planer), Gegenstände, leere Etiketten;
+  Druck oder 3D-Schilder als 3MF auf Druckplatten verteilt
+- **Verwaltung:** Personen (Rollen, Passwörter, Archiv, Zusammenführen, E-Mail-Freigaben, Registrierung), Lager
+  (Hausplan-Lager nur ansehen), API-Schlüssel, Backups (anlegen, herunterladen, wiederherstellen, hochladen),
+  Assistent-Einstellungen, Export/Import (Excel/CSV mit Vorschau)
+
+**Tests:** Fach-Namenssuche per MCP; Klicktest um Kachel-Anmeldung, Assistent (simuliertes Modell), Auswertung/Heatmap,
+Etiketten/3MF-Download und Verwaltung erweitert
+
+## 0.3.0 – 2026-10-03
+
+**Lager in der App** (`/app/#/lager`, auch auf dem Handy – kleine Bildschirme starten direkt dort)
+- Start mit Hinweis auf Ablaufendes, Suchen, Gegenstand (Foto aufnehmen, Verlauf, Rückgängig, Entnehmen, Einbuchen,
+  Umlagern, Bearbeiten, Löschen, auf die Einkaufsliste), Einbuchen, Ausbuchen, Platz, Einkaufsliste (abhaken, Menge,
+  gekauft + einbuchen/einlagern, teilen), Haltbarkeit, Scannen mit der Kamera (Fach + Gegenstand = einbuchen,
+  Gegenstand 2× = ausbuchen, unbekanntes Etikett = neu anlegen)
+- Orte werden überall über den Hausplan beschrieben („Abstellraum · Regal offen · Boden 3“) und gewählt (Fach-Auswahl:
+  Etage → Raum → Möbel → Fach mit Belegung, alternativ Platzadresse wie H-B12)
+- „Im Haus zeigen“ aus Suche, Gegenstand, Platz und Haltbarkeit: Planer springt auf die Etage, lässt die Fächer
+  leuchten und fährt zum Möbel; Buchungen mit „Rückgängig“ im Hinweis
+- QR-Etiketten (`/q/…`) öffnen die App
+- Assistent, Auswertung, Etiketten und Verwaltung öffnen vorerst die bisherige Lager-Oberfläche
+
+**Haus aus dem bisherigen Lager übernehmen**
+- `model/fromSite.ts`: Etagen, Räume, Öffnungen und Einbauten aus „Haus einrichten“ → Hausplan; Wände werden aus den
+  Raumgrenzen abgeleitet (gegenüberliegende Kanten im Abstand 4–65 cm), offen verbundene Räume bleiben ohne Wand
+- `npm run import-prod`: Lager-Haus (GET /api/site) + Küchenplanung (Exportdatei) zu einem Hausplan zusammensetzen
+  und mit Lager-Abgleich speichern (vorher Sicherung), fehlende Bibliotheks-Texturen werden nachgeladen
+- Räume mit festem Umriss (offene Grundrisse, Außenflächen) neben aus Wänden erkannten Räumen
+- 3D: Treppe, Durchgang (Öffnung ohne Türblatt), Satteldach mit Kniestock und Giebeln (Haus-Ansicht), Außenflächen
+  (Terrasse, Stellplatz, Carport mit Dach)
+
+**Intern**
+- Speichern des Hausplans als wiederverwendbare Funktion (`saveHouse`) für API und Import
+- Tests: Übernahme aus dem Lager-Modell (`test/fromsite.test.cjs`), Klicktest um Lager-Seiten erweitert
+
+## 0.2.0 – 2026-10-03
+
+**Vollintegration: der Küchenplaner wird zum Hausplaner, das Lager lebt im Plan**
+- Hausmodell mit Etagen (Keller, Etage, Dachgeschoss, Außen), Höhenlage und Raumhöhe; Materialien und Licht hausweit
+- Etagen-Reiter, Etage anlegen (auf Wunsch mit den Außenwänden der aktuellen Etage), Etage darunter als Durchpause im Plan
+- Räume aus Wänden erkennen („Raum festlegen“): kleinste geschlossene Fläche um den Klickpunkt, folgt beim Verschieben
+  von Wänden; Name, Lager-Kürzel, Fläche, eigener Bodenbelag
+- Fächer je Möbel aus der Frontaufteilung der 3D-Modelle (Schubladen, Böden, Kühl-/Gefrierfächer, offene Böden)
+- Neue Möbel: Regal offen, Schwerlastregal, Vorratsschrank, Kleiderschrank, Sideboard, Kommode, Werkbank (Böden bzw.
+  Schubladen einstellbar), eigener Name je Möbel
+- 3D: Etage / bis hier / ganzes Haus mit Geschossdecken; Kamera passt das Haus ins Bild
+- **Lager im Plan:** Raum = Lager, Möbel = Spalte, Fach = Platz (z. B. KU-B2); Fächer farbig nach Füllstand, Fach
+  anklicken → Inhalt, einbuchen, entnehmen, umlagern; „Wo liegt …?“ lässt Treffer im Haus leuchten
+- Server: Hausplan als gemeinsames Dokument (`GET/PUT /api/house`, Version gegen Überschreiben), Abgleich mit dem Lager
+  in einer Transaktion – Plätze und Gegenstände wandern mit, Fächer mit Inhalt bleiben erhalten; `GET /api/house/storage`
+- App unter `/app/` (frühere Adressen `/kueche/` und `/textures/` werden umgeleitet), automatisches Speichern,
+  Konfliktdialog, gespeicherte Küchenplanungen als Etage übernehmen
+- Lager-App: „Haus planen“ führt zur App
+- Entfernt: Übernahme „Küche ins Haus“ aus 0.1.0 (ersetzt durch den Hausplan)
+- Tests: Abgleich Hausplan ↔ Lager (`test/haus.test.cjs`), Klicktest im Browser (`npm run test:e2e`)
+
+## 0.1.0 – 2026-10-03
+
+Erste Fassung von **Zuhause**: Heimlager 1.8.1 (inkl. Haus in 3D aus `inventory-3d`) und Küchenplaner 1.0.0 in einer
+Anwendung. Frühere Versionen: [docs/CHANGELOG-LAGER.md](docs/CHANGELOG-LAGER.md), [docs/CHANGELOG-KUECHE.md](docs/CHANGELOG-KUECHE.md).
+
+**Ein Server, eine Datenbank**
+- Express-Server (`server/index.ts`, TypeScript ohne Build): Lager unter `/`, Küchenplaner unter `/kueche/`, MCP auf eigenem Port
+- Gemeinsame Datenbank `zuhause.db`; Küchenplanungen in `kitchen_projects` – damit auch in jedem Backup
+- `npm run dev` startet alles in einem Prozess (Vite als Middleware mit HMR)
+
+**Ein Konto**
+- Personen des Lagers sind die Konten; neu mit optionaler E-Mail und Status (wartet auf Freigabe)
+- Anmeldung per Kachel oder E-Mail, eine Sitzung für beide Oberflächen; `GET /api/auth/me`, `POST /api/auth/register`
+- Registrierung standardmäßig aus; Freigabepflicht, Rollen und Sperren in der Benutzerverwaltung des Küchenplaners
+- Personen zusammenführen nimmt Küchenplanungen mit
+
+**Küche ins Haus**
+- Küchenplaner → Meine Planungen → „Ins Haus“: Schränke werden Einbauten auf einer Etage (an einem Raum ausgerichtet,
+  verschiebbar, drehbar); erneutes Übernehmen ersetzt sie und behält die Fach-Zuordnungen
+- `POST /api/projects/:id/house`; Einbauten merken ihre Herkunft (`fixtures.source`)
+
+**Oberflächen**
+- Lager: Kachel „Küchenplaner“; Küchenplaner: ⌂-Link zurück, Texturen unter `/kueche/textures/` (alte Pfade werden umgeleitet)
+
+**Übernahme bestehender Daten**
+- `npm run migrate`: Lager-Datenbank als Basis, Küchen-Konten werden Personen (gleiche E-Mail/gleicher Name), Planungen,
+  Einstellungen und importierte Texturen
+
+**Betrieb**
+- Ein Dockerfile (Build-Stufe für den Küchenplaner), ein Compose-Service `zuhause`

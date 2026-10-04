@@ -1,0 +1,19 @@
+# Laufzeitdaten – nie ins Repository (Datenbank, Backups, Texturen, Zertifikate)
+data/
+certs/
+*.db
+*.db-wal
+*.db-shm
+backups/
+
+# Build und Abhängigkeiten
+node_modules/
+dist/
+
+# private Projektdateien (persönliche Grundrisse)
+projekte-privat/
+
+# Umgebung / lokale Dateien
+.env
+*.log
+.DS_Store

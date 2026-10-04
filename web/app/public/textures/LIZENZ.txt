@@ -1,0 +1,4 @@
+Bodentexturen von Poly Haven (https://polyhaven.com), Lizenz CC0 (gemeinfrei):
+- laminate_floor_02 – Dario Barresi, Charlotte Baglioni
+- laminate_floor_03 – Dario Barresi, Charlotte Baglioni
+- wood_floor        – Dimitrios Savva
