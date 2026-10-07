@@ -8,6 +8,9 @@
 vorgelesen. Am Terminal darf der Assistent nur lesen, buchen, die Einkaufsliste pflegen und Preise suchen (nie
 Admin-Werkzeuge, kein Bearbeiten oder Löschen); das Gespräch wird im Ruhezustand gelöscht.
 
+**Wandterminal**: Einträge der Einkaufsliste lassen sich wieder löschen (der Server las bei `DELETE` die gewählte
+Person nicht). Aufgaben lassen sich am Terminal jetzt auch anlegen, ändern und löschen – mit „Wer bucht?“.
+
 **Preisrecherche ohne OpenRouter**: Bei einem Gateway wie LiteLLM nutzt die Preisrecherche dessen Such-Tool
 (Verwaltung → Assistent → „Such-Tool im Gateway“, z. B. `foundry-web`, oder `AI_SEARCH_TOOL`). Je Produkt recherchiert
 ein kleiner Agent: höchstens 3 Websuchen über `POST {Adresse}/search/{Such-Tool}` und 3 Seiten, die der Server selbst
