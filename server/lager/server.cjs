@@ -1,5 +1,5 @@
 'use strict';
-// Zuhause – Modul „Lager“ (ehemals Heimlager): Lager, Buchungen, Haus, Assistent – und das gemeinsame Kontosystem
+// homemgmt-ng – Modul „Lager“ (ehemals Heimlager): Lager, Buchungen, Haus, Assistent – und das gemeinsame Kontosystem
 // (Personen, Sitzungen, API-Schlüssel), das auch der Küchenplaner nutzt. Die HTTP-Server startet server/index.ts.
 const fs = require('node:fs');
 const path = require('node:path');
@@ -344,7 +344,7 @@ function openDatabase() {
     );
     CREATE INDEX IF NOT EXISTS idx_fixture_slots_fx ON fixture_slots(fixture_id);`);
 
-  // Migration (Zuhause): gemeinsames Konto für alle Module – optionale E-Mail (Anmeldung im Küchenplaner) und
+  // Migration (homemgmt-ng): gemeinsames Konto für alle Module – optionale E-Mail (Anmeldung im Küchenplaner) und
   // Kontostatus (pending = Registrierung wartet auf Freigabe durch einen Admin)
   {
     const cols = db.prepare('PRAGMA table_info(persons)').all().map((c) => c.name);
@@ -352,7 +352,7 @@ function openDatabase() {
     if (!cols.includes('status')) db.exec("ALTER TABLE persons ADD COLUMN status TEXT NOT NULL DEFAULT 'active'");
     db.exec('CREATE UNIQUE INDEX IF NOT EXISTS idx_persons_email ON persons(email) WHERE email IS NOT NULL');
   }
-  // Migration (Zuhause): Herkunft eines Einbaus, z. B. „kueche:12:abc“ = Element abc aus Küchenplanung 12
+  // Migration (homemgmt-ng): Herkunft eines Einbaus, z. B. „kueche:12:abc“ = Element abc aus Küchenplanung 12
   if (!db.prepare('PRAGMA table_info(fixtures)').all().some((c) => c.name === 'source')) {
     db.exec('ALTER TABLE fixtures ADD COLUMN source TEXT');
   }
@@ -1000,7 +1000,7 @@ async function geocode(q, { postal = false } = {}) {
   const url = postal
     ? `https://nominatim.openstreetmap.org/search?postalcode=${encodeURIComponent(q)}&country=de&format=json&limit=1&addressdetails=1`
     : `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(q)}&format=json&limit=5&addressdetails=1&accept-language=de`;
-  const list = await fetch(url, { headers: { 'User-Agent': 'Zuhause-Heimserver (Lage des Hauses, Wetter)' }, signal: AbortSignal.timeout(8000) }).then((r) => r.json());
+  const list = await fetch(url, { headers: { 'User-Agent': 'homemgmt-ng-Heimserver (Lage des Hauses, Wetter)' }, signal: AbortSignal.timeout(8000) }).then((r) => r.json());
   const out = (Array.isArray(list) ? list : []).map((h) => {
     const a = h.address ?? {};
     return { name: a.city || a.town || a.village || a.suburb || h.name || q, label: h.display_name, lat: Number(h.lat), lon: Number(h.lon) };
@@ -2365,7 +2365,7 @@ function readBody(req) {
 
 async function handle(req, res) {
   const url = new URL(req.url, `http://${req.headers.host || 'localhost'}`);
-  // QR-Code-Links: /q/P-B12 oder /q/O-K7M2XQ → in die Zuhause-App (Platz bzw. Gegenstand, unbekannt = neu anlegen)
+  // QR-Code-Links: /q/P-B12 oder /q/O-K7M2XQ → in die homemgmt-ng-App (Platz bzw. Gegenstand, unbekannt = neu anlegen)
   if (url.pathname.startsWith('/q/')) {
     res.writeHead(302, { Location: `/#/q/${encodeURIComponent(url.pathname.slice(3))}` });
     return res.end();
@@ -2406,7 +2406,7 @@ async function handle(req, res) {
     });
     return;
   }
-  // Oberfläche liefert die Zuhause-App (server/index.ts); hier nur API, QR-Links und Healthcheck
+  // Oberfläche liefert die homemgmt-ng-App (server/index.ts); hier nur API, QR-Links und Healthcheck
   if (!url.pathname.startsWith('/api/')) return sendJson(res, 404, { error: 'Nicht gefunden.' });
   try {
     for (const r of routes) {

@@ -1,6 +1,6 @@
-// Zuhause – ein Server für Lager, Haus und Küchenplaner. Start: node server/index.ts (Node >= 22.18)
+// homemgmt-ng – ein Server für Lager, Haus und Küchenplaner. Start: node server/index.ts (Node >= 22.18)
 //
-//   /            Zuhause-App: Hausplaner mit Lager (web/app, Vite; Dateien unter /app/)   /q/…  QR-Links
+//   /            homemgmt-ng-App: Hausplaner mit Lager (web/app, Vite; Dateien unter /app/)   /q/…  QR-Links
 //   MCP-Server auf eigenem Port (Standard 3100)
 //
 // Eine Datenbank (DB_PATH, Standard data/zuhause.db), ein Konto für alles.
@@ -42,7 +42,7 @@ app.use((_req, res, next) => {
 app.use(createHouse(lager as Core));
 app.use(createKitchen(lager as Core, { dataDir: dirname(lager.DB_PATH) }));
 
-// Zuhause-App (Hausplaner mit Lager) unter / – Dateien liegen unter /app/ (Vite-Basis)
+// homemgmt-ng-App (Hausplaner mit Lager) unter / – Dateien liegen unter /app/ (Vite-Basis)
 // frühere Adressen: /app/ und /kueche/ → /, Texturen unter /textures/ → /app/textures/
 app.get(/^\/(app|kueche)\/?$/, (_req, res) => res.redirect(301, '/'));
 app.get(/^\/kueche\/.*$/, (_req, res) => res.redirect(301, '/'));
@@ -98,7 +98,7 @@ if (DEV) {
 app.use((req, res) => lager.handle(req, res));
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`Zuhause läuft auf http://localhost:${PORT}  (Datenbank: ${lager.DB_PATH})`);
+  console.log(`homemgmt-ng läuft auf http://localhost:${PORT}  (Datenbank: ${lager.DB_PATH})`);
 });
 
 // HTTPS optional – nötig, damit Handys im Heimnetz die Kamera fürs Scannen freigeben (npm run cert)

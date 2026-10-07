@@ -1,4 +1,4 @@
-# Zuhause mit Docker Compose
+# homemgmt-ng mit Docker Compose
 #   docker compose up -d --build
 # Lager: http://<server>:3000   ·   Küchenplaner: http://<server>:3000/kueche/   ·   MCP: http://<server>:3100/mcp
 services:

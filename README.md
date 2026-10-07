@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🏠 Zuhause
+# 🏠 homemgmt-ng
 
 **Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz.**
 
@@ -20,7 +20,7 @@ Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – a
 
 ## Worum geht's?
 
-Wo liegen die Batterien? Ist noch Spülmittel da? Was läuft diese Woche ab? **Zuhause** beantwortet das, indem es dein
+Wo liegen die Batterien? Ist noch Spülmittel da? Was läuft diese Woche ab? **homemgmt-ng** beantwortet das, indem es dein
 Haus abbildet: Du zeichnest Etagen, Wände und Räume, stellst Möbel hinein – und jedes Fach, jede Schublade wird
 automatisch ein **Lagerplatz** mit eigener Adresse (`KU-C2` = Küche, Möbel C, Fach 2). Gegenstände buchst du per
 Klick, QR-Scan, Sprache oder KI-Assistent ein und aus. Die Suche „Wo liegt …?“ lässt die Treffer im Haus aufleuchten.
@@ -183,7 +183,7 @@ Daten: Ort über [OpenStreetMap](https://www.openstreetmap.org), Wetter über [O
 
 ## Ein echtes Haus
 
-Zuhause ist für ein echtes Einfamilienhaus entstanden – mit Keller, Erdgeschoss, Obergeschoss, Dachboden und
+homemgmt-ng ist für ein echtes Einfamilienhaus entstanden – mit Keller, Erdgeschoss, Obergeschoss, Dachboden und
 Außenbereich. Diese Bilder zeigen den Plan dieses Hauses (Stand einer früheren Version der Oberfläche).
 
 <table>
@@ -407,7 +407,7 @@ auch für die REST-API.
 
 ## Lizenz
 
-[GNU Affero General Public License v3.0](LICENSE). Du darfst Zuhause nutzen, verändern und weitergeben. Wer eine
+[GNU Affero General Public License v3.0](LICENSE). Du darfst homemgmt-ng nutzen, verändern und weitergeben. Wer eine
 veränderte Fassung weitergibt oder als Online-Dienst anbietet, muss den Quellcode unter derselben Lizenz offenlegen.
 
 Der Hausplaner ist aus dem [Küchenplaner 3D](https://github.com/mupf-dev/kitchen-planner-3d) hervorgegangen

@@ -1,4 +1,4 @@
-> **Hinweis:** Handbuch aus dem eigenständigen Küchenplaner (Stand 1.0.0). Die App läuft jetzt unter `/kueche/` von Zuhause; Konten, Start und Docker stehen in der [README](../README.md).
+> **Hinweis:** Handbuch aus dem eigenständigen Küchenplaner (Stand 1.0.0). Die App läuft jetzt unter `/kueche/` von homemgmt-ng; Konten, Start und Docker stehen in der [README](../README.md).
 
 # Küchenplaner 3D
 

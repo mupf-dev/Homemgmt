@@ -6,7 +6,7 @@ import type { View } from './views';
 const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   {
     id: 'start', title: 'Erste Schritte',
-    html: `<p><b>Zuhause</b> verbindet den Plan deines Hauses mit dem Lager: Jedes Fach eines geplanten Möbels – Schublade, Regalboden, Kühlschrankfach – ist ein Lagerplatz. So weißt du, <b>was wo liegt</b>, wie viel da ist und wer zuletzt etwas genommen hat.</p>
+    html: `<p><b>homemgmt-ng</b> verbindet den Plan deines Hauses mit dem Lager: Jedes Fach eines geplanten Möbels – Schublade, Regalboden, Kühlschrankfach – ist ein Lagerplatz. So weißt du, <b>was wo liegt</b>, wie viel da ist und wer zuletzt etwas genommen hat.</p>
       <ul><li><b>Übersicht</b>: Scannen, Ein-/Ausbuchen, Suchen, Einkaufsliste, was bald abläuft, was zuletzt bewegt wurde.</li>
       <li><b>Haus</b>: der Plan zum <b>Ansehen</b> – Möbel antippen zeigt die Fächer, ein Fach seinen Inhalt. <b>Planen</b> (Wände, Möbel, Etagen) gibt es am PC für Personen mit dem Recht „Haus planen“.</li>
       <li><b>Suchen</b>, <b>Einkauf</b> und unter <b>Mehr</b> Haltbarkeit, Assistent, Auswertung, Etiketten, Einstellungen und Verwaltung.</li></ul>
@@ -115,7 +115,7 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   },
   {
     id: 'handy', title: 'Am Handy',
-    html: `<p>Auf dem Handy startet Zuhause im Lager. Über HTTPS lässt sich die App installieren („App installieren“ bzw. iPhone: Teilen → Zum Home-Bildschirm); langes Drücken auf das Symbol springt zu Scannen, Einbuchen, Suchen, Einkaufsliste oder Haus.</p>`,
+    html: `<p>Auf dem Handy startet homemgmt-ng im Lager. Über HTTPS lässt sich die App installieren („App installieren“ bzw. iPhone: Teilen → Zum Home-Bildschirm); langes Drücken auf das Symbol springt zu Scannen, Einbuchen, Suchen, Einkaufsliste oder Haus.</p>`,
   },
   {
     id: 'personen', title: 'Personen und Anmeldung', admin: true,

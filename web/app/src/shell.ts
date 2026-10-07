@@ -29,7 +29,7 @@ export function initShell() {
   top.id = 'shell';
   top.className = 'sh-top';
   top.innerHTML = `
-    <a class="sh-brand" href="#/" title="Startseite">${ic('logo')}<span>Zuhause</span></a>
+    <a class="sh-brand" href="#/" title="Startseite">${ic('logo')}<span>homemgmt-ng</span></a>
     <nav class="sh-nav" aria-label="Hauptnavigation">${NAV.map(([k, h, l, i]) => `<a href="${h}" data-k="${k}">${ic(i)}<span>${l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('')}</nav>
     <span class="spacer"></span>
     <button class="btn sh-outbox" id="outboxPill" hidden title="Ohne Verbindung vorgemerkte Buchungen – antippen zum Nachbuchen">${ic('hourglass')}<span></span></button>

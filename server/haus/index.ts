@@ -1,4 +1,4 @@
-// Zuhause – Modul „Haus“: der Hausplan (alle Etagen, Räume, Möbel) als gemeinsames Dokument und sein Abgleich mit
+// homemgmt-ng – Modul „Haus“: der Hausplan (alle Etagen, Räume, Möbel) als gemeinsames Dokument und sein Abgleich mit
 // dem Lager. Jeder Raum ist ein Lager (Kürzel des Raums), jedes Möbel mit Fächern eine Spalte, jedes Fach ein Platz:
 // KU-B2 = Küche, Möbel B, Fach 2. Wandert ein Möbel in einen anderen Raum oder bekommt es eine andere Spalte, ziehen
 // Plätze und Gegenstände mit; entfernte Fächer mit Inhalt bleiben als Platz erhalten (nicht mehr im Plan).
