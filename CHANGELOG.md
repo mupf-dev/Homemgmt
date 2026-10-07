@@ -2,6 +2,11 @@
 
 ## Unveröffentlicht
 
+**Preisrecherche ohne OpenRouter**: Bei einem Gateway wie LiteLLM nutzt die Preisrecherche dessen Such-Tool
+(Verwaltung → Assistent → „Such-Tool im Gateway“, z. B. `foundry-web`, oder `AI_SEARCH_TOOL`). Die App sucht je Produkt
+über `POST {Adresse}/search/{Such-Tool}` und gibt die Treffer mit ins Prompt; als Quellen gelten die Treffer, die
+Prüfung „bestätigt/unbestätigt“ bleibt wie bei OpenRouter.
+
 **Aufgaben** (Mehr → Aufgaben, Karte auf der Übersicht): einmalig oder **wiederkehrend** (täglich, wöchentlich, alle
 3 Monate, jährlich oder eigener Rhythmus – nach festem Plan oder ab Erledigung), einer **Person** zugeordnet und optional
 an einem **Fach** („Filter Dunstabzug tauschen“ → im Haus zeigen). Abhaken mit „Rückgängig“; zuletzt erledigt mit wer und

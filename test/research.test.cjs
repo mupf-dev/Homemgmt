@@ -113,3 +113,48 @@ test('Ohne OpenRouter nicht verfügbar', async () => {
   assert.equal((await a.get('/api/assistant/settings')).data.research.available, false);
   await other.stop();
 });
+
+test('Ohne OpenRouter mit Such-Tool des Gateways: Suche, Treffer als Quellen', async () => {
+  const other = await startServer();
+  const { admin: a, user: u } = await setupUsers(other.base);
+  await a.put('/api/assistant/settings', { base_url: llm.url, model: 'claude-sonnet', api_key: 'sk-gw', location: 'Stuttgart-Südheim, 70199' });
+  assert.equal((await a.put('/api/assistant/settings', { search_tool: 'foundry web' })).status, 400, 'ungültiger Name');
+  const s = (await a.put('/api/assistant/settings', { search_tool: 'foundry-web' })).data;
+  assert.equal(s.search_tool, 'foundry-web');
+  assert.equal(s.research.available, true);
+
+  llm.search = (body, url) => {
+    assert.equal(url, '/v1/search/foundry-web');
+    assert.match(body.query, /^Butter .*Preis Angebot Stuttgart-Südheim$/, 'Produkt, Stadt ohne PLZ');
+    assert.equal(body.max_results, 6);
+    return { results: [
+      { title: 'Markenbutter 250 g', url: 'https://www.aldi-sued.de/butter', snippet: 'Deutsche Markenbutter 250 g 1,19 €' },
+      { title: 'ohne Adresse', url: 'kein-link', snippet: '…' },
+    ] };
+  };
+  llm.replies.push((body) => {
+    assert.equal(body.plugins, undefined, 'kein OpenRouter-Plugin');
+    assert.match(body.messages[1].content, /Suchergebnisse[\s\S]*\[1\] Markenbutter 250 g\nURL: https:\/\/www\.aldi-sued\.de\/butter/);
+    assert.doesNotMatch(body.messages[1].content, /kein-link/);
+    return { content: answer([
+      { haendler: 'Aldi Süd', packung: '250 g', preis: 1.19, url: 'https://www.aldi-sued.de/butter', bestaetigt: true },
+      { haendler: 'Lidl', packung: '250 g', preis: 1.09, url: 'https://www.lidl.de/butter', bestaetigt: true },
+    ]) };
+  });
+  const e = (await u.post('/api/shopping', { name: 'Butter' })).data;
+  await u.post('/api/shopping/prices', {});
+  const r = (await settle(u)).checks[e.id].result;
+  assert.deepEqual(r.angebote.map((o) => [o.haendler, o.bestaetigt, o.aus_suche]), [['Aldi Süd', true, true], ['Lidl', false, false]],
+    'nicht unter den Treffern → unbestätigt');
+  assert.deepEqual(r.quellen, [{ url: 'https://www.aldi-sued.de/butter', title: 'Markenbutter 250 g' }]);
+  assert.equal(llm.requests.filter((q) => q.path.includes('/search/')).at(-1).auth, 'Bearer sk-gw');
+
+  // Fehler der Suche landen am Eintrag
+  llm.search = () => ({ detail: 'Not Found' });
+  await u.post('/api/shopping/prices', { force: true });
+  const err = (await settle(u)).checks[e.id];
+  assert.equal(err.status, 'error');
+  assert.match(err.error, /^Websuche: Not Found/);
+  llm.search = { results: [] };
+  await other.stop();
+});

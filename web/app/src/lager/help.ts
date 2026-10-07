@@ -135,7 +135,7 @@ const S: { id: string; title: string; admin?: boolean; html: string }[] = [
   },
   {
     id: 'ki', title: 'Assistent einrichten', admin: true,
-    html: `<p>Verwaltung → Assistent: Adresse einer OpenAI-kompatiblen Schnittstelle (Standard OpenRouter), Modell mit Werkzeugen und Bildern, Schlüssel – dann „Verbindung testen“. Für die Preisrecherche den Wohnort eintragen. Nachrichten, Fotos und Suchergebnisse gehen an den gewählten Anbieter.</p>`,
+    html: `<p>Verwaltung → Assistent: Adresse einer OpenAI-kompatiblen Schnittstelle (Standard OpenRouter), Modell mit Werkzeugen und Bildern, Schlüssel – dann „Verbindung testen“. Für die Preisrecherche den Wohnort eintragen; ohne OpenRouter zusätzlich das Such-Tool des Gateways (z. B. „foundry-web“ bei LiteLLM). Nachrichten, Fotos und Suchergebnisse gehen an den gewählten Anbieter.</p>`,
   },
 ];
 

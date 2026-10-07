@@ -273,7 +273,8 @@ Nähe, zeigt das Terminal eine Warnung und eine Blitzkarte. Zum Ausprobieren: Ad
 
 **Assistent:** *Verwaltung → Assistent* – Adresse einer OpenAI-kompatiblen Schnittstelle (Standard
 `https://openrouter.ai/api/v1`), Modell (mit Tool Calling, für Fotos mit Bildern) und API-Schlüssel eintragen,
-*Verbindung testen*. Der Schlüssel bleibt auf dem Server.
+*Verbindung testen*. Der Schlüssel bleibt auf dem Server. Die Preisrecherche braucht eine Websuche: OpenRouter bringt
+sie mit, bei einem Gateway wie LiteLLM dessen Such-Tool unter „Such-Tool im Gateway“ eintragen.
 
 **MCP:** *Verwaltung → API-Schlüssel* einen Schlüssel anlegen („Lesen und buchen“ oder „Nur lesen“), dann z. B. in
 Claude Code:
@@ -298,6 +299,7 @@ Das vollständige Handbuch für alle Lagerfunktionen steht in **[docs/LAGER.md](
 | `TRUST_PROXY` | – | `1` hinter einem Reverse Proxy (Secure-Cookie, echte Client-IP) |
 | `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatische Backups |
 | `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | KI-Assistent (sonst unter *Verwaltung → Assistent*) |
+| `AI_SEARCH_TOOL` | – | Such-Tool eines Gateways (z. B. LiteLLM) für die Preisrecherche ohne OpenRouter |
 | `LIGHTNING` | – | `0` schaltet die Live-Blitze (Blitzortung.org) für Wandterminals ab |
 | `OBJECT_CATALOG_URL` | `https://mupf-dev.github.io/homemgmt-object-library/` | Community-Katalog der Objektbibliothek (eigener Fork oder lokaler Spiegel) |
 
