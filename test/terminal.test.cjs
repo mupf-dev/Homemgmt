@@ -2,7 +2,7 @@
 // Wandterminals: Einrichtungslink, Geräte-Anmeldung ohne Person, Buchen nur mit „wer bucht“, keine Verwaltung
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { startServer, client } = require('./helpers.cjs');
+const { startServer, client, fakeLlm } = require('./helpers.cjs');
 
 let srv;
 let admin;
@@ -107,4 +107,31 @@ test('Blitze in Echtzeit: Stream nur angemeldet, liefert Ereignisstrom', async (
   assert.match(Buffer.from(first.value).toString(), /retry: 5000/);
   ac.abort();
   assert.equal((await admin.get('/api/lightning?lat=48.8&lon=9.1')).data.level, 0);
+});
+
+test('Assistent am Terminal: nur mit „wer spricht“, ohne Admin- und Bearbeiten-Werkzeuge', async () => {
+  const llm = await fakeLlm();
+  await admin.put('/api/assistant/settings', { base_url: llm.url, model: 'test/modell', api_key: 'sk-test' });
+  const r = await admin.post('/api/terminals', { name: 'Flur', settings: {} });
+  const t = as((await pair(r.data.path)).cookie);
+  assert.equal((await t('POST', '/api/assistant', { message: 'Hallo' })).status, 400, 'ohne Person');
+  llm.replies.push((body) => {
+    const names = body.tools.map((x) => x.function.name);
+    assert.ok(names.includes('einbuchen') && names.includes('objekte_suchen'));
+    for (const n of ['lager_anlegen', 'objekt_bearbeiten', 'lagerplatz_loeschen', 'foto_zuordnen', 'umlagern']) assert.ok(!names.includes(n), n);
+    assert.match(body.messages[0].content, /Wandterminal[\s\S]*Anna spricht mit dir/);
+    return { tool_calls: [['lager_anlegen', { code: 'X', name: 'Hack' }]] };
+  });
+  llm.replies.push((body) => {
+    assert.equal(body.messages.at(-1).content, 'Am Wandterminal nicht möglich.');
+    return { content: 'Das geht hier nicht.' };
+  });
+  const a = await t('POST', '/api/assistant', { message: 'Leg ein Lager an', person_id: annaId });
+  assert.equal(a.status, 200, JSON.stringify(a.data));
+  assert.equal(a.data.reply, 'Das geht hier nicht.');
+  assert.ok(!(await admin.get('/api/warehouses')).data.some((w) => w.code === 'X'), 'kein Lager angelegt, obwohl Anna Admin ist');
+  // Verwaltung des Assistenten bleibt gesperrt
+  assert.equal((await t('PUT', '/api/assistant/settings', { model: 'x', person_id: annaId })).status, 403);
+  await admin.del(`/api/terminals/${r.data.terminal.id}`);
+  await llm.stop();
 });

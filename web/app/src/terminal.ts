@@ -26,7 +26,7 @@ const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&l
 export const terminal = () => info;
 
 /** Seiten, die es am Terminal gibt */
-export const terminalAllows = (hash: string) => /^#\/(haus|suche|einkauf|aufgaben|haltbarkeit|item\/\d+|platz|q\/.+)$/.test(hash);
+export const terminalAllows = (hash: string) => /^#\/(haus|suche|einkauf|aufgaben|haltbarkeit|assistent|item\/\d+|platz|q\/.+)$/.test(hash);
 
 export function setTerminal(t: TerminalInfo | null) {
   info = t;

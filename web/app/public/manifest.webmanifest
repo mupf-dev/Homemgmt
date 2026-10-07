@@ -3,7 +3,7 @@
   "short_name": "Zuhause",
   "description": "Haus in 3D planen – jedes Fach ist ein Lagerplatz: scannen, ein- und ausbuchen, suchen, Einkaufsliste.",
   "lang": "de",
-  "start_url": "/#/lager",
+  "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "any",
@@ -15,6 +15,7 @@
     { "src": "/app/icons/maskable-512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
+    { "name": "Assistent", "short_name": "Assistent", "url": "/#/assistent", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Scannen", "short_name": "Scannen", "url": "/#/scan", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Einbuchen", "short_name": "Einbuchen", "url": "/#/ein", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },
     { "name": "Suchen", "short_name": "Suchen", "url": "/#/suche", "icons": [{ "src": "/app/icons/icon-192.png", "sizes": "192x192" }] },

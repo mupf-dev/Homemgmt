@@ -3,7 +3,7 @@
 // Browser, damit die App beim Start nicht kurz in der falschen Darstellung erscheint.
 
 export interface Prefs {
-  start: 'overview' | 'house';
+  start: 'overview' | 'house' | 'assistant';
   houseView: '2d' | '3d';
   theme: 'auto' | 'light' | 'dark';
   fontSize: 'normal' | 'large' | 'xlarge';

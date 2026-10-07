@@ -6,24 +6,33 @@ import { api, esc, pickPhoto, placeInfo, type LagerCtx } from './core';
 import { parseCode } from './scan';
 import type { View } from './views';
 import { ic } from '../icons';
+import { pickWho, terminal } from '../terminal';
 
 type Msg =
   | { role: 'divider'; content: string }
   | { role: 'user'; content: string; photos?: string[]; at: number }
   | { role: 'assistant'; content: string; error?: boolean; at?: number; places?: string[]; bookings?: any[]; confirm?: { token: string; count: number; actions: string[]; done?: 'ok' | 'no' } };
 
-const KEY = 'zh.assistant';
+// Wandterminal: eigener Verlauf, der im Ruhezustand gelöscht wird (dort sprechen wechselnde Personen)
+const key = () => (terminal() ? 'zh.assistant.terminal' : 'zh.assistant');
+export function clearTerminalChat() {
+  try {
+    localStorage.removeItem('zh.assistant.terminal');
+  } catch {
+    /* egal */
+  }
+}
 const PAUSE = 30 * 60_000; // nach so langer Pause beginnt ein neues Gespräch
 const load = (): Msg[] => {
   try {
-    return JSON.parse(localStorage.getItem(KEY) ?? '[]');
+    return JSON.parse(localStorage.getItem(key()) ?? '[]');
   } catch {
     return [];
   }
 };
 const save = (m: Msg[]) => {
   try {
-    localStorage.setItem(KEY, JSON.stringify(m.slice(-60)));
+    localStorage.setItem(key(), JSON.stringify(m.slice(-60)));
   } catch {
     /* zu groß (Fotos) – dann eben nicht */
   }
@@ -32,9 +41,11 @@ const history = (msgs: Msg[]) => {
   const start = msgs.map((m) => m.role).lastIndexOf('divider') + 1;
   return msgs.slice(start).filter((m) => m.role !== 'divider' && m.content && !(m as any).error).map((m) => ({ role: m.role, content: m.content }));
 };
+// Vorlesen: am Wandterminal standardmäßig an
 const speakOn = () => {
   try {
-    return localStorage.getItem('zh.speak') === '1';
+    const v = localStorage.getItem('zh.speak');
+    return v === '1' || (v === null && !!terminal());
   } catch {
     return false;
   }
@@ -86,6 +97,14 @@ function planPlaces(ctx: LagerCtx, addrs: string[]) {
 
 let busy = false;
 let recog: any = null;
+let talkListener: (() => void) | null = null;
+
+/** Am Wandterminal: wer spricht (Kachel antippen, gilt eine Weile) – sonst nichts */
+async function who(): Promise<{ person_id?: number } | null> {
+  if (!terminal()) return {};
+  const id = await pickWho();
+  return id ? { person_id: id } : null;
+}
 
 export const viewAssistant: View = async (el, ctx, params) => {
   const status = await api<{ enabled: boolean; confirm_from: number }>('GET', '/api/assistant/status').catch(() => ({ enabled: false, confirm_from: 4 }));
@@ -118,7 +137,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
     <form class="ai-composer" id="form">
       <div class="ai-previews" id="prev" hidden></div>
       <div class="ai-row">
-        <button type="button" class="btn icon" id="photo" title="Foto aufnehmen" aria-label="Foto aufnehmen">${ic('camera')}</button>
+        ${terminal() ? '' : `<button type="button" class="btn icon" id="photo" title="Foto aufnehmen" aria-label="Foto aufnehmen">${ic('camera')}</button>`}
         ${SpeechRec ? `<button type="button" class="btn icon" id="mic" title="Sprechen" aria-label="Sprechen">${ic('mic')}</button>` : ''}
         <textarea id="text" rows="1" placeholder="z. B. „Leg 3 Dosen Tomaten in den Vorratsschrank“"></textarea>
         <button class="btn primary" id="send" title="Senden">➤</button>
@@ -163,6 +182,8 @@ export const viewAssistant: View = async (el, ctx, params) => {
     if (busy) return;
     message = message.trim();
     if (!message && !photos.length) return;
+    const person = await who();
+    if (!person) return;
     const last = [...msgs].reverse().find((m) => 'at' in m && m.at) as any;
     if (last && Date.now() - last.at > PAUSE && msgs.at(-1)?.role !== 'divider') msgs.push({ role: 'divider', content: 'Neues Gespräch nach längerer Pause' });
     const hist = history(msgs);
@@ -175,7 +196,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
     busy = true;
     render();
     try {
-      const r = await api<any>('POST', '/api/assistant', { message, history: hist, context, images: sent.map((p) => ({ image: p.image, thumb: p.thumb, codes: p.codes })) });
+      const r = await api<any>('POST', '/api/assistant', { message, history: hist, context, images: sent.map((p) => ({ image: p.image, thumb: p.thumb, codes: p.codes })), ...person });
       if (r.reset) msgs.length = 0;
       msgs.push({ role: 'assistant', content: r.reply, bookings: r.bookings, confirm: r.confirm, places: r.places ?? [], at: Date.now() });
       if (r.reset) msgs.push({ role: 'divider', content: 'Verlauf gelöscht – neues Gespräch' });
@@ -201,7 +222,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
     e.preventDefault();
     send(text.value);
   });
-  el.querySelector('#photo')!.addEventListener('click', async () => {
+  el.querySelector('#photo')?.addEventListener('click', async () => {
     if (photos.length >= 4) return ctx.toast('Höchstens 4 Fotos je Nachricht.');
     const p = await pickPhoto();
     if (!p) return;
@@ -231,8 +252,11 @@ export const viewAssistant: View = async (el, ctx, params) => {
     render();
   });
   const mic = el.querySelector<HTMLElement>('#mic');
-  mic?.addEventListener('click', () => {
+  const listen = async () => {
+    if (!mic || !document.body.contains(mic)) return;
     if (recog) return recog.stop();
+    // am Terminal zuerst „wer spricht“ – sonst würde nach dem Sprechen noch gefragt
+    if (terminal() && !(await who())) return;
     const rec = new SpeechRec();
     rec.lang = 'de-DE';
     rec.interimResults = true;
@@ -259,7 +283,12 @@ export const viewAssistant: View = async (el, ctx, params) => {
     rec.start();
     recog = rec;
     mic.classList.add('on');
-  });
+  };
+  mic?.addEventListener('click', listen);
+  // „Sprechen“ am Wandterminal (Leiste): gleich zuhören
+  if (talkListener) document.removeEventListener('zh-talk', talkListener);
+  talkListener = () => void listen();
+  document.addEventListener('zh-talk', talkListener);
   chat.addEventListener('click', async (e) => {
     const t = e.target as HTMLElement;
     const u = t.closest<HTMLElement>('[data-undo]');
@@ -267,7 +296,9 @@ export const viewAssistant: View = async (el, ctx, params) => {
       const [i, j] = u.dataset.undo!.split(':').map(Number);
       const b = (msgs[i] as any).bookings[j];
       try {
-        await api('POST', `/api/movements/${b.movement_id}/undo`);
+        const person = await who();
+        if (!person) return;
+        await api('POST', `/api/movements/${b.movement_id}/undo`, person);
         b.undone = true;
         ctx.sync.loadStorage();
       } catch (err) {
@@ -287,10 +318,12 @@ export const viewAssistant: View = async (el, ctx, params) => {
     if (!ok && !no) return;
     const m = msgs[Number((ok ?? no)!.dataset.ok ?? (ok ?? no)!.dataset.no)] as any;
     if (!m?.confirm || m.confirm.done || busy) return;
+    const person = await who();
+    if (!person) return;
     busy = true;
     render();
     try {
-      const r = await api<any>('POST', `/api/assistant/${ok ? 'confirm' : 'cancel'}`, { token: m.confirm.token });
+      const r = await api<any>('POST', `/api/assistant/${ok ? 'confirm' : 'cancel'}`, { token: m.confirm.token, ...person });
       m.confirm.done = ok ? 'ok' : 'no';
       msgs.push({ role: 'assistant', content: r.reply, bookings: r.bookings ?? [], places: (r.bookings ?? []).map((b: any) => b.platz).filter(Boolean), at: Date.now() });
       ctx.sync.loadStorage();
@@ -306,4 +339,9 @@ export const viewAssistant: View = async (el, ctx, params) => {
   });
   render();
   if (!SpeechRec) text.placeholder = 'Nachricht schreiben … (Spracheingabe gibt es in diesem Browser nicht)';
+  if (params.get('sprechen')) {
+    window.history.replaceState(null, '', '#/assistent');
+    if (SpeechRec) void listen();
+    else ctx.toast('Spracheingabe gibt es in diesem Browser nicht – bitte tippen.');
+  }
 };

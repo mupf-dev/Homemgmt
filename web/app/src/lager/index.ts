@@ -59,7 +59,8 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
     // ohne Adresse: Startseite der Person (Übersicht oder Haus); ohne Anmeldung die Anmeldung
     if (['', '#', '#/'].includes(location.hash)) {
       const u = ctx.user() ?? (await ctx.ensureUser());
-      history.replaceState(null, '', terminal() || (u && prefs().start === 'house') ? '#/haus' : '#/lager');
+      const start = u && prefs().start;
+      history.replaceState(null, '', terminal() || start === 'house' ? '#/haus' : start === 'assistant' ? '#/assistent' : '#/lager');
     }
     // Wandterminal: nur Haus, Suchen, Einkauf, Haltbarkeit und Gegenstände
     if (terminal() && !terminalAllows(location.hash.split('?')[0])) history.replaceState(null, '', '#/haus');

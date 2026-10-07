@@ -2,6 +2,12 @@
 
 ## Unveröffentlicht
 
+**Assistent schneller erreichen**: Startseite „Assistent“ in den Einstellungen (die installierte App startet jetzt mit
+`/`, damit die gewählte Startseite auch dort gilt) und Kurzbefehl „Assistent“ am App-Symbol (Android).
+**Sprechen am Wandterminal**: neuer Knopf „Sprechen“ in der Leiste – erst „Wer bucht?“, dann zuhören; die Antwort wird
+vorgelesen. Am Terminal darf der Assistent nur lesen, buchen, die Einkaufsliste pflegen und Preise suchen (nie
+Admin-Werkzeuge, kein Bearbeiten oder Löschen); das Gespräch wird im Ruhezustand gelöscht.
+
 **Preisrecherche ohne OpenRouter**: Bei einem Gateway wie LiteLLM nutzt die Preisrecherche dessen Such-Tool
 (Verwaltung → Assistent → „Such-Tool im Gateway“, z. B. `foundry-web`, oder `AI_SEARCH_TOOL`). Je Produkt recherchiert
 ein kleiner Agent: höchstens 3 Websuchen über `POST {Adresse}/search/{Such-Tool}` und 3 Seiten, die der Server selbst

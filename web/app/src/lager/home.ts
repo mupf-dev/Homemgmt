@@ -124,7 +124,7 @@ export const viewSettings: View = (el, ctx) => {
     `<div class="set-choice" data-k="${k}">${opts.map(([v, t, s]) => `<button type="button" data-v="${v}" class="${prefs()[k] === v ? 'on' : ''}"><b>${t}</b><small>${s}</small></button>`).join('')}</div>`;
   el.innerHTML = `<a class="l-back" href="#/mehr">${ic('back')}Mehr</a><h1>Einstellungen</h1>
     <p class="hint">Gilt für ${esc(u.name)} auf allen Geräten.</p>
-    <section class="l-card"><h2>Beim Öffnen der App zeigen</h2>${choice('start', [['overview', 'Übersicht', 'Scannen, Einkaufsliste, was bald abläuft'], ['house', 'Haus', 'Hausplan zum Ansehen und Suchen']])}</section>
+    <section class="l-card"><h2>Beim Öffnen der App zeigen</h2>${choice('start', [['overview', 'Übersicht', 'Scannen, Einkaufsliste, was bald abläuft'], ['house', 'Haus', 'Hausplan zum Ansehen und Suchen'], ['assistant', 'Assistent', 'Gleich sagen oder schreiben, was zu tun ist']])}</section>
     <section class="l-card"><h2>Haus zuerst zeigen als</h2>${choice('houseView', [['2d', 'Grundriss (2D)', 'Übersichtlich, schnell'], ['3d', '3D', 'Räumlich, Fächer in Farbe']])}</section>
     <section class="l-card"><h2>Darstellung</h2>${choice('theme', [['auto', 'Automatisch', 'Wie das Gerät'], ['light', 'Hell', 'Immer hell'], ['dark', 'Dunkel', 'Immer dunkel']])}</section>
     <section class="l-card"><h2>Schriftgröße</h2>${choice('fontSize', [['normal', 'Normal', 'Standard'], ['large', 'Groß', 'Etwa 15 % größer'], ['xlarge', 'Sehr groß', 'Etwa 30 % größer']])}</section>
