@@ -66,7 +66,9 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
     const [hash, qs] = location.hash.split('?');
     const params = new URLSearchParams(qs ?? '');
     shell.update(hash, !!ctx.user());
-    if (hash === '#/haus') {
+    // Haus nur angemeldet (Person oder Wandterminal) – oder über einen Freigabelink (?ansicht=…); sonst die Anmeldung
+    const shared = new URLSearchParams(location.search).has('ansicht');
+    if (hash === '#/haus' && (shared || ctx.user() || terminal())) {
       root.hidden = true;
       document.body.classList.remove('mode-lager');
       onHouse(params);

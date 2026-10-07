@@ -292,6 +292,17 @@ class Store {
     this.commit();
   }
 
+  /** Abgemeldet: Entwurf im Browser löschen (sonst bliebe das Haus ohne Anmeldung lesbar); übrig bleibt die Beispielküche */
+  forget() {
+    try {
+      localStorage.removeItem(STORAGE_KEY);
+      localStorage.removeItem(OLD_KEY);
+    } catch {
+      /* egal */
+    }
+    this.reset();
+  }
+
   reset(empty = false) {
     const h = emptyHouse();
     if (!empty) h.floors = [exampleFloor()];

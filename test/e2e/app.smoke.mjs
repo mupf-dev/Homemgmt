@@ -54,14 +54,13 @@ const step = (s) => console.log('▶', s);
 const shot = (n) => page.screenshot({ path: `${DIR}/${n}.png` });
 
 try {
-  step('App ohne Anmeldung: Startseite ist die Anmeldung, das Haus lässt sich ansehen');
+  step('App ohne Anmeldung: Startseite ist die Anmeldung, auch das Haus zeigt nur die Anmeldung');
   await page.goto(base + '/');
   await page.waitForSelector('.who[data-id="new"]');
   console.log('  Adresse:', new URL(page.url()).hash);
   await page.goto(base + '/#/haus');
-  await page.waitForSelector('#floorTabs .floor-tab');
-  console.log('  Etagen-Reiter:', await page.$$eval('#floorTabs .floor-tab', (b) => b.map((x) => x.textContent)));
-  console.log('  Status:', await page.textContent('#account'));
+  await page.waitForSelector('.who[data-id="new"]');
+  if (await page.isVisible('#floorTabs .floor-tab')) throw new Error('Haus ohne Anmeldung sichtbar');
 
   step('Ersteinrichtung in der App (Kachel „Neue Person“), Abmelden, Anmelden per Kachel');
   await page.goto(base + '/#/lager');
