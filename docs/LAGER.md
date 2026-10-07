@@ -253,9 +253,12 @@ Bohrmaschine in die Werkzeugkiste“, Foto vom Gegenstand + Regal-Etikett „das
   neues Gespräch (ältere Nachrichten bleiben sichtbar, gehen aber nicht mehr mit).
 - **Preisrecherche** (Einkaufsliste, Werkzeug `preise_recherchieren`): je Produkt eine Websuche, das Modell nennt die
   günstigsten Angebote mit Quelle; Angebote, deren Quelle nicht unter den Suchergebnissen ist, gelten als unbestätigt.
-  Die Websuche kommt bei **OpenRouter** vom Web-Plugin, bei einem **Gateway wie LiteLLM** von dessen Such-Tool
-  (Einstellung „Such-Tool im Gateway“, z. B. `foundry-web`; die App ruft `POST {Adresse}/search/{Such-Tool}` auf und
-  gibt die Treffer mit ins Prompt). Ohne beides ist die Preisrecherche nicht verfügbar.
+  Die Websuche kommt bei **OpenRouter** vom Web-Plugin. Bei einem **Gateway wie LiteLLM** (Einstellung „Such-Tool im
+  Gateway“, z. B. `foundry-web`) recherchiert ein kleiner Agent mit den Werkzeugen `websuche` (`POST {Adresse}/search/{Such-Tool}`,
+  höchstens 3) und `seite_lesen` (der Server lädt die Seite, nur öffentliche Adressen, höchstens 3); bestätigt ist ein
+  Preis dann nur, wenn er auf einer gelesenen Seite steht. Seiten, die ihre Preise erst per JavaScript laden, liefern
+  keinen Text – Prospektportale wie kaufDA funktionieren gut. Ohne Web-Plugin und Such-Tool ist die Preisrecherche nicht verfügbar.
+  Vergleichs- und Prospektportale sind nur Quelle, nie Händler.
 - **Datenschutz/Kosten:** Nachrichten, Fotos und Suchergebnisse gehen an den gewählten Anbieter. Die Einstellungen
   zeigen Anfragen, Tokens und (falls der Anbieter sie meldet) Kosten der letzten 30 Tage.
 

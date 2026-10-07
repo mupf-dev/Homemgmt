@@ -113,12 +113,19 @@ const FAKE_JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0
 // `requests` sammelt die empfangenen Anfragen (zum Prüfen von Prompt, Werkzeugen, Bildern).
 async function fakeLlm() {
   const http = require('node:http');
-  const state = { replies: [], requests: [], status: 200, search: { results: [] } }; // search: Antwort auf POST …/search/{tool}
+  // search: Antwort auf POST …/search/{tool}; pages: Pfad → HTML für GET (Seiten für seite_lesen)
+  const state = { replies: [], requests: [], status: 200, search: { results: [] }, pages: {} };
   let n = 0;
   const srv = http.createServer((req, res) => {
     let raw = '';
     req.on('data', (c) => { raw += c; });
     req.on('end', () => {
+      if (req.method === 'GET') {
+        const page = state.pages[req.url];
+        if (page && typeof page === 'object') { res.writeHead(page.status, page.headers || {}); return res.end(page.body || ''); }
+        res.writeHead(page ? 200 : 404, { 'content-type': 'text/html; charset=utf-8' });
+        return res.end(page || 'nicht gefunden');
+      }
       const body = JSON.parse(raw || '{}');
       state.requests.push({ auth: req.headers.authorization, path: req.url, body });
       if (state.status !== 200) {
