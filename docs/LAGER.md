@@ -251,6 +251,11 @@ Bohrmaschine in die Werkzeugkiste“, Foto vom Gegenstand + Regal-Etikett „das
 - **Verlauf:** Mitgeschickt werden nur die letzten Nachrichten (höchstens 20 bzw. etwa 8000 Zeichen). „Vergiss das“ oder
   „Neues Gespräch“ löscht den Verlauf, ebenso der Knopf „Neues Gespräch“; nach 30 Minuten Pause beginnt automatisch ein
   neues Gespräch (ältere Nachrichten bleiben sichtbar, gehen aber nicht mehr mit).
+- **Preisrecherche** (Einkaufsliste, Werkzeug `preise_recherchieren`): je Produkt eine Websuche, das Modell nennt die
+  günstigsten Angebote mit Quelle; Angebote, deren Quelle nicht unter den Suchergebnissen ist, gelten als unbestätigt.
+  Die Websuche kommt bei **OpenRouter** vom Web-Plugin, bei einem **Gateway wie LiteLLM** von dessen Such-Tool
+  (Einstellung „Such-Tool im Gateway“, z. B. `foundry-web`; die App ruft `POST {Adresse}/search/{Such-Tool}` auf und
+  gibt die Treffer mit ins Prompt). Ohne beides ist die Preisrecherche nicht verfügbar.
 - **Datenschutz/Kosten:** Nachrichten, Fotos und Suchergebnisse gehen an den gewählten Anbieter. Die Einstellungen
   zeigen Anfragen, Tokens und (falls der Anbieter sie meldet) Kosten der letzten 30 Tage.
 
@@ -259,6 +264,7 @@ Bohrmaschine in die Werkzeugkiste“, Foto vom Gegenstand + Regal-Etikett „das
 | `AI_API_KEY`  | API-Schlüssel (hat Vorrang vor der Einstellung; steht dann nicht in Datenbank und Backups) |
 | `AI_BASE_URL` | Adresse der Schnittstelle, z. B. `https://openrouter.ai/api/v1`         |
 | `AI_MODEL`    | Modell                                                                 |
+| `AI_SEARCH_TOOL` | Such-Tool des Gateways für die Preisrecherche ohne OpenRouter, z. B. `foundry-web` (hat Vorrang vor der Einstellung) |
 | `PUBLIC_URL`  | Öffentliche Adresse der App (wird dem Anbieter als Referer genannt)    |
 
 ## Haus in 3D

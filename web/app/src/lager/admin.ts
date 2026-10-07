@@ -220,7 +220,8 @@ export const viewAiSettings: View = async (el, ctx) => {
       <label>Modell<input name="model" value="${esc(s.model ?? '')}" ${s.model_from_env ? 'disabled' : ''} /></label>
       <label>API-Schlüssel${s.key_set ? ` <small>(gesetzt: ${esc(s.key_hint ?? '')}${s.key_from_env ? ', aus der Umgebung' : ''})</small>` : ''}<input name="api_key" type="password" placeholder="${s.key_set ? 'leer = unverändert' : 'sk-…'}" ${s.key_from_env ? 'disabled' : ''} autocomplete="off" /></label>
       <label>Wohnort für die Preisrecherche<input name="location" value="${esc(s.location ?? '')}" placeholder="z. B. 12345 Musterstadt" /></label>
-      <label class="l-check"><input type="checkbox" name="research_enabled" ${s.research_enabled ? 'checked' : ''} /> Preisrecherche aktiv${s.research?.available === false ? ' <small>(nur mit OpenRouter)</small>' : ''}</label>
+      <label>Such-Tool im Gateway <small>(für die Preisrecherche ohne OpenRouter, z. B. „foundry-web“ bei LiteLLM)</small><input name="search_tool" value="${esc(s.search_tool ?? '')}" ${s.search_tool_from_env ? 'disabled' : ''} placeholder="leer = keins" /></label>
+      <label class="l-check"><input type="checkbox" name="research_enabled" ${s.research_enabled ? 'checked' : ''} /> Preisrecherche aktiv${s.research?.available === false && !s.research?.disabled ? ' <small>(braucht OpenRouter oder ein Such-Tool)</small>' : ''}</label>
       <div class="l-actions"><button class="btn primary">Speichern</button><button type="button" class="btn" id="test">Verbindung testen</button></div>
     </form>
     <p class="hint">Status: ${s.enabled ? 'eingerichtet ✓' : 'nicht eingerichtet'} · letzte 30 Tage: ${s.usage_30d?.requests ?? 0} Anfragen, ${(s.usage_30d?.prompt_tokens ?? 0) + (s.usage_30d?.completion_tokens ?? 0)} Tokens${s.usage_30d?.cost ? `, ${Number(s.usage_30d.cost).toFixed(2)} $` : ''}</p>`;
@@ -230,6 +231,7 @@ export const viewAiSettings: View = async (el, ctx) => {
     const body: Record<string, unknown> = { location: fd.get('location'), research_enabled: !!fd.get('research_enabled') };
     if (fd.get('base_url') !== null) body.base_url = fd.get('base_url');
     if (fd.get('model') !== null) body.model = fd.get('model');
+    if (fd.get('search_tool') !== null) body.search_tool = fd.get('search_tool');
     if (fd.get('api_key')) body.api_key = fd.get('api_key');
     if (await run(ctx, () => api('PUT', '/api/assistant/settings', body), 'Gespeichert.')) viewAiSettings(el, ctx, new URLSearchParams());
   });

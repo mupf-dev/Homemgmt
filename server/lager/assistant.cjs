@@ -40,6 +40,8 @@ function createAssistant(core, opts = {}) {
       model: process.env.AI_MODEL || getSetting('ai_model') || '',
       key,
       keyFromEnv: !!envKey,
+      // Such-Tool eines Gateways (z. B. LiteLLM search_tools) für die Preisrecherche ohne OpenRouter
+      searchTool: process.env.AI_SEARCH_TOOL || getSetting('ai_search_tool') || '',
     };
   }
   const enabled = () => { const c = config(); return !!(c.key && c.model); };
@@ -54,6 +56,7 @@ function createAssistant(core, opts = {}) {
       base_url: c.baseUrl, model: c.model, key_set: !!c.key, key_hint: keyHint(c.key), key_from_env: c.keyFromEnv,
       base_url_from_env: !!process.env.AI_BASE_URL, model_from_env: !!process.env.AI_MODEL, enabled: enabled(), usage_30d: usage,
       location: getSetting('ai_location') || '', research_enabled: getSetting('ai_research') !== '0', research: research.availability(),
+      search_tool: c.searchTool, search_tool_from_env: !!process.env.AI_SEARCH_TOOL,
     };
   }
 
@@ -66,6 +69,11 @@ function createAssistant(core, opts = {}) {
     if (body.model !== undefined) setSetting('ai_model', String(body.model || '').trim().slice(0, 200));
     if (body.location !== undefined) setSetting('ai_location', String(body.location || '').trim().slice(0, 120));
     if (body.research_enabled !== undefined) setSetting('ai_research', body.research_enabled ? '' : '0'); // Standard: an
+    if (body.search_tool !== undefined) {
+      const t = String(body.search_tool || '').trim();
+      if (!/^[\w.-]{0,64}$/.test(t)) throw new HttpError(400, 'Der Name des Such-Tools darf nur Buchstaben, Ziffern, ".", "_" und "-" enthalten.');
+      setSetting('ai_search_tool', t);
+    }
     // Schlüssel nur ändern, wenn mitgeschickt; leer = entfernen
     if (body.api_key !== undefined) setSetting('ai_api_key', String(body.api_key || '').trim());
     return publicSettings();
@@ -99,12 +107,37 @@ function createAssistant(core, opts = {}) {
     return { message: choice, usage: data.usage || {} };
   }
 
+  // Websuche über das Such-Tool eines Gateways: POST {baseUrl}/search/{tool} (LiteLLM-Format: {results: [{title, url, snippet}]})
+  async function search(c, query, maxResults, timeoutMs = TIMEOUT_MS) {
+    let res;
+    try {
+      res = await fetch(`${c.baseUrl}/search/${encodeURIComponent(c.searchTool)}`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${c.key}`, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ query, max_results: maxResults, country: 'DE' }),
+        signal: AbortSignal.timeout(timeoutMs),
+      });
+    } catch (e) {
+      throw new HttpError(502, e.name === 'TimeoutError' ? 'Die Websuche antwortet nicht (Zeitüberschreitung).' : `Websuche nicht erreichbar: ${e.message}`);
+    }
+    const text = await res.text();
+    let data = null;
+    try { data = JSON.parse(text); } catch { /* unten */ }
+    if (!res.ok || !data || data.error || !Array.isArray(data.results)) {
+      const msg = data?.error?.message || data?.detail || data?.message || text.slice(0, 200) || res.statusText;
+      throw new HttpError(502, `Websuche: ${typeof msg === 'string' ? msg : JSON.stringify(msg).slice(0, 200)}${res.ok ? '' : ` (HTTP ${res.status})`}`);
+    }
+    return data.results
+      .filter((r) => r && /^https?:\/\/\S+$/i.test(String(r.url || '')))
+      .map((r) => ({ url: String(r.url), title: String(r.title || '').slice(0, 200), snippet: String(r.snippet || '').slice(0, 1500) }));
+  }
+
   function logUsage(personId, model, usage) {
     db().prepare('INSERT INTO assistant_log (person_id, model, prompt_tokens, completion_tokens, cost) VALUES (?, ?, ?, ?, ?)')
       .run(personId, model, usage.prompt_tokens || 0, usage.completion_tokens || 0, typeof usage.cost === 'number' ? usage.cost : null);
   }
 
-  const research = createResearch(core, { config, complete, logUsage, getSetting }, opts);
+  const research = createResearch(core, { config, complete, search, logUsage, getSetting }, opts);
 
   // Werkzeuge, die auf das Netz warten (nicht in tools.js, weil dort alles synchron läuft) – nur im Assistenten
   const asyncTools = [{

@@ -1,4 +1,4 @@
-// Preisrecherche für die Einkaufsliste: sucht über den KI-Anbieter (Websuche, OpenRouter), wo die Einträge gerade am
+// Preisrecherche für die Einkaufsliste: sucht über den KI-Anbieter (Websuche von OpenRouter oder Such-Tool eines Gateways), wo die Einträge gerade am
 // günstigsten sind – je Eintrag das beste Angebot, weitere aufklappbar, dazu eine Einkaufstour nach Händler.
 // Server: GET/POST /api/shopping/prices (läuft im Hintergrund, Ergebnisse 24 Stunden gültig).
 

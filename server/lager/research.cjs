@@ -1,12 +1,14 @@
 'use strict';
-// Heimlager – Preisrecherche für die Einkaufsliste. Je Produkt ein Modell-Aufruf mit der Websuche von OpenRouter
-// (plugins: [{ id: 'web' }]); die Quellen kommen als annotations zurück. Läuft als Auftrag im Hintergrund,
-// Ergebnisse werden in price_checks gespeichert und 24 Stunden wiederverwendet.
+// Heimlager – Preisrecherche für die Einkaufsliste. Je Produkt ein Modell-Aufruf mit Websuche: bei OpenRouter über das
+// Web-Plugin (plugins: [{ id: 'web' }], Quellen kommen als annotations zurück), sonst über das Such-Tool eines Gateways
+// (z. B. LiteLLM, POST /search/{tool}) – die Treffer gehen dann mit ins Prompt und gelten als Quellen.
+// Läuft als Auftrag im Hintergrund, Ergebnisse werden in price_checks gespeichert und 24 Stunden wiederverwendet.
 
 const FRESH_HOURS = 24;
 const CONCURRENCY = 3;
 const TIMEOUT_MS = 120_000;
 const MAX_OFFERS = 4;
+const SEARCH_RESULTS = 6;
 
 function createResearch(core, provider, opts = {}) {
   const { HttpError } = core;
@@ -20,15 +22,20 @@ function createResearch(core, provider, opts = {}) {
   db().prepare("UPDATE price_checks SET status = 'error', error = 'Abgebrochen (Server-Neustart).', finished_at = datetime('now') WHERE status IN ('pending', 'running')").run();
 
   const location = () => provider.getSetting('ai_location') || '';
-  // Nur OpenRouter kennt das Web-Plugin; AI_WEB_SEARCH=1 erzwingt es (z. B. für einen kompatiblen Proxy oder Tests)
+  // Woher die Websuche kommt: OpenRouter-Web-Plugin (AI_WEB_SEARCH=1 erzwingt es, z. B. für einen kompatiblen Proxy
+  // oder Tests), sonst das eingetragene Such-Tool des Gateways
+  function searchMode(c) {
+    let host = '';
+    try { host = new URL(c.baseUrl).hostname; } catch { /* ungültig */ }
+    if (process.env.AI_WEB_SEARCH === '1' || /(^|\.)openrouter\.ai$/.test(host)) return 'plugin';
+    return c.searchTool ? 'gateway' : null;
+  }
   function availability() {
     const c = provider.config();
     if (!c.key || !c.model) return { available: false, reason: 'Der Assistent ist noch nicht eingerichtet (Administration → Assistent).' };
     if (provider.getSetting('ai_research') === '0') return { available: false, disabled: true, reason: 'Die Preisrecherche ist in Administration → Assistent ausgeschaltet.' };
-    let host = '';
-    try { host = new URL(c.baseUrl).hostname; } catch { /* ungültig */ }
-    if (process.env.AI_WEB_SEARCH !== '1' && !/(^|\.)openrouter\.ai$/.test(host)) {
-      return { available: false, reason: 'Die Preisrecherche nutzt die Websuche von OpenRouter – dafür OpenRouter als Schnittstelle eintragen.' };
+    if (!searchMode(c)) {
+      return { available: false, reason: 'Die Preisrecherche braucht eine Websuche – OpenRouter als Schnittstelle oder das Such-Tool eines Gateways (z. B. LiteLLM) eintragen.' };
     }
     return { available: true, reason: '' };
   }
@@ -102,6 +109,15 @@ function createResearch(core, provider, opts = {}) {
     });
   }
 
+  // Suchanfrage für das Such-Tool des Gateways
+  function searchQuery(row) {
+    const loc = location().replace(/\b\d{5}\b/g, '').replace(/[,;]+/g, ' ').trim(); // Stadt statt PLZ findet mehr Prospekte
+    return [row.name, row.details, 'Preis Angebot', loc].filter(Boolean).join(' ').replace(/\s+/g, ' ').slice(0, 300);
+  }
+  const resultsBlock = (results) => (results.length
+    ? ['Suchergebnisse (nur diese Quellen verwenden):', ...results.map((r, i) => `[${i + 1}] ${r.title}\nURL: ${r.url}\n${r.snippet}`)].join('\n\n')
+    : 'Suchergebnisse: keine Treffer.');
+
   function prompts(row) {
     const today = new Date().toLocaleDateString('de-DE', { timeZone: tz, day: '2-digit', month: '2-digit', year: 'numeric' });
     const loc = location();
@@ -172,14 +188,25 @@ function createResearch(core, provider, opts = {}) {
     try {
       const c = provider.config();
       const { system, user } = prompts(row);
-      const { message, usage } = await provider.complete(c, {
-        messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
-        plugins: [{ id: 'web', max_results: 6 }],
-      }, TIMEOUT_MS);
+      let message, usage, annotations;
+      if (searchMode(c) === 'gateway') {
+        const results = await provider.search(c, searchQuery(row), SEARCH_RESULTS, TIMEOUT_MS);
+        ({ message, usage } = await provider.complete(c, {
+          messages: [{ role: 'system', content: system }, { role: 'user', content: `${user}\n\n${resultsBlock(results)}` }],
+        }, TIMEOUT_MS));
+        // Die Treffer der Suche sind die Quellen – wie die annotations von OpenRouter
+        annotations = results.map((r) => ({ type: 'url_citation', url_citation: { url: r.url, title: r.title } }));
+      } else {
+        ({ message, usage } = await provider.complete(c, {
+          messages: [{ role: 'system', content: system }, { role: 'user', content: user }],
+          plugins: [{ id: 'web', max_results: SEARCH_RESULTS }],
+        }, TIMEOUT_MS));
+        annotations = message.annotations;
+      }
       provider.logUsage(row.person_id, c.model, usage);
       const raw = parseJson(message.content);
       if (!raw) throw new HttpError(502, 'Das Modell hat kein auswertbares Ergebnis geliefert.');
-      const result = { ...validate(raw, message.annotations), ort: location() || null, modell: c.model };
+      const result = { ...validate(raw, annotations), ort: location() || null, modell: c.model };
       db().prepare("UPDATE price_checks SET status = 'done', result = ?, error = NULL, finished_at = datetime('now') WHERE id = ?").run(JSON.stringify(result), id);
     } catch (e) {
       db().prepare("UPDATE price_checks SET status = 'error', error = ?, finished_at = datetime('now') WHERE id = ?")
