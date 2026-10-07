@@ -12,7 +12,7 @@ Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – a
 [![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/Website-mupf--dev.github.io-E8692E)](https://mupf-dev.github.io/Homemgmt/)
 
-[Funktionen](#funktionen) · [Wandterminal](#wandterminal) · [Live-Wetter](#live-wetter) · [Ein echtes Haus](#ein-echtes-haus) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
+[KI-Assistent](#der-ki-assistent) · [Funktionen](#funktionen) · [Wandterminal](#wandterminal) · [Live-Wetter](#live-wetter) · [Ein echtes Haus](#ein-echtes-haus) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
 
 <img src="site/img/haus-3d.webp" alt="Das Erdgeschoss in 3D, Möbel nach Füllstand eingefärbt, im Dunkelmodus" width="900">
 
@@ -26,6 +26,25 @@ automatisch ein **Lagerplatz** mit eigener Adresse (`KU-C2` = Küche, Möbel C, 
 Klick, QR-Scan, Sprache oder KI-Assistent ein und aus. Die Suche „Wo liegt …?“ lässt die Treffer im Haus aufleuchten.
 
 Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **eine** SQLite-Datei, keine Cloud.
+
+## Der KI-Assistent
+
+Sag, schreib oder fotografiere, was passiert ist – der Assistent bucht es ins richtige Fach.
+
+- 📷 **Regal fotografieren = inventarisiert:** Foto vom Regal oder der Schublade, am besten mit dem QR-Etikett des
+  Fachs im Bild. Der Assistent erkennt **alle Gegenstände auf dem Foto**, legt neue an, erhöht vorhandene und bucht
+  alles in einem Schritt in dieses Fach – ab vier Buchungen erst nach Bestätigung. Das Foto speichert er auf Wunsch am
+  Gegenstand.
+- 🎤 **Einfach sagen:** „3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“ – Fächer versteht er beim Namen
+  („Küche Kühlschrank oben“), Antworten liest er vor.
+- 🔎 **Fragen und finden:** „Wo ist der Akkuschrauber?“, „Was läuft diese Woche ab?“ – mit „Im Haus zeigen“.
+- 🏷️ **QR-Etiketten auf Fotos** liest die App selbst: „das kommt hierhin“ genügt.
+- 🛒 **Einkauf und Preise:** auf die Liste setzen, abhaken, „Wo gibt's Butter gerade am günstigsten?“ (Preisrecherche
+  mit Händler, Filiale und Quelle).
+- 🖥️ **Am Wandterminal sprechen:** Knopf „Sprechen“, Kachel antippen, loslegen – dort nur Suchen, Buchen und Einkauf.
+- ↩️ **Sicher:** jede Buchung mit Rückgängig, handelt mit den Rechten der Person; jeder OpenAI-kompatible Anbieter
+  (OpenRouter, LiteLLM …), dazu ein MCP-Server für Claude & Co. – Details unter
+  [KI-Assistent und MCP-Server](#ki-assistent).
 
 ## Funktionen
 

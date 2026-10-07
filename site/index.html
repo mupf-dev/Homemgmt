@@ -159,6 +159,35 @@ footer a { color: var(--muted); }
 .term-shots figcaption { padding: 10px 14px; font-size: 14px; color: var(--muted); }
 .term-shots figcaption b { color: var(--text); }
 .small { font-size: 14px; color: var(--muted); margin-top: 20px; }
+
+/* KI-Assistent */
+.ai { display: grid; gap: 40px; grid-template-columns: 1fr; align-items: start; }
+@media (min-width: 960px) { .ai { grid-template-columns: 6fr 5fr; gap: 56px; } }
+.ai-caps { display: grid; gap: 14px; grid-template-columns: 1fr; }
+@media (min-width: 640px) { .ai-caps { grid-template-columns: repeat(2, 1fr); } }
+.ai-caps > div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 18px; }
+.ai-caps > div.wide { grid-column: 1 / -1; border-color: var(--accent); box-shadow: inset 4px 0 0 var(--accent); }
+.ai-caps h4 { margin: 0 0 6px; font-size: 16px; display: flex; align-items: center; gap: 8px; }
+.ai-caps h4 svg { width: 20px; height: 20px; color: var(--accent); flex: none; }
+.ai-caps p { margin: 0; color: var(--muted); font-size: 14.5px; }
+.ai-caps .q { color: var(--text); }
+.chat { background: var(--card); border: 1px solid var(--line); border-radius: 16px; box-shadow: var(--shadow); padding: 18px; display: grid; gap: 12px; font-size: 14.5px; }
+.chat .head { display: flex; align-items: center; justify-content: space-between; font-weight: 700; padding-bottom: 10px; border-bottom: 1px solid var(--line); }
+.chat .head small { font-weight: 500; color: var(--muted); }
+.chat .me { justify-self: end; max-width: 85%; display: grid; gap: 6px; justify-items: end; }
+.chat .bot { justify-self: start; max-width: 92%; display: grid; gap: 8px; }
+.chat .bubble { padding: 9px 13px; border-radius: 14px; line-height: 1.45; }
+.chat .me .bubble { background: var(--accent); color: #fff; border-bottom-right-radius: 4px; }
+.chat .bot .bubble { background: var(--bg-alt); border: 1px solid var(--line); border-bottom-left-radius: 4px; }
+.chat .photo { width: 220px; max-width: 100%; border-radius: 12px; border: 1px solid var(--line); overflow: hidden; background: var(--bg-alt); }
+.chat .photo svg { display: block; width: 100%; height: auto; }
+.chat ul.book { list-style: none; margin: 0; padding: 0; display: grid; gap: 4px; }
+.chat ul.book li { display: flex; justify-content: space-between; gap: 10px; align-items: center; background: var(--bg); border: 1px solid var(--line); border-radius: 9px; padding: 6px 10px; font-size: 13.5px; }
+.chat ul.book li span:last-child { font-size: 12px; color: var(--muted); border: 1px solid var(--line); border-radius: 6px; padding: 1px 7px; white-space: nowrap; }
+.chat .confirm { display: flex; gap: 8px; }
+.chat .confirm span { font-size: 13px; font-weight: 600; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--line); }
+.chat .confirm span.go { background: #2f9e6b; border-color: #2f9e6b; color: #fff; }
+.chat .note-line { font-size: 12.5px; color: var(--muted); text-align: center; }
 </style>
 </head>
 <body>
@@ -167,6 +196,7 @@ footer a { color: var(--muted); }
   <div class="wrap">
     <a class="brand" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>Zuhause</a>
     <nav class="links">
+      <a href="#assistent">KI-Assistent</a>
       <a href="#funktionen">Funktionen</a>
       <a href="#wandterminal">Wandterminal</a>
       <a href="#live-wetter">Live-Wetter</a>
@@ -182,9 +212,10 @@ footer a { color: var(--muted); }
     <div class="wrap">
       <span class="eyebrow">Selbst gehostet · Open Source · ohne Cloud</span>
       <h1>Das ganze Haus planen. <em>Alles darin finden.</em></h1>
-      <p class="lead">Zeichne dein Haus in 2D und 3D – jedes Fach jedes Möbels wird automatisch ein Lagerplatz. Einbuchen per Klick, QR-Scan oder Sprache, und „Wo liegt …?“ zeigt dir die Schublade.</p>
+      <p class="lead">Zeichne dein Haus in 2D und 3D – jedes Fach jedes Möbels wird automatisch ein Lagerplatz. Einbuchen per Klick, QR-Scan oder einfach mit dem <b>KI-Assistenten</b>: Regal fotografieren, fertig inventarisiert.</p>
       <div class="cta">
         <a class="btn primary" href="#installation">Installieren</a>
+        <a class="btn ghost" href="#assistent">KI-Assistent ansehen</a>
         <a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt">Quellcode ansehen</a>
       </div>
       <div class="shot">
@@ -194,7 +225,56 @@ footer a { color: var(--muted); }
     </div>
   </div>
 
-  <section id="so-gehts" class="alt">
+  <section id="assistent" class="alt">
+    <div class="wrap">
+      <h2>Der KI-Assistent räumt mit auf</h2>
+      <p class="sub">Sag, schreib oder fotografiere, was passiert ist – der Assistent bucht es ins richtige Fach. Er kennt dein Haus, deine Fächer beim Namen und alles, was darin liegt.</p>
+      <div class="ai">
+        <div class="ai-caps">
+          <div class="wide"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg>Regal fotografieren = inventarisiert</h4><p>Foto vom Regal oder der Schublade machen, am besten mit dem QR-Etikett des Fachs im Bild: Der Assistent erkennt <b>alle Gegenstände auf dem Foto</b>, legt neue an, erhöht vorhandene und bucht alles <b>in einem Schritt</b> in dieses Fach. Ab vier Buchungen zeigt er die Liste erst zur Bestätigung. Das Foto kann er gleich am Gegenstand speichern.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Einfach sagen</h4><p><span class="q">„3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“</span> – per Mikrofon oder Text. Fächer versteht er beim Namen: <span class="q">„Küche Kühlschrank oben“</span>.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Fragen und finden</h4><p><span class="q">„Wo ist der Akkuschrauber?“</span>, <span class="q">„Was läuft diese Woche ab?“</span> – die Antwort nennt das Fach, <b>„Im Haus zeigen“</b> lässt es im Plan aufleuchten.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4l2 4-2.5 1.5a11 11 0 0 0 5 5L14 12l4 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2"/></svg>QR-Etiketten auf Fotos</h4><p>Fach- und Gegenstands-Etiketten liest die App selbst aus dem Bild – <span class="q">„das kommt hierhin“</span> genügt.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Einkauf und Preise</h4><p>Auf die Liste setzen, abhaken, und <span class="q">„Wo gibt's Butter gerade am günstigsten?“</span> – <b>Preisrecherche</b> mit Händler, nächster Filiale und Quelle.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>Am Wandterminal sprechen</h4><p>Knopf <b>„Sprechen“</b>, Kachel antippen, loslegen – die Antwort wird vorgelesen. Dort nur Suchen, Buchen und Einkauf, nie Verwaltung.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Sicher bedienbar</h4><p>Jede Buchung mit <b>Rückgängig</b>, handelt mit den Rechten der Person. Jeder OpenAI-kompatible Anbieter (OpenRouter, LiteLLM …), dazu ein <b>MCP-Server</b> für Claude &amp; Co.</p></div>
+        </div>
+        <div class="chat" aria-label="Beispiel-Unterhaltung mit dem Assistenten">
+          <div class="head">Assistent <small>Beispiel</small></div>
+          <div class="me">
+            <div class="photo"><svg viewBox="0 0 220 150" role="img" aria-label="Foto eines Kellerregals mit Dosen, Gläsern, Batterien und QR-Etikett">
+              <rect width="220" height="150" fill="#d9cfc2"/><rect x="14" y="10" width="192" height="132" fill="#b88a5a"/><rect x="20" y="16" width="180" height="56" fill="#efe7dc"/><rect x="20" y="78" width="180" height="58" fill="#efe7dc"/>
+              <rect x="20" y="70" width="180" height="8" fill="#9c7246"/>
+              <g fill="#c0392b"><rect x="28" y="38" width="16" height="32" rx="2"/><rect x="47" y="38" width="16" height="32" rx="2"/><rect x="66" y="38" width="16" height="32" rx="2"/></g>
+              <g fill="#f4d03f"><rect x="28" y="48" width="16" height="10"/><rect x="47" y="48" width="16" height="10"/><rect x="66" y="48" width="16" height="10"/></g>
+              <g fill="#a9cce3" opacity=".9"><rect x="96" y="30" width="20" height="40" rx="4"/><rect x="120" y="30" width="20" height="40" rx="4"/></g><g fill="#7d3c98"><rect x="96" y="26" width="20" height="6" rx="2"/><rect x="120" y="26" width="20" height="6" rx="2"/></g>
+              <g fill="#2c3e50"><rect x="30" y="110" width="40" height="24" rx="3"/></g><g fill="#e67e22"><rect x="34" y="114" width="8" height="16"/><rect x="45" y="114" width="8" height="16"/><rect x="56" y="114" width="8" height="16"/></g>
+              <g fill="#5d6d7e"><rect x="84" y="96" width="34" height="38" rx="3"/></g><rect x="88" y="102" width="26" height="8" fill="#ecf0f1"/>
+              <g fill="#27ae60"><rect x="128" y="104" width="44" height="30" rx="3"/></g>
+              <rect x="150" y="34" width="38" height="30" fill="#fff" stroke="#333" stroke-width="1"/><g fill="#111"><rect x="154" y="38" width="7" height="7"/><rect x="177" y="38" width="7" height="7"/><rect x="154" y="53" width="7" height="7"/><rect x="164" y="44" width="4" height="4"/><rect x="170" y="50" width="5" height="5"/><rect x="166" y="56" width="4" height="4"/></g>
+            </svg></div>
+            <div class="bubble">Das ist alles im Kellerregal – bitte einbuchen.</div>
+          </div>
+          <div class="bot">
+            <div class="bubble">Ich sehe 5 verschiedene Dinge und habe das Etikett <b>KE-B2</b> (Kellerregal, Boden 2) gelesen. Soll ich alles dort einbuchen?</div>
+            <ul class="book">
+              <li><span>3× Dosentomaten</span><span>neu</span></li>
+              <li><span>2× Gurken im Glas</span><span>neu</span></li>
+              <li><span>1× Batterien AA (8er)</span><span>+1</span></li>
+              <li><span>1× Werkzeugkoffer</span><span>vorhanden</span></li>
+              <li><span>1× Pflanzerde 10 l</span><span>neu</span></li>
+            </ul>
+            <div class="confirm"><span class="go">Ausführen</span><span>Abbrechen</span></div>
+          </div>
+          <div class="me"><div class="bubble">Wo sind die AA-Batterien jetzt?</div></div>
+          <div class="bot"><div class="bubble">Im Keller, <b>KE-B2</b> – 2 Packungen. <u>Im Haus zeigen</u></div></div>
+          <p class="note-line">Nachgestellte Unterhaltung · Bilderkennung und Sprache über deinen KI-Anbieter</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section id="so-gehts">
     <div class="wrap center">
       <h2>Vom Grundriss zur Schublade</h2>
       <p class="sub">Zuhause verbindet einen Hausplaner mit einer Lagerverwaltung. Der Plan ist das Lager.</p>
@@ -208,7 +288,7 @@ footer a { color: var(--muted); }
     </div>
   </section>
 
-  <section id="funktionen">
+  <section id="funktionen" style="border-top: 1px solid var(--line)">
     <div class="wrap">
       <div class="feature">
         <div>
@@ -286,7 +366,7 @@ footer a { color: var(--muted); }
             <li>Den <b>Einrichtungslink</b> oder seinen <b>QR-Code</b> am Tablet öffnen – fertig, kein Passwort am Gerät</li>
             <li>Je Gerät: <b>Hoch- oder Querformat</b>, Haus als Grundriss oder 3D, hell/dunkel, Schriftgröße bis „sehr groß“</li>
             <li>Wartezeit bis zurück zum Haus, Ruhezustand an/aus, <b>Detailgrad</b> (Entwurf 15 s, Normal 30 s, Hoch 90 s) und Postleitzahl fürs Wetter</li>
-            <li>Nur die passenden Seiten: Haus, Suchen, Einkauf, Haltbarkeit – <b>Planen ist am Terminal gesperrt</b>; Link jederzeit neu erzeugen oder Terminal entfernen</li>
+            <li>Nur die passenden Seiten: Haus, Suchen, Einkauf, Aufgaben, Haltbarkeit und <b>Sprechen</b> mit dem Assistenten – <b>Planen ist am Terminal gesperrt</b>; Link jederzeit neu erzeugen oder Terminal entfernen</li>
           </ul>
         </div>
         <div>
@@ -382,8 +462,8 @@ footer a { color: var(--muted); }
         <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 20h1v1"/></svg>Scannen und Etiketten</h4><ul><li><b>Kamera-Scan</b>: Fach-Code, dann Gegenstand = einbuchen; Gegenstand zweimal = ausbuchen</li><li>Unbekanntes, vorgedrucktes Etikett = neuer Gegenstand; <b>Behälter befüllen</b> per Scan</li><li>Auch Handscanner und Eingabe von Hand; QR-Links öffnen direkt Fach oder Gegenstand</li><li><b>Etiketten</b> für Fächer (nach Etage/Raum/Möbel), Gegenstände und leere Vorrats-Etiketten</li><li><b>3D-gedruckte QR-Schilder</b> als STL oder mehrfarbiges 3MF, auf Druckplatten verteilt</li></ul></div>
         <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Einkauf und Haltbarkeit</h4><ul><li><b>Verbrauchsmaterial</b> landet beim Ausbuchen automatisch auf der Einkaufsliste</li><li>Abhaken, <b>gekauft und gleich wieder einbuchen</b>, freie Einträge („Milch“)</li><li><b>Teilen</b> per WhatsApp, Teilen-Menü, Kopieren oder als Text; <b>Preisrecherche</b> für den Wohnort</li><li><b>Haltbarkeitsdatum</b> mit Schnellwahl (1 Woche … 1 Jahr), Warnungen vor und nach Ablauf</li><li>Liste „Läuft bald ab“: abgelaufen, 7 Tage, 30 Tage, 3 Monate, 1 Jahr</li></ul></div>
         <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Personen und Rechte</h4><ul><li>Anmeldung per <b>Kachel + PIN/Passwort</b> oder E-Mail; Ersteinrichtung direkt in der App</li><li>Rollen, Archiv, Personen zusammenführen, Registrierung mit Freigabe</li><li>Recht <b>„Haus planen“</b> pro Person – auch der Server prüft es</li><li><b>Einstellungen pro Person</b>: Startseite, Haus in 2D oder 3D, hell/dunkel, Schriftgröße</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Handy und Offline</h4><ul><li><b>Als App installierbar</b> mit Schnellzugriffen (Scannen, Einbuchen, Suchen, Einkauf, Haus)</li><li>Navigation unten, <b>Scannen in der Mitte</b>, Fächer als Blatt von unten</li><li><b>Schlechtes WLAN</b>: Buchungen werden vorgemerkt („2 Buchungen warten“) und nachgebucht – nie doppelt</li><li>Scannen von Fächern und Gegenständen klappt auch ohne Netz</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/></svg>KI-Assistent und MCP</h4><ul><li><b>Assistent</b> per Text, Sprache oder Foto: „3 Dosen Tomaten in den Keller, haltbar bis 05/2027“</li><li>Kennt <b>Fächer beim Namen</b> („Küche Kühlschrank oben“), liest QR-Etiketten auf Fotos, liest Antworten vor</li><li>Bucht selbst mit Rückgängig, fragt ab 4 Buchungen nach; jeder OpenAI-kompatible Anbieter</li><li><b>MCP-Server</b>: Claude und andere suchen, buchen und lesen die Einkaufsliste – mit API-Schlüssel, lesend oder schreibend</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Handy und Offline</h4><ul><li><b>Als App installierbar</b> mit Schnellzugriffen (Assistent, Scannen, Einbuchen, Suchen, Einkauf, Haus)</li><li>Navigation unten, <b>Scannen in der Mitte</b>, Fächer als Blatt von unten</li><li><b>Schlechtes WLAN</b>: Buchungen werden vorgemerkt („2 Buchungen warten“) und nachgebucht – nie doppelt</li><li>Scannen von Fächern und Gegenständen klappt auch ohne Netz</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/></svg>KI-Assistent und MCP</h4><ul><li><b>Assistent</b> per Text, Sprache oder Foto: „3 Dosen Tomaten in den Keller, haltbar bis 05/2027“</li><li><b>Regal-Inventur per Foto</b>: erkennt alle Gegenstände im Bild und bucht sie in einem Schritt ins Fach</li><li><b>Sprechen am Wandterminal</b>, als Startseite oder Kurzbefehl am App-Symbol</li><li>Kennt <b>Fächer beim Namen</b> („Küche Kühlschrank oben“), liest QR-Etiketten auf Fotos, liest Antworten vor</li><li>Bucht selbst mit Rückgängig, fragt ab 4 Buchungen nach; jeder OpenAI-kompatible Anbieter</li><li><b>MCP-Server</b>: Claude und andere suchen, buchen und lesen die Einkaufsliste – mit API-Schlüssel, lesend oder schreibend</li></ul></div>
         <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Betrieb und Daten</h4><ul><li><b>Ein Prozess, eine SQLite-Datei</b> – Docker oder Node.js, auch auf NAS oder Raspberry Pi</li><li><b>Automatische Backups</b>, anlegen, herunterladen, hochladen und wiederherstellen per Klick</li><li><b>Export/Import</b> als Excel oder CSV mit Vorschau</li><li>REST-API und API-Schlüssel für eigene Erweiterungen; HTTPS direkt oder per Reverse Proxy</li></ul></div>
       </div>
     </div>
