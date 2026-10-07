@@ -1,6 +1,6 @@
 {
-  "name": "Zuhause",
-  "short_name": "Zuhause",
+  "name": "homemgmt-ng",
+  "short_name": "homemgmt-ng",
   "description": "Haus in 3D planen – jedes Fach ist ein Lagerplatz: scannen, ein- und ausbuchen, suchen, Einkaufsliste.",
   "lang": "de",
   "start_url": "/",

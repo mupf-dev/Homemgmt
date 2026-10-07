@@ -2,6 +2,9 @@
 
 ## Unveröffentlicht
 
+**Neuer Name: homemgmt-ng** – App, Website und Handbuch heißen jetzt homemgmt-ng (vorher „Zuhause“). Technische
+Namen (Container, Datenbankdatei, Ordner) bleiben gleich, ein Update braucht keine Anpassung.
+
 **Assistent schneller erreichen**: Startseite „Assistent“ in den Einstellungen (die installierte App startet jetzt mit
 `/`, damit die gewählte Startseite auch dort gilt) und Kurzbefehl „Assistent“ am App-Symbol (Android).
 **Sprechen am Wandterminal**: neuer Knopf „Sprechen“ in der Leiste – erst „Wer bucht?“, dann zuhören; die Antwort wird

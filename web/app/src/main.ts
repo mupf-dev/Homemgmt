@@ -2468,7 +2468,7 @@ if (shareToken) {
     .then((d) => {
       store.replace(d.data);
       $('#sharedTitle').textContent = d.name;
-      document.title = `${d.name} – Zuhause`;
+      document.title = `${d.name} – homemgmt-ng`;
       view.setView('perspective');
     })
     .catch((e) => {

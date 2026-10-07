@@ -1,4 +1,4 @@
-# Zuhause – Lager, Haus und Küchenplaner in einem Container
+# homemgmt-ng – Lager, Haus und Küchenplaner in einem Container
 # Stufe 1: Küchenplaner-Oberfläche bauen (Vite)
 FROM node:22-alpine AS build
 WORKDIR /app

@@ -1,7 +1,7 @@
 {
   "name": "zuhause",
   "version": "0.7.0",
-  "description": "Zuhause – Lager, Haus in 3D und Küchenplaner in einer Webanwendung",
+  "description": "homemgmt-ng – Lager, Haus in 3D und Küchenplaner in einer Webanwendung",
   "private": true,
   "type": "module",
   "engines": {

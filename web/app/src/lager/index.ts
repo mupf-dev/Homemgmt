@@ -100,7 +100,7 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
   /** Anmeldung: Kachel antippen + Passwort/PIN (wie bisher im Lager), E-Mail-Konto, beim ersten Start Ersteinrichtung */
   async function loginPage() {
     const st = await fetch('/api/auth/status', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ users: [], setup: false }));
-    page.innerHTML = `<h1>${st.setup ? 'Willkommen bei Zuhause' : 'Wer bist du?'}</h1>
+    page.innerHTML = `<h1>${st.setup ? 'Willkommen bei homemgmt-ng' : 'Wer bist du?'}</h1>
       ${st.setup ? '<p>Ersteinrichtung: Wer wird <b>Admin</b>? Person antippen (oder neue anlegen) und ein Passwort vergeben.</p>' : ''}
       <div class="l-tiles login">${st.users.map((p: any) => `<button class="l-tile who" data-id="${p.id}"><span class="avatar big" style="background:${esc(p.color)}">${esc(p.name.slice(0, 1).toUpperCase())}</span><b>${esc(p.name)}</b></button>`).join('')}
         ${st.setup ? '<button class="l-tile who" data-id="new"><span class="avatar big" style="background:#888">+</span><b>Neue Person</b></button>' : ''}</div>

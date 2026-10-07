@@ -8,7 +8,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const BASE = 'https://furnimesh.com';
-const UA = { 'user-agent': 'Mozilla/5.0 (compatible; Zuhause-Hausplaner/0.5; Bibliothek)' };
+const UA = { 'user-agent': 'Mozilla/5.0 (compatible; homemgmt-ng-Hausplaner/0.5; Bibliothek)' };
 export const FM_ID_RE = /^[a-z-]{2,30}\/[a-z0-9-]{2,40}\/[a-z0-9-]{3,140}$/;
 
 /** Kategorien der Auswahl → FurniMesh-Bereiche */

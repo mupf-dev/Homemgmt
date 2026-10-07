@@ -462,7 +462,7 @@ body.shared-view #exitShowroom { display: none; }
 @media (max-width: 640px) { .adj-layout { grid-template-columns: 1fr; } }
 
 /* ---------------------------------------------------------------------------
-   Zuhause: Etagen, Räume, Lager */
+   homemgmt-ng: Etagen, Räume, Lager */
 .floor-tabs { display: flex; gap: 2px; background: var(--panel-2); border: 1px solid var(--line); border-radius: 8px; padding: 2px; overflow-x: auto; scrollbar-width: none; min-width: 0; flex: 0 1 auto; }
 .floor-tab { border: 0; background: transparent; padding: 5px 11px; border-radius: 6px; cursor: pointer; color: var(--ink-soft); white-space: nowrap; position: relative; display: inline-flex; align-items: center; }
 .floor-tab svg { width: 14px; height: 14px; }

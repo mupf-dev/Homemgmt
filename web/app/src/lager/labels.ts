@@ -54,7 +54,7 @@ async function download3mf(labels: Label[], o: typeof P3D, toast: (m: string) =>
         const { plate, code } = Q.meshes(s.model);
         return { name: s.l.addr || s.l.code, x: p.x, y: p.y, parts: [{ name: 'Grundplatte', mesh: plate, color: o.colBase }, { name: 'QR-Code', mesh: code, color: o.colCode }] };
       });
-    const blob: Blob = await Q.threeMFMulti(objects, `Zuhause QR-Schilder – Platte ${pi + 1}`);
+    const blob: Blob = await Q.threeMFMulti(objects, `homemgmt-ng QR-Schilder – Platte ${pi + 1}`);
     files.push({ name: `qr-schilder-${stamp}-platte-${pi + 1}.3mf`, data: new Uint8Array(await blob.arrayBuffer()) });
   }
   if (files.length === 1) Q.download(new Blob([files[0].data as BlobPart]), files[0].name);

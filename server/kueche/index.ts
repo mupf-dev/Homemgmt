@@ -1,4 +1,4 @@
-// Zuhause – Modul „Planungen“ (ehemals Küchenplaner-Server): gespeicherte Planungen (Entwürfe, Import ins Haus),
+// homemgmt-ng – Modul „Planungen“ (ehemals Küchenplaner-Server): gespeicherte Planungen (Entwürfe, Import ins Haus),
 // Showroom-Links, Benutzerverwaltung auf dem gemeinsamen Konto und Online-Materialbibliothek.
 
 import express from 'express';

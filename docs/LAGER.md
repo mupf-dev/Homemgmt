@@ -1,4 +1,4 @@
-> **Hinweis:** Handbuch aus dem eigenständigen Heimlager (Stand 1.8.1). Bedienung und API gelten unverändert im Modul „Lager“ von Zuhause; Start, Ports, Pfade und Docker stehen jetzt in der [README](../README.md).
+> **Hinweis:** Handbuch aus dem eigenständigen Heimlager (Stand 1.8.1). Bedienung und API gelten unverändert im Modul „Lager“ von homemgmt-ng; Start, Ports, Pfade und Docker stehen jetzt in der [README](../README.md).
 
 # Heimlager
 

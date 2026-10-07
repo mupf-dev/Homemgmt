@@ -113,7 +113,7 @@ export const viewMore: View = (el, ctx) => {
       ${tile('#/etiketten', 'tag', 'Etiketten', 'QR-Schilder für Fächer')}
       ${tile('#/objekte', 'box', 'Objektbibliothek', 'Möbelarten: eigene und aus der Community')}
       ${tile('#/einstellungen', 'gear', 'Einstellungen', 'Startseite, Ansicht, Darstellung')}
-      ${tile('#/hilfe', 'help', 'Anleitung', 'So funktioniert Zuhause')}
+      ${tile('#/hilfe', 'help', 'Anleitung', 'So funktioniert homemgmt-ng')}
       ${u.role === 'admin' ? tile('#/verwaltung', 'users', 'Verwaltung', 'Personen, Rechte, Sicherungen') : ''}
     </div>`;
 };
