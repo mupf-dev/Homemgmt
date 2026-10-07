@@ -3,9 +3,11 @@
 ## Unveröffentlicht
 
 **Preisrecherche ohne OpenRouter**: Bei einem Gateway wie LiteLLM nutzt die Preisrecherche dessen Such-Tool
-(Verwaltung → Assistent → „Such-Tool im Gateway“, z. B. `foundry-web`, oder `AI_SEARCH_TOOL`). Die App sucht je Produkt
-über `POST {Adresse}/search/{Such-Tool}` und gibt die Treffer mit ins Prompt; als Quellen gelten die Treffer, die
-Prüfung „bestätigt/unbestätigt“ bleibt wie bei OpenRouter.
+(Verwaltung → Assistent → „Such-Tool im Gateway“, z. B. `foundry-web`, oder `AI_SEARCH_TOOL`). Je Produkt recherchiert
+ein kleiner Agent: höchstens 3 Websuchen über `POST {Adresse}/search/{Such-Tool}` und 3 Seiten, die der Server selbst
+lädt (nur öffentliche Adressen). „Bestätigt“ ist ein Preis dort nur, wenn er auf einer gelesenen Seite steht.
+Außerdem: Vergleichs- und Prospektportale (idealo, kaufDA …) gelten nicht mehr als Händler, Hinweise werden am Satzende
+gekürzt.
 
 **Aufgaben** (Mehr → Aufgaben, Karte auf der Übersicht): einmalig oder **wiederkehrend** (täglich, wöchentlich, alle
 3 Monate, jährlich oder eigener Rhythmus – nach festem Plan oder ab Erledigung), einer **Person** zugeordnet und optional
