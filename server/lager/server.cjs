@@ -449,7 +449,9 @@ const TERMINAL_WRITES = [
   ['POST', /^\/api\/(movements|shopping)\/\d+\/(undo|restock)$/],
   ['PATCH', /^\/api\/shopping\/\d+$/],
   ['DELETE', /^\/api\/shopping\/\d+$/],
-  ['POST', /^\/api\/tasks\/\d+\/(done|undo)$/],
+  ['POST', /^\/api\/tasks(\/\d+\/(done|undo))?$/],
+  ['PATCH', /^\/api\/tasks\/\d+$/],
+  ['DELETE', /^\/api\/tasks\/\d+$/],
   ['POST', /^\/api\/assistant(\/(confirm|cancel))?$/], // Werkzeuge dort eingeschränkt, siehe assistantAuth
 ];
 
@@ -1904,7 +1906,6 @@ route('GET', '/api/tasks', (_p, _b, qs) => {
   return { today, open: open.map((t) => ({ ...t, overdue: !!t.due_on && t.due_on < today, due_today: t.due_on === today })), done };
 });
 route('POST', '/api/tasks', (_p, body, _qs, ctx) => {
-  if (ctx.via === 'terminal') throw new HttpError(403, 'Aufgaben legt man in der App an.');
   const f = { note: '', assignee_id: null, due_on: null, repeat_unit: null, repeat_every: 1, repeat_from_done: 0, warehouse_id: null, col: null, row: null, ...taskFields(body) };
   if (f.repeat_unit && !f.due_on) f.due_on = localDate();
   const { lastInsertRowid } = db.prepare(`INSERT INTO tasks (title, note, assignee_id, due_on, repeat_unit, repeat_every, repeat_from_done, warehouse_id, col, row, created_by)
@@ -2418,7 +2419,8 @@ async function handle(req, res) {
         if (ctx.via === 'key' && ctx.scope === 'read' && req.method !== 'GET') throw new HttpError(403, 'Dieser API-Schlüssel darf nur lesen.');
         if (r.auth === 'admin' && (ctx.via !== 'session' || ctx.person.role !== 'admin')) throw new HttpError(403, 'Nur für Admins.');
       }
-      const body = !['POST', 'PATCH', 'PUT'].includes(req.method) ? {} : r.raw ? await readRaw(req) : await readBody(req);
+      // DELETE mit Inhalt: z. B. person_id vom Wandterminal
+      const body = !['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) ? {} : r.raw ? await readRaw(req) : await readBody(req);
       // Terminal: nur freigegebene Buchungen, und nur mit der Person, die am Gerät gewählt wurde
       if (ctx.via === 'terminal' && req.method !== 'GET' && r.auth !== 'public') {
         if (!TERMINAL_WRITES.some(([mt, re]) => mt === req.method && re.test(url.pathname))) throw new HttpError(403, 'Am Wandterminal nicht möglich.');

@@ -1,6 +1,6 @@
 // Aufgaben des Haushalts (#/aufgaben): einmalig oder wiederkehrend, einer Person zugeordnet, optional an einem Fach
 // („Filter Dunstabzug tauschen“). Abhaken geht überall – in der Liste, auf der Übersicht und am Wandterminal (dort mit
-// „Wer bucht?“). Anlegen und Ändern in der App.
+// „Wer bucht?“). Anlegen, Ändern und Löschen ebenso – am Wandterminal ebenfalls mit „Wer bucht?“.
 
 import { ic } from '../icons';
 import { terminal } from '../terminal';
@@ -121,7 +121,7 @@ export const viewTasks: View = async (el, ctx, params) => {
     ['Später', open.filter((t) => t.due_on && t.due_on > until(7))],
     ['Ohne Termin', open.filter((t) => !t.due_on)],
   ];
-  const canEdit = !terminal();
+  const canEdit = true; // auch am Wandterminal (mit „Wer bucht?“)
   el.innerHTML = `<a class="l-back" href="#/${terminal() ? 'haus' : 'lager'}">${ic('back')}${terminal() ? 'Haus' : 'Übersicht'}</a>
     <div class="ob-head"><h1>Aufgaben</h1><span class="spacer"></span>${canEdit ? `<button class="btn primary" id="tkNew">${ic('plus')}Neue Aufgabe</button>` : ''}</div>
     ${me ? `<div class="seg tk-filter">${[['alle', 'Alle'], ['meine', 'Meine']].map(([k, l]) => `<a href="#/aufgaben?f=${k}" class="${k === filter ? 'on' : ''}">${l}</a>`).join('')}</div>` : ''}

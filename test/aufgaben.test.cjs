@@ -92,7 +92,7 @@ test('Ändern und löschen', async () => {
   assert.equal((await anna.get(`/api/tasks`)).data.open.some((x) => x.id === t.id), false);
 });
 
-test('Wandterminal: sieht Aufgaben, hakt mit „wer“ ab, legt keine an', async () => {
+test('Wandterminal: sieht Aufgaben, hakt ab, legt an, ändert und löscht – immer mit „wer“', async () => {
   const link = (await anna.post('/api/terminals', { name: 'Test-Terminal' })).data.path;
   const r = await fetch(srv.base + link, { redirect: 'manual' });
   const cookie = r.headers.getSetCookie().find((c) => c.startsWith('zh_terminal=')).split(';')[0];
@@ -103,8 +103,18 @@ test('Wandterminal: sieht Aufgaben, hakt mit „wer“ ab, legt keine an', async
   const list = await t('GET', '/api/tasks');
   assert.equal(list.status, 200);
   const keller = list.data.open.find((x) => x.title === 'Keller aufräumen');
-  assert.equal((await t('POST', '/api/tasks', { title: 'Neu', person_id: annaId })).status, 403);
-  assert.equal((await t('PATCH', `/api/tasks/${keller.id}`, { title: 'Anders', person_id: annaId })).status, 403);
+  assert.equal((await t('POST', '/api/tasks', { title: 'Neu' })).status, 400, 'ohne Person');
+  const neu = await t('POST', '/api/tasks', { title: 'Blumen gießen', person_id: benId });
+  assert.equal(neu.status, 200, JSON.stringify(neu.data));
+  assert.equal((await t('PATCH', `/api/tasks/${neu.data.id}`, { title: 'Blumen gießen (Balkon)', person_id: benId })).data.title, 'Blumen gießen (Balkon)');
+  // DELETE mit Inhalt (person_id) – so schickt es die App
+  assert.equal((await t('DELETE', `/api/tasks/${neu.data.id}`)).status, 400, 'ohne Person');
+  assert.equal((await t('DELETE', `/api/tasks/${neu.data.id}`, { person_id: benId })).status, 200);
+  assert.equal((await t('GET', '/api/tasks')).data.open.some((x) => x.id === neu.data.id), false);
+  // Einkaufsliste: Eintrag löschen ebenso
+  const e = await t('POST', '/api/shopping', { name: 'Milch', person_id: benId });
+  assert.equal(e.status, 200, JSON.stringify(e.data));
+  assert.equal((await t('DELETE', `/api/shopping/${e.data.id}`, { person_id: benId })).status, 200);
   const no = await t('POST', `/api/tasks/${keller.id}/done`, {});
   assert.equal(no.status, 400);
   assert.match(no.data.error, /wer bucht/);
