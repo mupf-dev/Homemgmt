@@ -1162,17 +1162,53 @@ export class Scene3D {
     }
     return f;
   }
+  /**
+   * Fokus beim Navigieren im Ansehen-Panel (Auswahl oder Hover über eine Zeile): eine Etage oder einzelne Möbel bleiben
+   * deutlich, alles andere wird halbtransparent; mit „polygon“ wird zusätzlich die Raumfläche farbig markiert.
+   * Hat Vorrang vor dem ausgewählten Möbel.
+   */
+  private focusArea: { floorId: string; itemIds?: string[]; polygon?: Vec2[]; color?: string } | null = null;
+  setFocusArea(area: { floorId: string; itemIds?: string[]; polygon?: Vec2[]; color?: string } | null) {
+    this.focusArea = area;
+    this.applyFocus();
+  }
+  private focusOverlay: THREE.Mesh | null = null;
   private applyFocus() {
     const s = store.selection;
-    const id = this.focusMode && !this.ptActive && !this.showroomMode && s?.kind === 'item' ? s.id : null;
+    const active = this.focusMode && !this.ptActive && !this.showroomMode;
+    const area = active ? this.focusArea : null;
+    const id = active && !area && s?.kind === 'item' ? s.id : null;
     let target: THREE.Object3D | undefined;
     if (id) this.content.traverse((o) => {
       if (!target && o.userData.itemId === id) target = o;
     });
-    const inside = (o: THREE.Object3D | null) => {
-      for (; o; o = o.parent) if (o === target) return true;
+    const ids = area?.itemIds ? new Set(area.itemIds) : null;
+    // bleibt deutlich: das Möbel (Auswahl) bzw. die Möbel oder die ganze Etage des Fokus
+    const keep = (o: THREE.Object3D | null) => {
+      for (; o; o = o.parent) {
+        if (o === target || o === this.focusOverlay) return true;
+        if (ids && ids.has(o.userData.itemId)) return true;
+        if (area && !ids && o.userData.floorId === area.floorId) return true;
+      }
       return false;
     };
+    // Raumfläche markieren
+    if (this.focusOverlay) {
+      this.focusOverlay.removeFromParent();
+      this.focusOverlay.geometry.dispose();
+      this.focusOverlay = null;
+    }
+    const fg = area?.polygon && area.polygon.length >= 3 ? this.content.children.find((c) => c.userData.floorId === area.floorId) : undefined;
+    if (area?.polygon && fg) {
+      const shape = new THREE.Shape(area.polygon.map((v) => new THREE.Vector2(v.x * M, -v.y * M)));
+      const m = new THREE.Mesh(new THREE.ShapeGeometry(shape), fachMat(area.color ?? FACH_COLORS.hit, 0.35));
+      m.rotation.x = -Math.PI / 2;
+      m.position.y = 0.02;
+      m.renderOrder = 3;
+      fg.add(m);
+      this.focusOverlay = m;
+    }
+    const focused = !!target || !!area;
     this.content.traverse((o) => {
       const m = o as THREE.Mesh;
       if (!m.isMesh) return;
@@ -1180,7 +1216,7 @@ export class Scene3D {
         m.material = m.userData.origMat;
         delete m.userData.origMat;
       }
-      if (target && !inside(m)) {
+      if (focused && !keep(m)) {
         m.userData.origMat = m.material;
         m.material = Array.isArray(m.material) ? m.material.map((x) => this.fade(x)) : this.fade(m.material);
       }

@@ -3159,6 +3159,56 @@ function showFach(itemId: string, row: number) {
 
 /** Seitenleiste im Ansehen-Modus: Räume der Etage → Möbel → Fächer → Inhalt (auf dem Handy als Blatt von unten) */
 function renderViewPanel() {
+  renderViewPanelContent();
+  bindPanelFocus();
+}
+
+// --- Fokus in 3D beim Navigieren in der Leiste: ausgewählter Raum, beim Zeigen auf eine Zeile deren Etage, Raum oder Möbel ---
+type FocusKey = { floor?: string; room?: string; item?: string };
+let panelHover: FocusKey | null = null;
+function focusAreaOf(k: FocusKey | null) {
+  if (k?.item) {
+    const found = findItem(k.item);
+    return found ? { floorId: found.floor.id, itemIds: [k.item] } : null;
+  }
+  if (k?.room) {
+    for (const fl of store.house.floors) {
+      const i = fl.rooms.findIndex((r) => r.id === k.room);
+      if (i < 0) continue;
+      const r = fl.rooms[i];
+      return { floorId: fl.id, polygon: r.polygon, color: roomColor(i), itemIds: fl.items.filter((it) => roomOf(fl, it)?.id === r.id).map((it) => it.id) };
+    }
+  }
+  if (k?.floor) return { floorId: k.floor };
+  return null;
+}
+function applyPanelFocus() {
+  const sel = store.selection;
+  const planning = document.body.classList.contains('haus-plan');
+  view.setFocusArea(planning ? null : focusAreaOf(panelHover ?? (sel?.kind === 'room' && !viewFach ? { room: sel.id } : null)));
+}
+function bindPanelFocus() {
+  const el = $('#viewPanel');
+  const keyOf = (b: HTMLElement): FocusKey | null =>
+    b.dataset.it ? { item: b.dataset.it } : b.dataset.room ? { room: b.dataset.room } : b.dataset.floor ? { floor: b.dataset.floor } : null;
+  const set = (k: FocusKey | null) => {
+    panelHover = k;
+    applyPanelFocus();
+  };
+  el.querySelectorAll<HTMLElement>('.vp-row[data-it], .vp-row[data-room], .vp-row[data-floor]').forEach((b) => {
+    // nur Maus (auf Touch-Geräten gibt es kein Zeigen – dort fokussiert die Auswahl)
+    b.addEventListener('pointerenter', (e) => e.pointerType === 'mouse' && set(keyOf(b)));
+    b.addEventListener('pointerleave', (e) => e.pointerType === 'mouse' && set(null));
+    b.addEventListener('focus', () => b.matches(':focus-visible') && set(keyOf(b)));
+    b.addEventListener('blur', () => set(null));
+  });
+  // nach dem Neuzeichnen: steht die Maus noch auf einer Zeile, bleibt deren Fokus
+  const hovered = el.querySelector<HTMLElement>('.vp-row:hover');
+  panelHover = hovered ? keyOf(hovered) : null;
+  applyPanelFocus();
+}
+
+function renderViewPanelContent() {
   const el = $('#viewPanel');
   if (document.body.classList.contains('haus-plan')) return;
   const f = store.floor;
@@ -3176,7 +3226,7 @@ function renderViewPanel() {
     const found = findItem(viewFach.itemId);
     if (!found) {
       viewFach = null;
-      return renderViewPanel();
+      return renderViewPanelContent();
     }
     el.innerHTML = `<div class="vp-head"><button class="vp-back" data-back>${ic('back')}${esc(itemName(found.item))}</button>${close}</div><h2 class="vp-title"></h2><div class="vp-body"></div>`;
     bind();
