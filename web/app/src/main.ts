@@ -2488,6 +2488,7 @@ const account = new Account(shell.accountEl, {
     updatePlanButton();
     await sync.start(!!u || !!account.terminal);
     if (u || account.terminal) void loadLibrary().catch(() => {});
+    else store.forget();
     lager.render();
   },
   importPlan,
@@ -2560,6 +2561,8 @@ if (!shareToken)
   account.refresh().then(async (u) => {
     await sync.start(!!u || !!account.terminal);
     if (u || account.terminal) void loadLibrary().catch(() => {});
+    // nicht angemeldet (Server erreichbar): gespeicherten Entwurf des Hauses aus dem Browser entfernen
+    else if (account.serverAvailable) store.forget();
     lager.render();
   });
 else lager.render();

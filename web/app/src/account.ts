@@ -63,7 +63,7 @@ export class Account {
   private registrationEnabled = true;
   private requireApproval = false;
   private pendingCount = 0;
-  private serverAvailable = true;
+  serverAvailable = true;
   /** angemeldetes Wandterminal (Gerät ohne Person) */
   terminal: TerminalInfo | null = null;
   private menuOpen = false;
