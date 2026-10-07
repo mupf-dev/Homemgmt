@@ -450,6 +450,7 @@ const TERMINAL_WRITES = [
   ['PATCH', /^\/api\/shopping\/\d+$/],
   ['DELETE', /^\/api\/shopping\/\d+$/],
   ['POST', /^\/api\/tasks\/\d+\/(done|undo)$/],
+  ['POST', /^\/api\/assistant(\/(confirm|cancel))?$/], // Werkzeuge dort eingeschränkt, siehe assistantAuth
 ];
 
 // Einfache Bremse gegen Passwort-Raten: nach 5 Fehlversuchen zunehmend lange Sperre
@@ -868,7 +869,7 @@ const accountUser = (p) => p && {
 };
 // Persönliche Einstellungen der App: Startseite, Ansicht im Haus, Darstellung
 const PREFS = {
-  start: ['overview', 'house'],
+  start: ['overview', 'house', 'assistant'],
   houseView: ['2d', '3d'],
   theme: ['auto', 'light', 'dark'],
   fontSize: ['normal', 'large', 'xlarge'],
@@ -2454,7 +2455,11 @@ const assistant = require('./assistant.cjs').createAssistant(core, {
   timeZone: process.env.TZ || 'Europe/Berlin',
   publicUrl: process.env.PUBLIC_URL || process.env.MCP_PUBLIC_URL || '',
 });
-const assistantAuth = (ctx) => ({ person: ctx.person, scope: ctx.scope });
+// Am Wandterminal spricht die gewählte Person ohne Passwort – deshalb nie mit Admin-Rechten und nur mit den
+// Werkzeugen, die das Terminal auch sonst darf (siehe TERMINAL_TOOLS im Assistenten)
+const assistantAuth = (ctx) => (ctx.via === 'terminal'
+  ? { person: { ...ctx.person, role: 'user' }, scope: 'write', terminal: true }
+  : { person: ctx.person, scope: ctx.scope });
 route('GET', '/api/assistant/status', () => ({ enabled: assistant.enabled(), confirm_from: assistant.CONFIRM_FROM }));
 route('GET', '/api/assistant/settings', () => assistant.publicSettings(), { auth: 'admin' });
 route('PUT', '/api/assistant/settings', (_p, body) => assistant.saveSettings(body), { auth: 'admin' });

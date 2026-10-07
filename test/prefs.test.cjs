@@ -21,6 +21,8 @@ test('Standardwerte, ändern, ungültige Werte abgelehnt, ohne Anmeldung nicht',
   assert.equal(r.status, 200, JSON.stringify(r.data));
   assert.deepEqual(r.data, { start: 'house', houseView: '2d', theme: 'dark', fontSize: 'normal' });
   assert.equal((await anna.get('/api/auth/me')).data.user.prefs.start, 'house');
+  assert.equal((await anna.patch('/api/auth/me/prefs', { start: 'assistant' })).data.start, 'assistant', 'Startseite Assistent');
+  await anna.patch('/api/auth/me/prefs', { start: 'house' });
 
   assert.equal((await anna.patch('/api/auth/me/prefs', { fontSize: 'riesig' })).status, 400);
   assert.equal((await anna.get('/api/auth/me')).data.user.prefs.fontSize, 'normal');

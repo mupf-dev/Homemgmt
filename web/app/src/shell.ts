@@ -51,11 +51,17 @@ export function initShell() {
   rail.id = 'rail';
   rail.className = 'sh-rail';
   rail.setAttribute('aria-label', 'Navigation');
-  const R: [string, string, IconName][] = [['#/haus', 'Haus', 'plan'], ['#/suche', 'Suchen', 'search'], ['#/einkauf', 'Einkauf', 'cart'], ['#/aufgaben', 'Aufgaben', 'check'], ['#/haltbarkeit', 'Haltbarkeit', 'clock']];
+  const R: [string, string, IconName][] = [['#/haus', 'Haus', 'plan'], ['#/suche', 'Suchen', 'search'], ['#/einkauf', 'Einkauf', 'cart'], ['#/aufgaben', 'Aufgaben', 'check'], ['#/haltbarkeit', 'Haltbarkeit', 'clock'], ['#/assistent?sprechen=1', 'Sprechen', 'mic']];
   rail.innerHTML = R.map(([h, l, i]) => `<a href="${h}" data-r="${h}">${ic(i)}<span>${l}</span>${h === '#/einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('');
   document.body.prepend(top);
   document.body.appendChild(tabs);
   document.body.appendChild(rail);
+  // „Sprechen“, während der Assistent schon offen ist: kein Seitenwechsel, gleich zuhören
+  rail.querySelector('[data-r^="#/assistent"]')?.addEventListener('click', (e) => {
+    if (!location.hash.startsWith('#/assistent')) return;
+    e.preventDefault();
+    document.dispatchEvent(new CustomEvent('zh-talk'));
+  });
 
   // vorgemerkte Buchungen (schlechtes WLAN)
   const pill = top.querySelector<HTMLButtonElement>('#outboxPill')!;
@@ -76,7 +82,7 @@ export function initShell() {
       const k = navKey(hash);
       document.querySelectorAll<HTMLElement>('#shell [data-k], #tabbar [data-k]').forEach((a) => a.classList.toggle('on', a.dataset.k === k));
       const h = hash.split('?')[0];
-      rail.querySelectorAll<HTMLElement>('[data-r]').forEach((a) => a.classList.toggle('on', a.dataset.r === h || (a.dataset.r === '#/suche' && (h.startsWith('#/item/') || h === '#/platz'))));
+      rail.querySelectorAll<HTMLElement>('[data-r]').forEach((a) => a.classList.toggle('on', a.dataset.r!.split('?')[0] === h || (a.dataset.r === '#/suche' && (h.startsWith('#/item/') || h === '#/platz'))));
       document.body.classList.toggle('logged-out', !loggedIn);
       if (loggedIn && Date.now() - badgeAt > 5000) {
         badgeAt = Date.now();

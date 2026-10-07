@@ -26,6 +26,7 @@ import { ic } from './icons';
 import { initShell } from './shell';
 import { onPrefs, prefs } from './prefs';
 import { idleNow, initIdle, setTermStorm, setTermWeather, terminal } from './terminal';
+import { clearTerminalChat } from './lager/assistant';
 import { sunPosition } from './sun';
 import { lookFromWeather, WeatherFx } from './weatherfx';
 
@@ -3711,8 +3712,10 @@ async function paintRest(key: string) {
   }
 }
 function startRest() {
-  // zurück zum Haus, Auswahl und Suche zurücksetzen
+  // zurück zum Haus, Auswahl und Suche zurücksetzen; Gespräch mit dem Assistenten vergessen
   if (location.hash !== '#/haus') location.hash = '#/haus';
+  clearTerminalChat();
+  window.speechSynthesis?.cancel();
   document.querySelectorAll('.modal-back').forEach((m) => m.remove());
   viewFach = null;
   store.select(null);

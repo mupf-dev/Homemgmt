@@ -16,6 +16,11 @@ const MAX_HISTORY = 20; // frühere Nachrichten, die höchstens als Kontext mitg
 const MAX_HISTORY_CHARS = 8000; // … und höchstens so viele Zeichen (die neuesten zuerst)
 const TIMEOUT_MS = 90_000;
 const PENDING_MS = 10 * 60_000; // so lange bleibt eine Rückfrage gültig
+// Am Wandterminal (gewählte Person ohne Passwort) nur Lesen, Buchen, Einkaufsliste und Preise – wie die Terminal-Oberfläche
+const TERMINAL_TOOLS = new Set(['lager_auflisten', 'objekte_suchen', 'objekt_anzeigen', 'lagerplaetze_suchen', 'lagerplatz_anzeigen',
+  'haltbarkeit_pruefen', 'einkaufsliste_anzeigen', 'code_aufloesen', 'letzte_buchungen', 'gespraech_neu_beginnen', 'einbuchen', 'ausbuchen',
+  'mehrere_einbuchen', 'einkaufsliste_hinzufuegen', 'einkaufsliste_abhaken', 'buchung_rueckgaengig', 'preise_recherchieren']);
+const permitted = (name, auth) => !auth.terminal || TERMINAL_TOOLS.has(name);
 const RESEARCH_WAIT_MS = 45_000; // so lange wartet der Assistent auf die Preisrecherche, danach läuft sie im Hintergrund weiter
 
 function createAssistant(core, opts = {}) {
@@ -175,12 +180,13 @@ function createAssistant(core, opts = {}) {
   const asyncTool = (name) => asyncTools.find((t) => t.name === name && t.available());
 
   // Werkzeuge im Function-Calling-Format
-  const toolSpecs = (auth) => [...kit.list(auth, { assistant: true }), ...asyncTools.filter((t) => t.available())].map((t) => ({
+  const toolSpecs = (auth) => [...kit.list(auth, { assistant: true }), ...asyncTools.filter((t) => t.available())].filter((t) => permitted(t.name, auth)).map((t) => ({
     type: 'function',
     function: { name: t.name, description: t.description, parameters: t.inputSchema },
   }));
 
   async function callTool(name, args, auth, ctx) {
+    if (!permitted(name, auth)) return { content: [{ type: 'text', text: 'Am Wandterminal nicht möglich.' }], isError: true };
     const t = asyncTool(name);
     if (!t) return kit.call(name, args, auth, ctx);
     try {
@@ -215,6 +221,7 @@ function createAssistant(core, opts = {}) {
       ...(research.availability().available ? ['- Fragt der Nutzer nach Preisen oder wo etwas am günstigsten ist, nutze preise_recherchieren. '
         + 'Dafür darfst du je Produkt eine kurze Zeile schreiben (ohne Tabelle).'] : []),
     ];
+    if (auth.terminal) lines.push(`Du läufst am Wandterminal im Flur; ${auth.person.name} spricht mit dir. Die Antwort wird vorgelesen – antworte in ein bis zwei kurzen Sätzen. Verwaltung, Bearbeiten und Fotos gehen hier nicht.`);
     if (context?.place) lines.push(`Der Nutzer hat den Assistenten auf dem Lagerplatz ${context.place} geöffnet – "hier" meint diesen Platz.`);
     if (context?.item) lines.push(`Der Nutzer hat den Assistenten beim Gegenstand „${context.item.name}“ (Code ${context.item.code}, ${context.item.wh_code}-${context.item.col}${context.item.row}) geöffnet – "das" meint ihn, falls nichts anderes gesagt wird.`);
     if (codes.length) lines.push(`Auf den Fotos erkannte QR-Codes: ${codes.join('; ')}.`);
@@ -352,6 +359,7 @@ function createAssistant(core, opts = {}) {
         const name = p.call.function?.name;
         let result;
         if (!p.args) result = 'Die Argumente waren kein gültiges JSON.';
+        else if (!permitted(name, auth)) result = 'Am Wandterminal nicht möglich.';
         else if (deferred && p.tool?.write) {
           actions.push({ name, args: p.args });
           result = 'Zurückgestellt: Der Nutzer muss diese Buchungen erst bestätigen.';
@@ -385,7 +393,7 @@ function createAssistant(core, opts = {}) {
     pending.delete(token);
     const bookings = [];
     const errors = [];
-    for (const a of p.actions) {
+    for (const a of p.actions.filter((x) => permitted(x.name, auth))) {
       const r = kit.call(a.name, a.args, auth, { source: 'assistent', images: p.images });
       if (r.isError) errors.push(r.content[0]?.text);
       else {
