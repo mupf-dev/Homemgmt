@@ -3,6 +3,7 @@
 // für private, nicht-kommerzielle Nutzung. Die Verbindung steht nur, solange jemand (Wandterminal) fragt; gemerkt
 // werden nur Blitze im Umkreis der angefragten Orte, höchstens eine Stunde lang.
 
+const { tr, lang, withLang } = require('../i18n.cjs');
 const HOSTS = ['ws1', 'ws7', 'ws8'];
 const KEEP_KM = 300; // Blitze weiter weg werden gar nicht erst gemerkt
 const KEEP_MS = 60 * 60000;
@@ -38,8 +39,9 @@ function distBearing(lat1, lon1, lat2, lon2) {
   const x = Math.cos(lat1 * RAD) * Math.sin(lat2 * RAD) - Math.sin(lat1 * RAD) * Math.cos(lat2 * RAD) * Math.cos(dLon);
   return { km, bearing: ((Math.atan2(y, x) / RAD) + 360) % 360 };
 }
-const DIRS = ['Norden', 'Nordosten', 'Osten', 'Südosten', 'Süden', 'Südwesten', 'Westen', 'Nordwesten'];
-const direction = (deg) => DIRS[Math.round(deg / 45) % 8];
+// Himmelsrichtung in der Sprache der Anfrage
+const DIRS = () => [tr('Norden'), tr('Nordosten'), tr('Osten'), tr('Südosten'), tr('Süden'), tr('Südwesten'), tr('Westen'), tr('Nordwesten')];
+const direction = (deg) => DIRS()[Math.round(deg / 45) % 8];
 
 /** Zusammenfassung für einen Ort: Blitze bis radiusKm in den letzten minutes Minuten */
 function summarize(strikes, lat, lon, now = Date.now(), radiusKm = 100, minutes = 60) {
@@ -115,7 +117,7 @@ function createLightning({ log = () => {} } = {}) {
         const d = distBearing(sub.lat, sub.lon, strike.lat, strike.lon);
         if (d.km <= sub.radiusKm) {
           try {
-            sub.fn({ km: Math.round(d.km * 10) / 10, bearing: Math.round(d.bearing), direction: direction(d.bearing), t: strike.t });
+            sub.fn({ km: Math.round(d.km * 10) / 10, bearing: Math.round(d.bearing), direction: withLang(sub.lang, () => direction(d.bearing)), t: strike.t });
           } catch {
             /* Empfänger weg */
           }
@@ -171,7 +173,7 @@ function createLightning({ log = () => {} } = {}) {
     },
     /** Echtzeit: fn wird für jeden neuen Blitz im Umkreis sofort aufgerufen; liefert die Abmeldung */
     subscribe(lat, lon, radiusKm, fn) {
-      const sub = { lat, lon, radiusKm, fn };
+      const sub = { lat, lon, radiusKm, fn, lang: lang() }; // Sprache der Anfrage, die den Strom geöffnet hat
       subscribers.add(sub);
       lastAsk = Date.now();
       places.set(`${lat.toFixed(2)},${lon.toFixed(2)}`, lastAsk);

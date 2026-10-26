@@ -29,8 +29,11 @@ import { idleNow, initIdle, setTermStorm, setTermWeather, terminal } from './ter
 import { clearTerminalChat } from './lager/assistant';
 import { sunPosition } from './sun';
 import { lookFromWeather, WeatherFx } from './weatherfx';
+import { locale, tr, trn } from './i18n';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
+/** Zahl mit fester Nachkommastellenzahl im Format der Sprache */
+const fixed = (v: number, d: number) => v.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 const ICON = {
@@ -69,41 +72,41 @@ const shell = initShell();
 const app = $('#app');
 app.innerHTML = `
 <div class="hausbar" id="hausbar">
-  <button class="btn primary plan-only" id="planDone" title="Planen beenden – zurück zum Ansehen">${ic('check')}Fertig</button>
-  <div class="floor-tabs" id="floorTabs" role="tablist" aria-label="Etagen"></div>
-  <form class="house-search view-only" id="houseSearch" role="search">${ICON.search}<input type="search" id="houseSearchInput" placeholder="Wo liegt …?" aria-label="Im Haus suchen" autocomplete="off" /><div class="search-pop" id="searchPop" hidden></div></form>
+  <button class="btn primary plan-only" id="planDone" title="${tr('Planen beenden – zurück zum Ansehen')}">${ic('check')}${tr('Fertig')}</button>
+  <div class="floor-tabs" id="floorTabs" role="tablist" aria-label="${tr('Etagen')}"></div>
+  <form class="house-search view-only" id="houseSearch" role="search">${ICON.search}<input type="search" id="houseSearchInput" placeholder="${tr('Wo liegt …?')}" aria-label="${tr('Im Haus suchen')}" autocomplete="off" /><div class="search-pop" id="searchPop" hidden></div></form>
   <div class="plan-tools plan-only">
-    <button class="btn icon" id="undo" title="Rückgängig (Strg+Z)">${ICON.undo}</button>
-    <button class="btn icon" id="redo" title="Wiederholen (Strg+Y)">${ICON.redo}</button>
+    <button class="btn icon" id="undo" title="${tr('Rückgängig (Strg+Z)')}">${ICON.undo}</button>
+    <button class="btn icon" id="redo" title="${tr('Wiederholen (Strg+Y)')}">${ICON.redo}</button>
     <span class="vsep"></span>
-    <button class="tool on" data-tool="select" title="Auswählen und verschieben">${ICON.select}<span>Auswählen</span></button>
-    <button class="tool" data-tool="wall" title="Wand zeichnen">${ICON.wall}<span>Wand</span></button>
-    <button class="tool" data-tool="door" title="Tür in eine Wand setzen">${ICON.door}<span>Tür</span></button>
-    <button class="tool" data-tool="window" title="Fenster in eine Wand setzen">${ICON.window}<span>Fenster</span></button>
-    <button class="tool" data-tool="room" title="Raum festlegen – jeder Raum wird ein Lager">${ICON.room}<span>Raum</span></button>
+    <button class="tool on" data-tool="select" title="${tr('Auswählen und verschieben')}">${ICON.select}<span>${tr('Auswählen')}</span></button>
+    <button class="tool" data-tool="wall" title="${tr('Wand zeichnen')}">${ICON.wall}<span>${tr('Wand')}</span></button>
+    <button class="tool" data-tool="door" title="${tr('Tür in eine Wand setzen')}">${ICON.door}<span>${tr('Tür')}</span></button>
+    <button class="tool" data-tool="window" title="${tr('Fenster in eine Wand setzen')}">${ICON.window}<span>${tr('Fenster')}</span></button>
+    <button class="tool" data-tool="room" title="${tr('Raum festlegen – jeder Raum wird ein Lager')}">${ICON.room}<span>${tr('Raum')}</span></button>
     <span class="vsep"></span>
-    <button class="tool" data-drawer="catalog" title="Möbel und Einrichtung hinzufügen">${ic('sofa')}<span>Möbel</span></button>
-    <button class="tool" data-drawer="materials" title="Materialien und Oberflächen">${ic('palette')}<span>Materialien</span></button>
-    <button class="tool" data-drawer="room" title="Etage, Räume, Grundriss-Vorlage">${ic('layers')}<span>Etage</span></button>
+    <button class="tool" data-drawer="catalog" title="${tr('Möbel und Einrichtung hinzufügen')}">${ic('sofa')}<span>${tr('Möbel')}</span></button>
+    <button class="tool" data-drawer="materials" title="${tr('Materialien und Oberflächen')}">${ic('palette')}<span>${tr('Materialien')}</span></button>
+    <button class="tool" data-drawer="room" title="${tr('Etage, Räume, Grundriss-Vorlage')}">${ic('layers')}<span>${tr('Etage')}</span></button>
   </div>
   <div class="spacer"></div>
   <div class="seg" id="viewMode">
-    <button data-v="2d">2D</button><button data-v="split" class="plan-only">Geteilt</button><button data-v="3d">3D</button>
+    <button data-v="2d">2D</button><button data-v="split" class="plan-only">${tr('Geteilt')}</button><button data-v="3d">3D</button>
   </div>
-  <button class="btn view-only" id="planStart" title="Wände, Möbel und Etagen bearbeiten" hidden>${ic('pencil')}Planen</button>
+  <button class="btn view-only" id="planStart" title="${tr('Wände, Möbel und Etagen bearbeiten')}" hidden>${ic('pencil')}${tr('Planen')}</button>
   <span class="acc-status plan-only" id="saveStatus"></span>
   <div class="file-menu">
-    <button class="btn icon" id="fileBtn" title="Weitere Funktionen" aria-label="Weitere Funktionen">${ic('dots')}</button>
+    <button class="btn icon" id="fileBtn" title="${tr('Weitere Funktionen')}" aria-label="${tr('Weitere Funktionen')}">${ic('dots')}</button>
     <div class="dropdown" id="fileMenu" hidden>
-      <label class="dd-name plan-only">Name des Hauses<input id="projectName" type="text" /></label>
-      <button id="showroomBtn">${ICON.sparkle}Showroom (3D im Vollbild)</button>
-      <button id="locationBtn" class="plan-only">${ic('sun')}Lage des Hauses …</button>
+      <label class="dd-name plan-only">${tr('Name des Hauses')}<input id="projectName" type="text" /></label>
+      <button id="showroomBtn">${ICON.sparkle}${tr('Showroom (3D im Vollbild)')}</button>
+      <button id="locationBtn" class="plan-only">${ic('sun')}${tr('Lage des Hauses …')}</button>
       <hr class="plan-only" />
-      <button id="newBtn" class="plan-only">${ic('file')}Neues Haus …</button>
-      <button id="openBtn" class="plan-only">${ICON.open}Aus Datei importieren (.json) …</button>
-      <button id="saveBtn" class="plan-only">${ICON.save}Haus als Datei exportieren (.json)</button>
+      <button id="newBtn" class="plan-only">${ic('file')}${tr('Neues Haus …')}</button>
+      <button id="openBtn" class="plan-only">${ICON.open}${tr('Aus Datei importieren (.json) …')}</button>
+      <button id="saveBtn" class="plan-only">${ICON.save}${tr('Haus als Datei exportieren (.json)')}</button>
       <hr />
-      <a class="dd-link" href="#/hilfe">${ic('help')}Anleitung</a>
+      <a class="dd-link" href="#/hilfe">${ic('help')}${tr('Anleitung')}</a>
     </div>
   </div>
   <input type="file" id="openFile" accept=".json,application/json" hidden />
@@ -111,70 +114,70 @@ app.innerHTML = `
 
 <aside class="left">
   <div class="tabs">
-    <button data-tab="room" class="on">Etage</button>
-    <button data-tab="catalog">Möbel</button>
-    <button data-tab="materials">Materialien</button>
-    <button class="drawer-close" id="drawerClose" title="Leiste einklappen" aria-label="Leiste einklappen">${ic('x')}</button>
+    <button data-tab="room" class="on">${tr('Etage')}</button>
+    <button data-tab="catalog">${tr('Möbel')}</button>
+    <button data-tab="materials">${tr('Materialien')}</button>
+    <button class="drawer-close" id="drawerClose" title="${tr('Leiste einklappen')}" aria-label="${tr('Leiste einklappen')}">${ic('x')}</button>
   </div>
 
   <section class="tab on" id="tab-room">
-    <h3>Etage</h3>
+    <h3>${tr('Etage')}</h3>
     <div id="floorPanel"></div>
 
-    <h3>Räume</h3>
+    <h3>${tr('Räume')}</h3>
     <div id="roomList"></div>
 
-    <h3>Wände aus Maßen</h3>
+    <h3>${tr('Wände aus Maßen')}</h3>
     <div class="grid2">
-      <label class="field"><span>Breite</span><span class="unit" data-unit="cm"><input type="number" id="roomW" value="460" min="100" /></span></label>
-      <label class="field"><span>Tiefe</span><span class="unit" data-unit="cm"><input type="number" id="roomD" value="400" min="100" /></span></label>
-      <label class="field"><span>Raumhöhe</span><span class="unit" data-unit="cm"><input type="number" id="roomH" value="260" min="200" /></span></label>
-      <label class="field"><span>Form</span><select id="roomShape"><option value="rect">Rechteck</option><option value="l">L-Form</option></select></label>
+      <label class="field"><span>${tr('Breite')}</span><span class="unit" data-unit="cm"><input type="number" id="roomW" value="460" min="100" /></span></label>
+      <label class="field"><span>${tr('Tiefe')}</span><span class="unit" data-unit="cm"><input type="number" id="roomD" value="400" min="100" /></span></label>
+      <label class="field"><span>${tr('Raumhöhe')}</span><span class="unit" data-unit="cm"><input type="number" id="roomH" value="260" min="200" /></span></label>
+      <label class="field"><span>${tr('Form')}</span><select id="roomShape"><option value="rect">${tr('Rechteck')}</option><option value="l">${tr('L-Form')}</option></select></label>
     </div>
-    <button class="btn" id="makeRoom" style="width:100%;justify-content:center">Wände erzeugen (ersetzt Wände)</button>
+    <button class="btn" id="makeRoom" style="width:100%;justify-content:center">${tr('Wände erzeugen (ersetzt Wände)')}</button>
 
-    <h3>Grundriss-Vorlage (2D-Plan)</h3>
-    <p class="hint">Lade einen Grundriss als Bild (Scan, Foto, PNG/JPG) hoch, kalibriere den Maßstab über eine bekannte Strecke und zeichne die Wände nach.</p>
-    <div class="drop" id="underlayDrop">${ICON.image}<div>Bild hierher ziehen oder klicken</div></div>
+    <h3>${tr('Grundriss-Vorlage (2D-Plan)')}</h3>
+    <p class="hint">${tr('Lade einen Grundriss als Bild (Scan, Foto, PNG/JPG) hoch, kalibriere den Maßstab über eine bekannte Strecke und zeichne die Wände nach.')}</p>
+    <div class="drop" id="underlayDrop">${ICON.image}<div>${tr('Bild hierher ziehen oder klicken')}</div></div>
     <input type="file" id="underlayFile" accept="image/*" hidden />
     <div id="underlayControls" hidden>
-      <div class="row"><label>Deckkraft</label><input type="range" id="underlayOpacity" min="0.1" max="1" step="0.05" style="width:120px" /></div>
-      <div class="row"><label>Sichtbar</label><input type="checkbox" id="underlayVisible" /></div>
+      <div class="row"><label>${tr('Deckkraft')}</label><input type="range" id="underlayOpacity" min="0.1" max="1" step="0.05" style="width:120px" /></div>
+      <div class="row"><label>${tr('Sichtbar')}</label><input type="checkbox" id="underlayVisible" /></div>
       <div class="tools" style="margin-top:6px">
-        <button class="tool" id="calibrate">${ICON.ruler}Maßstab</button>
-        <button class="tool" id="moveUnderlay">${ICON.move}Verschieben</button>
+        <button class="tool" id="calibrate">${ICON.ruler}${tr('Maßstab')}</button>
+        <button class="tool" id="moveUnderlay">${ICON.move}${tr('Verschieben')}</button>
       </div>
-      <button class="btn danger" id="removeUnderlay" style="margin-top:6px">${ICON.trash}Vorlage entfernen</button>
+      <button class="btn danger" id="removeUnderlay" style="margin-top:6px">${ICON.trash}${tr('Vorlage entfernen')}</button>
     </div>
 
-    <h3>Einstellungen</h3>
-    <div class="row"><label for="setCeiling">Decke mit Deckenleuchten</label><input type="checkbox" id="setCeiling" /></div>
-    <div class="row"><label for="setBacksplash">Nischenrückwand automatisch</label><input type="checkbox" id="setBacksplash" /></div>
-    <div class="row"><label>Höhe Nischenrückwand</label><span class="unit" data-unit="cm"><input type="number" id="setBsHeight" min="10" max="150" step="0.1" /></span></div>
-    <div class="row"><label for="setHandleless" title="Fronten ohne Griffe: Unterschränke mit Griffmulde oben, Hängeschränke von unten greifbar">Grifflos (Griffmulden)</label><input type="checkbox" id="setHandleless" /></div>
-    <div class="row"><label>Sockelhöhe</label><span class="unit" data-unit="cm"><input type="number" id="setPlinth" min="0" max="20" /></span></div>
-    <div class="row"><label>Arbeitsplattenstärke</label><span class="unit" data-unit="cm"><input type="number" id="setTop" min="1" max="12" step="0.5" /></span></div>
+    <h3>${tr('Einstellungen')}</h3>
+    <div class="row"><label for="setCeiling">${tr('Decke mit Deckenleuchten')}</label><input type="checkbox" id="setCeiling" /></div>
+    <div class="row"><label for="setBacksplash">${tr('Nischenrückwand automatisch')}</label><input type="checkbox" id="setBacksplash" /></div>
+    <div class="row"><label>${tr('Höhe Nischenrückwand')}</label><span class="unit" data-unit="cm"><input type="number" id="setBsHeight" min="10" max="150" step="0.1" /></span></div>
+    <div class="row"><label for="setHandleless" title="${tr('Fronten ohne Griffe: Unterschränke mit Griffmulde oben, Hängeschränke von unten greifbar')}">${tr('Grifflos (Griffmulden)')}</label><input type="checkbox" id="setHandleless" /></div>
+    <div class="row"><label>${tr('Sockelhöhe')}</label><span class="unit" data-unit="cm"><input type="number" id="setPlinth" min="0" max="20" /></span></div>
+    <div class="row"><label>${tr('Arbeitsplattenstärke')}</label><span class="unit" data-unit="cm"><input type="number" id="setTop" min="1" max="12" step="0.5" /></span></div>
   </section>
 
   <section class="tab" id="tab-catalog">
     <div class="btn-col" style="margin-bottom:10px">
-      <button class="btn primary" id="modelLibrary" style="justify-content:center">${ICON.globe}Online-Bibliothek: Community-Möbel &amp; 3D-Modelle</button>
-      <button class="btn" id="modelUpload" style="justify-content:center">${ICON.box}Eigenes 3D-Modell (.glb) hochladen</button>
+      <button class="btn primary" id="modelLibrary" style="justify-content:center">${ICON.globe}${tr('Online-Bibliothek: Community-Möbel &amp; 3D-Modelle')}</button>
+      <button class="btn" id="modelUpload" style="justify-content:center">${ICON.box}${tr('Eigenes 3D-Modell (.glb) hochladen')}</button>
       <input type="file" id="modelFile" accept=".glb,model/gltf-binary" hidden />
     </div>
-    <p class="hint">Element anklicken und im Grundriss platzieren. Schränke docken automatisch an Wände und Nachbarn an. <kbd>R</kbd> dreht, <kbd>Shift</kbd>+Klick platziert mehrfach, <kbd>Alt</kbd> deaktiviert das Andocken.</p>
+    <p class="hint">${tr('Element anklicken und im Grundriss platzieren. Schränke docken automatisch an Wände und Nachbarn an. <kbd>R</kbd> dreht, <kbd>Shift</kbd>+Klick platziert mehrfach, <kbd>Alt</kbd> deaktiviert das Andocken.')}</p>
     <div id="catalog"></div>
   </section>
 
   <section class="tab" id="tab-materials">
-    <p class="hint">Standardmaterial je Bereich. Einzelne Elemente können im Eigenschaftenfeld abweichende Materialien erhalten.</p>
+    <p class="hint">${tr('Standardmaterial je Bereich. Einzelne Elemente können im Eigenschaftenfeld abweichende Materialien erhalten.')}</p>
     <div id="slots"></div>
-    <h3>Eigene Oberflächen</h3>
-    <p class="hint">Mische eine eigene Lackfarbe (matt, normal oder Hochglanz) oder lade ein Foto bzw. eine Textur deiner Wunschoberfläche hoch (z. B. Musterfoto einer Arbeitsplatte, Fliese, Holzdekor).</p>
+    <h3>${tr('Eigene Oberflächen')}</h3>
+    <p class="hint">${tr('Mische eine eigene Lackfarbe (matt, normal oder Hochglanz) oder lade ein Foto bzw. eine Textur deiner Wunschoberfläche hoch (z. B. Musterfoto einer Arbeitsplatte, Fliese, Holzdekor).')}</p>
     <div class="btn-col">
-      <button class="btn primary" id="libraryMaterial" style="justify-content:center">${ICON.globe}Online-Bibliothek</button>
-      <button class="btn" id="colorMaterial" style="justify-content:center">${ICON.palette}Eigene Farbe</button>
-      <button class="btn" id="uploadMaterial" style="justify-content:center">${ICON.image}Textur hochladen</button>
+      <button class="btn primary" id="libraryMaterial" style="justify-content:center">${ICON.globe}${tr('Online-Bibliothek')}</button>
+      <button class="btn" id="colorMaterial" style="justify-content:center">${ICON.palette}${tr('Eigene Farbe')}</button>
+      <button class="btn" id="uploadMaterial" style="justify-content:center">${ICON.image}${tr('Textur hochladen')}</button>
     </div>
     <div class="mat-grid" id="customMats" style="margin-top:10px"></div>
   </section>
@@ -182,59 +185,59 @@ app.innerHTML = `
 
 <main class="v-split" id="main">
   <div class="pane" id="plan">
-    <div class="overlay tr"><div class="chip"><button class="btn" id="fitPlan" title="Ansicht einpassen">Einpassen</button></div></div>
+    <div class="overlay tr"><div class="chip"><button class="btn" id="fitPlan" title="${tr('Ansicht einpassen')}">${tr('Einpassen')}</button></div></div>
     <div class="tool-hint plan-only" id="toolHint"></div>
   </div>
   <div class="pane" id="view">
-    <div class="shared-badge"><b id="sharedTitle">Lade Küche …</b><span>Nur ansehen</span></div>
+    <div class="shared-badge"><b id="sharedTitle">${tr('Lade Küche …')}</b><span>${tr('Nur ansehen')}</span></div>
     <div class="overlay tr showroom-only">
       <div class="chip">
-        <button class="btn" id="tourBtn" title="Kamera kreist langsam durch den Raum">${ICON.rotate}Rundgang</button>
-        <button class="btn" id="fsBtn" title="Browser-Vollbild">${ICON.expand}Vollbild</button>
-        <button class="btn" id="exitShowroom" title="Showroom beenden (Esc)">${ic('x')}Beenden</button>
+        <button class="btn" id="tourBtn" title="${tr('Kamera kreist langsam durch den Raum')}">${ICON.rotate}${tr('Rundgang')}</button>
+        <button class="btn" id="fsBtn" title="${tr('Browser-Vollbild')}">${ICON.expand}${tr('Vollbild')}</button>
+        <button class="btn" id="exitShowroom" title="${tr('Showroom beenden (Esc)')}">${ic('x')}${tr('Beenden')}</button>
       </div>
     </div>
     <div class="overlay tl">
       <div class="chip">
-        <div class="seg" id="houseMode" title="Was zu sehen ist"><button data-h="floor" class="on" title="Nur die aktive Etage">Etage</button><button data-h="stack" title="Alle Etagen bis zur aktiven – Blick von oben ins Haus">Bis hier</button><button data-h="house" title="Das ganze Haus">Haus</button></div>
-        <button class="btn plan-only" id="storageBtn" title="Lager: Fächer nach Füllstand färben, anklicken zeigt den Inhalt">${ICON.box}Lager</button>
-        <select id="heatSel" hidden title="Färbung der Fächer"><option value="">Füllstand</option><option value="moves">Bewegung (90 Tage)</option><option value="stale">Lange unberührt</option></select>
+        <div class="seg" id="houseMode" title="${tr('Was zu sehen ist')}"><button data-h="floor" class="on" title="${tr('Nur die aktive Etage')}">${tr('Etage')}</button><button data-h="stack" title="${tr('Alle Etagen bis zur aktiven – Blick von oben ins Haus')}">${tr('Bis hier')}</button><button data-h="house" title="${tr('Das ganze Haus')}">${tr('Haus')}</button></div>
+        <button class="btn plan-only" id="storageBtn" title="${tr('Lager: Fächer nach Füllstand färben, anklicken zeigt den Inhalt')}">${ICON.box}${tr('Lager')}</button>
+        <select id="heatSel" hidden title="${tr('Färbung der Fächer')}"><option value="">${tr('Füllstand')}</option><option value="moves">${tr('Bewegung (90 Tage)')}</option><option value="stale">${tr('Lange unberührt')}</option></select>
       </div>
       <div class="chip">
-        <button class="btn" data-cam="perspective">Übersicht</button>
-        <button class="btn" data-cam="corner">Raumecke</button>
-        <button class="btn" data-cam="front">Frontal</button>
-        <button class="btn" data-cam="top">Draufsicht</button>
-        <button class="btn" id="walkBtn" title="Durch das Haus laufen: Maus umsehen, WASD laufen, über Treppen in andere Etagen">${ICON.walk}Begehen</button>
+        <button class="btn" data-cam="perspective">${tr('Übersicht')}</button>
+        <button class="btn" data-cam="corner">${tr('Raumecke')}</button>
+        <button class="btn" data-cam="front">${tr('Frontal')}</button>
+        <button class="btn" data-cam="top">${tr('Draufsicht')}</button>
+        <button class="btn" id="walkBtn" title="${tr('Durch das Haus laufen: Maus umsehen, WASD laufen, über Treppen in andere Etagen')}">${ICON.walk}${tr('Begehen')}</button>
       </div>
     </div>
     <div class="overlay bl">
-      <div class="chip plan-only"><span title="Tageszeit (Sonnenstand)">${ic('sun')}</span><input type="range" id="timeOfDay" min="6" max="20" step="0.25" /><span id="timeLabel"></span></div>
-      <div class="chip plan-only"><span>Belichtung</span><input type="range" id="exposure" min="0.3" max="2.5" step="0.05" value="1" /></div>
+      <div class="chip plan-only"><span title="${tr('Tageszeit (Sonnenstand)')}">${ic('sun')}</span><input type="range" id="timeOfDay" min="6" max="20" step="0.25" /><span id="timeLabel"></span></div>
+      <div class="chip plan-only"><span>${tr('Belichtung')}</span><input type="range" id="exposure" min="0.3" max="2.5" step="0.05" value="1" /></div>
       <div class="chip light-chip plan-only">
-        <button class="btn" id="lightBtn" title="Licht einstellen: Sonne, Himmel, Lampen, Weichheit">${ICON.bulb}Licht</button>
+        <button class="btn" id="lightBtn" title="${tr('Licht einstellen: Sonne, Himmel, Lampen, Weichheit')}">${ICON.bulb}${tr('Licht')}</button>
         <div class="light-pop" id="lightPop" hidden>
-          <label class="field"><span>Sonne <b data-v="sunIntensity"></b></span><input type="range" data-light="sunIntensity" min="0" max="2" step="0.05" /></label>
-          <label class="field"><span>Himmel / Tageslicht <b data-v="skyIntensity"></b></span><input type="range" data-light="skyIntensity" min="0" max="2.5" step="0.05" /></label>
-          <label class="field"><span>Lampen <b data-v="lampIntensity"></b></span><input type="range" data-light="lampIntensity" min="0" max="3" step="0.05" /></label>
-          <label class="field"><span>Weichheit Schatten &amp; Lichtkegel <b data-v="softness"></b></span><input type="range" data-light="softness" min="0" max="1" step="0.05" /></label>
-          <div class="chips"><button data-preset="sun">Sonnig</button><button data-preset="soft">Weich / bewölkt</button><button data-preset="evening">Abend</button><button data-preset="reset">Standard</button></div>
+          <label class="field"><span>${tr('Sonne')} <b data-v="sunIntensity"></b></span><input type="range" data-light="sunIntensity" min="0" max="2" step="0.05" /></label>
+          <label class="field"><span>${tr('Himmel / Tageslicht')} <b data-v="skyIntensity"></b></span><input type="range" data-light="skyIntensity" min="0" max="2.5" step="0.05" /></label>
+          <label class="field"><span>${tr('Lampen')} <b data-v="lampIntensity"></b></span><input type="range" data-light="lampIntensity" min="0" max="3" step="0.05" /></label>
+          <label class="field"><span>${tr('Weichheit Schatten &amp; Lichtkegel')} <b data-v="softness"></b></span><input type="range" data-light="softness" min="0" max="1" step="0.05" /></label>
+          <div class="chips"><button data-preset="sun">${tr('Sonnig')}</button><button data-preset="soft">${tr('Weich / bewölkt')}</button><button data-preset="evening">${tr('Abend')}</button><button data-preset="reset">${tr('Standard')}</button></div>
         </div>
       </div>
       <div class="spacer"></div>
       <div class="chip">
-        <button class="btn" id="ptBtn" title="Physikalisch korrektes Pathtracing – Bild wird fortlaufend verfeinert">${ICON.sparkle}Fotorealistisch</button>
+        <button class="btn" id="ptBtn" title="${tr('Physikalisch korrektes Pathtracing – Bild wird fortlaufend verfeinert')}">${ICON.sparkle}${tr('Fotorealistisch')}</button>
         <span id="ptSamples" hidden></span>
         <span id="gpuBadge" class="gpu-badge" hidden></span>
-        <button class="btn" id="shotBtn" title="Aktuelle Ansicht als PNG speichern">${ICON.camera}Bild</button>
+        <button class="btn" id="shotBtn" title="${tr('Aktuelle Ansicht als PNG speichern')}">${ICON.camera}${tr('Bild')}</button>
       </div>
     </div>
-    <div class="walk-hint" id="walkHint"><b id="walkWhere"></b>WASD / Pfeiltasten laufen · Maus umsehen · Shift schneller · Treppen führen in die anderen Etagen · Esc beenden</div>
+    <div class="walk-hint" id="walkHint"><b id="walkWhere"></b>${tr('WASD / Pfeiltasten laufen · Maus umsehen · Shift schneller · Treppen führen in die anderen Etagen · Esc beenden')}</div>
   </div>
 </main>
 
 <aside class="right props plan-only" id="props"></aside>
-<aside class="right view-panel view-only" id="viewPanel" aria-label="Fächer und Inhalt"></aside>
+<aside class="right view-panel view-only" id="viewPanel" aria-label="${tr('Fächer und Inhalt')}"></aside>
 `;
 
 // ---------------------------------------------------------------------------
@@ -246,13 +249,13 @@ const view = new Scene3D($('#view'));
 const sync = new HouseSync({ toast, modal, statusEl: () => document.getElementById('saveStatus'), afterLoad });
 
 const toolHints: Record<Tool, string> = {
-  select: 'Elemente, Wände, Türen und Fenster anklicken und ziehen. Breite eines Elements über die seitlichen Ziehpunkte frei ändern. Wandendpunkte verschieben. <kbd>Entf</kbd> löscht, <kbd>R</kbd> dreht. Rechte Maustaste / Leertaste + Ziehen verschiebt die Ansicht, Mausrad zoomt.',
-  wall: 'Klicken setzt Wandpunkte. Länge eintippen + <kbd>Enter</kbd> für exakte Maße. Doppelklick, Rechtsklick oder <kbd>Esc</kbd> beendet. <kbd>Alt</kbd> hebt den Winkelfang auf.',
-  door: 'Auf eine Wand klicken, um eine Tür einzusetzen.',
-  window: 'Auf eine Wand klicken, um ein Fenster einzusetzen.',
-  calibrate: 'Zwei Punkte einer bekannten Strecke auf der Vorlage anklicken.',
-  room: 'In eine von Wänden umschlossene Fläche klicken und den Raum benennen. Jeder Raum wird ein eigenes Lager; Möbel mit Fächern darin bekommen Lagerplätze (z. B. KU-B2).',
-  place: 'Klicken zum Platzieren. <kbd>R</kbd> dreht, <kbd>Esc</kbd> bricht ab.',
+  select: tr('Elemente, Wände, Türen und Fenster anklicken und ziehen. Breite eines Elements über die seitlichen Ziehpunkte frei ändern. Wandendpunkte verschieben. <kbd>Entf</kbd> löscht, <kbd>R</kbd> dreht. Rechte Maustaste / Leertaste + Ziehen verschiebt die Ansicht, Mausrad zoomt.'),
+  wall: tr('Klicken setzt Wandpunkte. Länge eintippen + <kbd>Enter</kbd> für exakte Maße. Doppelklick, Rechtsklick oder <kbd>Esc</kbd> beendet. <kbd>Alt</kbd> hebt den Winkelfang auf.'),
+  door: tr('Auf eine Wand klicken, um eine Tür einzusetzen.'),
+  window: tr('Auf eine Wand klicken, um ein Fenster einzusetzen.'),
+  calibrate: tr('Zwei Punkte einer bekannten Strecke auf der Vorlage anklicken.'),
+  room: tr('In eine von Wänden umschlossene Fläche klicken und den Raum benennen. Jeder Raum wird ein eigenes Lager; Möbel mit Fächern darin bekommen Lagerplätze (z. B. KU-B2).'),
+  place: tr('Klicken zum Platzieren. <kbd>R</kbd> dreht, <kbd>Esc</kbd> bricht ab.'),
 };
 
 plan.onToolChange = (t) => {
@@ -322,7 +325,7 @@ $('#ptBtn').addEventListener('click', async () => {
   if (on) {
     const gpu = view.gpuInfo();
     if (gpu.integrated) showGpuHint(gpu.name);
-    else toast('Fotorealistischer Modus: Das Bild wird mit jeder Probe rauschfreier. Kamera ruhig halten.');
+    else toast(tr('Fotorealistischer Modus: Das Bild wird mit jeder Probe rauschfreier. Kamera ruhig halten.'));
   }
 });
 // GPU-Anzeige: warnt, wenn nur die integrierte Grafik genutzt wird
@@ -331,35 +334,35 @@ $('#ptBtn').addEventListener('click', async () => {
   const badge = $('#gpuBadge');
   const short = gpu.name.replace(/^ANGLE \(|\)$/g, '').replace(/Direct3D.*$|vs_\d.*$/i, '').split(',').slice(-2, -1)[0]?.trim() || gpu.name;
   badge.hidden = false;
-  badge.innerHTML = gpu.integrated ? `${ic('warn')} integrierte GPU` : `GPU ${ic('check')}`;
-  badge.title = `Genutzte Grafikkarte: ${short}`;
+  badge.innerHTML = gpu.integrated ? `${ic('warn')} ${tr('integrierte GPU')}` : `GPU ${ic('check')}`;
+  badge.title = tr('Genutzte Grafikkarte: {name}', { name: short });
   badge.classList.toggle('warn', gpu.integrated);
   if (gpu.integrated) badge.addEventListener('click', () => showGpuHint(gpu.name));
 }
 
 function showGpuHint(name: string) {
   modal(
-    'Leistungsstarke Grafikkarte nutzen',
-    `<p>Der Browser rendert gerade mit <b>${esc(name)}</b>. Der fotorealistische Modus läuft auf der dedizierten Grafikkarte (z. B. NVIDIA) um ein Vielfaches schneller.</p>
-    <h3>Windows-Einstellung (empfohlen)</h3>
+    tr('Leistungsstarke Grafikkarte nutzen'),
+    `<p>${tr('Der Browser rendert gerade mit <b>{name}</b>. Der fotorealistische Modus läuft auf der dedizierten Grafikkarte (z. B. NVIDIA) um ein Vielfaches schneller.', { name: esc(name) })}</p>
+    <h3>${tr('Windows-Einstellung (empfohlen)')}</h3>
     <ol class="steps">
-      <li><b>Einstellungen → System → Bildschirm → Grafik</b> öffnen.</li>
-      <li>Den Browser in der Liste suchen (oder über <i>Durchsuchen</i> hinzufügen, z. B. <code>C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe</code> bzw. <code>msedge.exe</code>).</li>
-      <li><b>Optionen → Hohe Leistung</b> (NVIDIA) wählen und speichern.</li>
-      <li>Den Browser <b>vollständig schließen</b> (alle Fenster, ggf. Hintergrundprozesse) und neu starten.</li>
+      <li>${tr('<b>Einstellungen → System → Bildschirm → Grafik</b> öffnen.')}</li>
+      <li>${tr('Den Browser in der Liste suchen (oder über <i>Durchsuchen</i> hinzufügen, z. B. {path} bzw. {edge}).', { path: '<code>C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe</code>', edge: '<code>msedge.exe</code>' })}</li>
+      <li>${tr('<b>Optionen → Hohe Leistung</b> (NVIDIA) wählen und speichern.')}</li>
+      <li>${tr('Den Browser <b>vollständig schließen</b> (alle Fenster, ggf. Hintergrundprozesse) und neu starten.')}</li>
     </ol>
-    <h3>Alternativ: NVIDIA-Systemsteuerung</h3>
-    <p class="hint">3D-Einstellungen verwalten → Programmeinstellungen → Browser auswählen → „Hochleistungs-NVIDIA-Prozessor“.</p>
-    <h3>Prüfen</h3>
-    <p class="hint">Nach dem Neustart zeigt die Anzeige neben „Fotorealistisch“ <b>GPU ✓</b>. Details unter <code>chrome://gpu</code> bzw. <code>edge://gpu</code> (Eintrag „GL_RENDERER“).
-    Notebook dabei möglichst am Netzteil betreiben – im Akkubetrieb drosseln viele Geräte die NVIDIA-GPU.</p>`,
+    <h3>${tr('Alternativ: NVIDIA-Systemsteuerung')}</h3>
+    <p class="hint">${tr('3D-Einstellungen verwalten → Programmeinstellungen → Browser auswählen → „Hochleistungs-NVIDIA-Prozessor“.')}</p>
+    <h3>${tr('Prüfen')}</h3>
+    <p class="hint">${tr('Nach dem Neustart zeigt die Anzeige neben „Fotorealistisch“ <b>GPU ✓</b>. Details unter <code>chrome://gpu</code> bzw. <code>edge://gpu</code> (Eintrag „GL_RENDERER“).')}
+    ${tr('Notebook dabei möglichst am Netzteil betreiben – im Akkubetrieb drosseln viele Geräte die NVIDIA-GPU.')}</p>`,
   );
 }
 
 let ptSamples = 0;
 view.onSamples = (n) => {
   ptSamples = n;
-  $('#ptSamples').textContent = `${n} Proben`;
+  $('#ptSamples').textContent = trn(n, '{n} Probe', '{n} Proben');
 };
 
 $('#shotBtn').addEventListener('click', () => {
@@ -394,7 +397,7 @@ function setShowroom(on: boolean) {
   } catch {
     /* ignorieren */
   }
-  if (on) toast('Showroom: Maus ziehen zum Drehen, Mausrad zum Zoomen, Doppelklick zum Fokussieren · Esc beendet');
+  if (on) toast(tr('Showroom: Maus ziehen zum Drehen, Mausrad zum Zoomen, Doppelklick zum Fokussieren · Esc beendet'));
 }
 $('#showroomBtn').addEventListener('click', () => setShowroom(true));
 $('#exitShowroom').addEventListener('click', () => setShowroom(false));
@@ -405,7 +408,7 @@ $('#tourBtn').addEventListener('click', () => {
 });
 $('#fsBtn').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  else document.documentElement.requestFullscreen().catch(() => toast('Vollbild wird von diesem Browser nicht unterstützt.'));
+  else document.documentElement.requestFullscreen().catch(() => toast(tr('Vollbild wird von diesem Browser nicht unterstützt.')));
 });
 document.addEventListener('fullscreenchange', () => $('#fsBtn').classList.toggle('on', !!document.fullscreenElement));
 window.addEventListener('keydown', (e) => {
@@ -506,16 +509,16 @@ $('#newBtn').addEventListener('click', () => openNewPlan());
 async function openNewPlan() {
   const shared = sync.online && sync.canEdit;
   const m = modal(
-    'Neues Haus',
-    `${shared ? '<p class="form-error" style="display:block">Achtung: Der Hausplan wird von allen geteilt. Ein neues Haus ersetzt ihn für alle; Lagerplätze von Möbeln, die es dann nicht mehr gibt, werden entfernt (Plätze mit Inhalt bleiben erhalten).</p>' : ''}
+    tr('Neues Haus'),
+    `${shared ? `<p class="form-error" style="display:block">${tr('Achtung: Der Hausplan wird von allen geteilt. Ein neues Haus ersetzt ihn für alle; Lagerplätze von Möbeln, die es dann nicht mehr gibt, werden entfernt (Plätze mit Inhalt bleiben erhalten).')}</p>` : ''}
     <div class="choice-grid">
-      <button class="choice" data-kind="empty"><b>Leeres Haus</b><span>Eine leere Etage – Wände aus Maßen erzeugen oder Grundriss hochladen.</span></button>
-      <button class="choice" data-kind="example"><b>Beispiel</b><span>Eine Etage mit fertiger Küche als Ausgangspunkt.</span></button>
+      <button class="choice" data-kind="empty"><b>${tr('Leeres Haus')}</b><span>${tr('Eine leere Etage – Wände aus Maßen erzeugen oder Grundriss hochladen.')}</span></button>
+      <button class="choice" data-kind="example"><b>${tr('Beispiel')}</b><span>${tr('Eine Etage mit fertiger Küche als Ausgangspunkt.')}</span></button>
     </div>`,
   );
   m.el.querySelectorAll<HTMLElement>('.choice').forEach((b) =>
     b.addEventListener('click', () => {
-      if (shared && !confirm('Den gemeinsamen Hausplan wirklich ersetzen?')) return;
+      if (shared && !confirm(tr('Den gemeinsamen Hausplan wirklich ersetzen?'))) return;
       m.close();
       store.reset(b.dataset.kind === 'empty');
       afterLoad();
@@ -547,7 +550,7 @@ function importPlan(data: Project, name: string, mode: 'new' | 'replace') {
   store.select(null);
   store.floorChanged();
   afterLoad();
-  toast(`„${name}“ übernommen. Jetzt mit „Raum“ die Räume bestimmen – daraus entstehen die Lager.`);
+  toast(tr('„{name}“ übernommen. Jetzt mit „Raum“ die Räume bestimmen – daraus entstehen die Lager.', { name }));
   setPlanning(true);
   setDrawer('room');
 }
@@ -572,19 +575,19 @@ $<HTMLInputElement>('#openFile').addEventListener('change', async (e) => {
   try {
     const raw = JSON.parse(await f.text());
     if (raw?.version === 2 && Array.isArray(raw.floors)) {
-      if (!confirm(`Das ganze Haus durch „${raw.name ?? f.name}“ ersetzen?`)) return;
+      if (!confirm(tr('Das ganze Haus durch „{name}“ ersetzen?', { name: raw.name ?? f.name }))) return;
       store.replace(raw as House, { keepUndo: true });
       afterLoad();
     } else {
-      if (!Array.isArray(raw?.walls)) throw new Error('Keine Haus- oder Planungsdatei');
-      const choice = await askChoice('Planung importieren', `<p>„${esc(raw.name ?? f.name)}“ ist eine einzelne Planung (eine Etage).</p>`, [
-        { id: 'replace', label: 'Aktuelle Etage ersetzen' },
-        { id: 'new', label: 'Als neue Etage', primary: true },
+      if (!Array.isArray(raw?.walls)) throw new Error(tr('Keine Haus- oder Planungsdatei'));
+      const choice = await askChoice(tr('Planung importieren'), `<p>${tr('„{name}“ ist eine einzelne Planung (eine Etage).', { name: esc(raw.name ?? f.name) })}</p>`, [
+        { id: 'replace', label: tr('Aktuelle Etage ersetzen') },
+        { id: 'new', label: tr('Als neue Etage'), primary: true },
       ]);
       if (choice) importPlan(raw as Project, raw.name || f.name.replace(/\..*$/, ''), choice as 'new' | 'replace');
     }
   } catch (err) {
-    toast('Datei konnte nicht geladen werden: ' + (err as Error).message);
+    toast(tr('Datei konnte nicht geladen werden: {msg}', { msg: (err as Error).message }));
   }
   (e.target as HTMLInputElement).value = '';
 });
@@ -595,7 +598,7 @@ $('#makeRoom').addEventListener('click', () => {
   const D = +$<HTMLInputElement>('#roomD').value;
   const H = +$<HTMLInputElement>('#roomH').value;
   const shape = $<HTMLSelectElement>('#roomShape').value;
-  if (store.project.walls.length && !confirm('Vorhandene Wände, Türen und Fenster werden ersetzt. Fortfahren?')) return;
+  if (store.project.walls.length && !confirm(tr('Vorhandene Wände, Türen und Fenster werden ersetzt. Fortfahren?'))) return;
   const pts =
     shape === 'l'
       ? [{ x: 0, y: 0 }, { x: W, y: 0 }, { x: W, y: D * 0.55 }, { x: W * 0.55, y: D * 0.55 }, { x: W * 0.55, y: D }, { x: 0, y: D }]
@@ -632,7 +635,7 @@ underlayFile.addEventListener('change', () => {
 
 async function loadUnderlay(f: File) {
   if (!f.type.startsWith('image/')) {
-    toast('Bitte ein Bild (PNG, JPG, WebP) hochladen. PDFs vorher als Bild exportieren.');
+    toast(tr('Bitte ein Bild (PNG, JPG, WebP) hochladen. PDFs vorher als Bild exportieren.'));
     return;
   }
   const url = await readImageFile(f, 3000);
@@ -643,7 +646,7 @@ async function loadUnderlay(f: File) {
     store.project.underlay = { image: url, scale, x: 0, y: 0, opacity: 0.6, visible: true };
     store.commit();
     plan.fit();
-    toast('Vorlage geladen. Jetzt den Maßstab kalibrieren: zwei Punkte einer bekannten Strecke anklicken.');
+    toast(tr('Vorlage geladen. Jetzt den Maßstab kalibrieren: zwei Punkte einer bekannten Strecke anklicken.'));
     plan.setTool('calibrate');
   };
   img.src = url;
@@ -651,7 +654,7 @@ async function loadUnderlay(f: File) {
 
 $('#calibrate').addEventListener('click', () => plan.setTool('calibrate'));
 plan.onCalibrated = (d) => {
-  const real = prompt(`Gemessene Strecke: ${Math.round(d)} cm im aktuellen Maßstab.\nWie lang ist die Strecke in Wirklichkeit (cm)?`, String(Math.round(d)));
+  const real = prompt(tr('Gemessene Strecke: {d} cm im aktuellen Maßstab.\nWie lang ist die Strecke in Wirklichkeit (cm)?', { d: Math.round(d) }), String(Math.round(d)));
   const v = parseFloat((real ?? '').replace(',', '.'));
   const u = store.project.underlay;
   if (!u || !(v > 0)) return;
@@ -661,7 +664,7 @@ plan.onCalibrated = (d) => {
   u.y *= f;
   store.commit();
   plan.fit();
-  toast('Maßstab gesetzt. Jetzt mit „Wand zeichnen“ die Wände nachzeichnen.');
+  toast(tr('Maßstab gesetzt. Jetzt mit „Wand zeichnen“ die Wände nachzeichnen.'));
 };
 $('#moveUnderlay').addEventListener('click', () => {
   plan.moveUnderlay = !plan.moveUnderlay;
@@ -769,10 +772,10 @@ function renderCatalog() {
   $('#catalog').innerHTML = groups
     .map(
       (g) => `<div class="cat-group"><h3>${esc(g)}</h3><div class="catalog">${all.filter((c) => c.group === g)
-        .map((c) => `<button class="cat-item${c.object ? ' cat-obj' : ''}" data-type="${esc(c.id)}" title="${c.object ? esc(`${c.object.name} · Objektbibliothek, Version ${c.object.version}`) : ''}">${catalogIcon(c)}<span>${esc(c.name)}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
+        .map((c) => `<button class="cat-item${c.object ? ' cat-obj' : ''}" data-type="${esc(c.id)}" title="${c.object ? esc(tr('{name} · Objektbibliothek, Version {version}', { name: c.object.name, version: c.object.version })) : ''}">${catalogIcon(c)}<span>${esc(c.name)}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
         .join('')}</div></div>`,
     )
-    .join('') + `<p class="cat-lib"><a class="link" href="#/objekte">${ic('box')}Objektbibliothek – weitere Möbelarten</a></p>`;
+    .join('') + `<p class="cat-lib"><a class="link" href="#/objekte">${ic('box')}${tr('Objektbibliothek – weitere Möbelarten')}</a></p>`;
   document.querySelectorAll<HTMLElement>('.cat-item').forEach((b) =>
     b.addEventListener('click', () => {
       document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', x === b));
@@ -787,42 +790,42 @@ document.addEventListener('zh-objects', () => renderCatalog());
 // ---------------------------------------------------------------------------
 // Möbel & Deko: 3D-Modelle aus der Online-Bibliothek (Poly Haven CC0, FurniMesh) oder eigene .glb
 
-const MODEL_CATS: [string, string][] = [['', 'Alle'], ['sitzen', 'Sitzmöbel'], ['tische', 'Tische'], ['betten', 'Betten'], ['schraenke', 'Schränke & Regale'], ['leuchten', 'Leuchten'], ['pflanzen', 'Pflanzen'], ['deko', 'Deko'], ['kueche', 'Küche & Geschirr'], ['elektronik', 'Elektronik'], ['buero', 'Büro'], ['aufbewahrung', 'Kisten & Körbe'], ['werkzeug', 'Werkzeug'], ['garten', 'Garten & Natur'], ['sonstiges', 'Sonstiges']];
+const MODEL_CATS: [string, string][] = [['', tr('Alle')], ['sitzen', tr('Sitzmöbel')], ['tische', tr('Tische')], ['betten', tr('Betten')], ['schraenke', tr('Schränke & Regale')], ['leuchten', tr('Leuchten')], ['pflanzen', tr('Pflanzen')], ['deko', tr('Deko')], ['kueche', tr('Küche & Geschirr')], ['elektronik', tr('Elektronik')], ['buero', tr('Büro')], ['aufbewahrung', tr('Kisten & Körbe')], ['werkzeug', tr('Werkzeug')], ['garten', tr('Garten & Natur')], ['sonstiges', tr('Sonstiges')]];
 let modelAll = false;
 /** FurniMesh: realistische (KI-erzeugte) Möbel, nur Einrichtungs-Kategorien */
-const FM_CATS: [string, string][] = [['', 'Alle'], ['sofas', 'Sofas'], ['sitzen', 'Sitzmöbel'], ['tische', 'Tische'], ['betten', 'Betten'], ['schraenke', 'Schränke & Regale'], ['leuchten', 'Leuchten'], ['bad', 'Bad']];
+const FM_CATS: [string, string][] = [['', tr('Alle')], ['sofas', tr('Sofas')], ['sitzen', tr('Sitzmöbel')], ['tische', tr('Tische')], ['betten', tr('Betten')], ['schraenke', tr('Schränke & Regale')], ['leuchten', tr('Leuchten')], ['bad', tr('Bad')]];
 let modelSource: 'community' | 'polyhaven' | 'furnimesh' = 'community';
 const SOURCE_HINT = {
-  community: 'Möbelarten aus dem Community-Katalog – Schränke, Regale, Geräte mit Fächern: jedes Fach wird ein Lagerplatz. Beim Auswählen wird die Möbelart installiert (verwalten unter Mehr → Objektbibliothek).',
-  polyhaven: 'Freie 3D-Modelle von Poly Haven (CC0) mit echten Maßen und Materialien. Beim Auswählen wird das Modell einmal auf den Server geladen.',
-  furnimesh: 'Realistische, KI-erzeugte Möbel von FurniMesh – frei herunterladbar, aber ohne ausdrückliche Lizenz. Beim Auswählen wird das Modell geladen und verkleinert (dauert etwa 10 s); die Größe ist ein typischer Wert der Kategorie und lässt sich anpassen.',
+  community: tr('Möbelarten aus dem Community-Katalog – Schränke, Regale, Geräte mit Fächern: jedes Fach wird ein Lagerplatz. Beim Auswählen wird die Möbelart installiert (verwalten unter Mehr → Objektbibliothek).'),
+  polyhaven: tr('Freie 3D-Modelle von Poly Haven (CC0) mit echten Maßen und Materialien. Beim Auswählen wird das Modell einmal auf den Server geladen.'),
+  furnimesh: tr('Realistische, KI-erzeugte Möbel von FurniMesh – frei herunterladbar, aber ohne ausdrückliche Lizenz. Beim Auswählen wird das Modell geladen und verkleinert (dauert etwa 10 s); die Größe ist ein typischer Wert der Kategorie und lässt sich anpassen.'),
 };
 let modelState = { q: '', cat: '' };
 
 /** Modell platzieren: Originalmaße messen, dann im Grundriss setzen */
 async function placeModel(model: NonNullable<Item['model']>) {
-  toast(`${model.name} wird geladen …`);
+  toast(tr('{name} wird geladen …', { name: model.name }));
   try {
     const s = await modelSize(model.url);
     const size: [number, number, number] = [s.w, s.d, s.h];
     if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
     plan.setTool('place', 'model', { model: { ...model, size }, width: s.w, depth: s.d, height: s.h });
-    toast(`${model.name}: zum Platzieren in den Grundriss klicken (R dreht).`);
+    toast(tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: model.name }));
   } catch (e) {
     toast((e as Error).message);
   }
 }
 
 function openModelLibrary() {
-  if (!account.user) return toast('Für die Online-Bibliothek bitte anmelden.');
-  const m = modal('Möbel & Deko – Online-Bibliothek', `
-    <form class="lib-search" id="mlForm"><input type="search" id="mlQ" placeholder="Suchen …" value="${esc(modelState.q)}" /><button class="btn primary">Suchen</button></form>
-    <div class="seg" id="mlSource" style="margin:6px 0"><button type="button" data-src="community" title="Möbelarten mit Fächern (Lagerplätze)">Community-Möbel</button><button type="button" data-src="polyhaven">Poly Haven</button><button type="button" data-src="furnimesh">FurniMesh</button></div>
-    <label class="row switch" id="mlAllRow" style="margin:4px 0"><input type="checkbox" id="mlAll" ${modelAll ? 'checked' : ''} /><span><b>Ohne Filter</b><small>Bei „Alle“ auch Garten, Natur, Werkzeug, Industrie und Requisiten zeigen</small></span></label>
+  if (!account.user) return toast(tr('Für die Online-Bibliothek bitte anmelden.'));
+  const m = modal(tr('Möbel & Deko – Online-Bibliothek'), `
+    <form class="lib-search" id="mlForm"><input type="search" id="mlQ" placeholder="${tr('Suchen …')}" value="${esc(modelState.q)}" /><button class="btn primary">${tr('Suchen')}</button></form>
+    <div class="seg" id="mlSource" style="margin:6px 0"><button type="button" data-src="community" title="${tr('Möbelarten mit Fächern (Lagerplätze)')}">${tr('Community-Möbel')}</button><button type="button" data-src="polyhaven">Poly Haven</button><button type="button" data-src="furnimesh">FurniMesh</button></div>
+    <label class="row switch" id="mlAllRow" style="margin:4px 0"><input type="checkbox" id="mlAll" ${modelAll ? 'checked' : ''} /><span><b>${tr('Ohne Filter')}</b><small>${tr('Bei „Alle“ auch Garten, Natur, Werkzeug, Industrie und Requisiten zeigen')}</small></span></label>
     <p class="hint" id="mlCount"></p>
     <div class="chips" id="mlCats"></div>
-    <div class="ml-grid" id="mlRes"><p class="hint">Lade …</p></div>
-    <div style="text-align:center;margin-top:8px"><button class="btn" id="mlMore" hidden>Mehr anzeigen</button></div>
+    <div class="ml-grid" id="mlRes"><p class="hint">${tr('Lade …')}</p></div>
+    <div style="text-align:center;margin-top:8px"><button class="btn" id="mlMore" hidden>${tr('Mehr anzeigen')}</button></div>
     <p class="hint" id="mlHint"></p>`);
   m.el.querySelector('.modal')!.classList.add('wide');
   const res = $('#mlRes', m.el);
@@ -835,18 +838,18 @@ function openModelLibrary() {
     const my = seq;
     community ??= await fetch('/api/objects/community', { credentials: 'same-origin' }).then(async (x) => {
       const d = await x.json();
-      if (!x.ok) throw new Error(d.error ?? 'Community-Katalog nicht erreichbar.');
+      if (!x.ok) throw new Error(d.error ?? tr('Community-Katalog nicht erreichbar.'));
       return d;
     });
     if (my !== seq) return;
     const q = modelState.q.toLowerCase();
     const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.group} ${o.description}`.toLowerCase().includes(q)));
     const page = hits.slice(offset, offset + 48);
-    $('#mlCount', m.el).textContent = `${hits.length} Möbelarten`;
+    $('#mlCount', m.el).textContent = trn(hits.length, '{n} Möbelart', '{n} Möbelarten');
     const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(o.name)}</b>
       <small>${o.size ? `${o.size[0]} × ${o.size[1]} × ${o.size[2]} cm` : esc(o.group)}</small>
-      <span class="ml-tags">${o.places ? `<span class="tag">${o.places} Fächer</span>` : ''}${o.update ? `<span class="tag warn">neue Version ${esc(o.version)}</span>` : o.installed ? '<span class="tag ok">installiert</span>' : ''}</span></button>`).join('');
-    res.innerHTML = append ? res.innerHTML + html : html || '<p class="hint">Nichts gefunden.</p>';
+      <span class="ml-tags">${o.places ? `<span class="tag">${trn(o.places, '{n} Fach', '{n} Fächer')}</span>` : ''}${o.update ? `<span class="tag warn">${tr('neue Version {version}', { version: esc(o.version) })}</span>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : ''}</span></button>`).join('');
+    res.innerHTML = append ? res.innerHTML + html : html || `<p class="hint">${tr('Nichts gefunden.')}</p>`;
     offset += page.length;
     more.hidden = offset >= hits.length;
     res.querySelectorAll<HTMLElement>('.ml-card:not([data-bound])').forEach((b) => {
@@ -862,7 +865,7 @@ function openModelLibrary() {
           if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
           document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.type === OBJ_PREFIX + o.id));
           plan.setTool('place', OBJ_PREFIX + o.id);
-          toast(`${o.name}: zum Platzieren in den Grundriss klicken (R dreht).${o.installed ? '' : ' Jetzt auch im Katalog unter „Möbel“.'}`);
+          toast(o.installed ? tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: o.name }) : tr('{name}: zum Platzieren in den Grundriss klicken (R dreht). Jetzt auch im Katalog unter „Möbel“.', { name: o.name }));
         } catch (e) {
           b.classList.remove('busy');
           toast((e as Error).message);
@@ -885,9 +888,9 @@ function openModelLibrary() {
       const r = await fetch(`/api/library/models?q=${encodeURIComponent(modelState.q)}&cat=${modelState.cat}&all=${modelAll ? 1 : 0}&source=${modelSource}&limit=48&offset=${offset}`, { credentials: 'same-origin' }).then((x) => x.json());
       if (my !== seq) return;
       if (r.error) throw new Error(r.error);
-      $('#mlCount', m.el).textContent = r.note ?? (r.more ? `${r.hits.length + offset} Modelle geladen, weitere verfügbar` : `${r.total} Modelle`);
+      $('#mlCount', m.el).textContent = r.note ?? (r.more ? trn(r.hits.length + offset, '{n} Modell geladen, weitere verfügbar', '{n} Modelle geladen, weitere verfügbar') : trn(r.total, '{n} Modell', '{n} Modelle'));
       const html = r.hits.map((h: any) => `<button class="ml-card" data-id="${esc(h.id)}"><img src="${esc(h.thumb)}" alt="" loading="lazy" /><b>${esc(h.name)}</b><small>${h.size ? `${h.size[0]} × ${h.size[1]} × ${h.size[2]} cm` : ''}</small></button>`).join('');
-      res.innerHTML = append ? res.innerHTML + html : html || '<p class="hint">Nichts gefunden – englische Begriffe probieren.</p>';
+      res.innerHTML = append ? res.innerHTML + html : html || `<p class="hint">${tr('Nichts gefunden – englische Begriffe probieren.')}</p>`;
       offset += r.hits.length;
       more.hidden = offset >= r.total;
       res.querySelectorAll<HTMLElement>('.ml-card:not([data-bound])').forEach((b) => {
@@ -917,7 +920,7 @@ function openModelLibrary() {
   // Quelle: eigene Kategorien, „Ohne Filter“ nur bei Poly Haven
   const renderSource = () => {
     const groups = [...new Set((community?.objects ?? []).map((o) => String(o.group)))].sort((a, b) => a.localeCompare(b, 'de'));
-    const cats: [string, string][] = modelSource === 'community' ? [['', 'Alle'], ...groups.map((g): [string, string] => [g, g])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
+    const cats: [string, string][] = modelSource === 'community' ? [['', tr('Alle')], ...groups.map((g): [string, string] => [g, g])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
     // Community-Gruppen sind erst nach dem Laden bekannt
     if ((modelSource !== 'community' || community) && !cats.some(([k]) => k === modelState.cat)) modelState.cat = '';
     m.el.querySelectorAll<HTMLElement>('#mlSource [data-src]').forEach((x) => x.classList.toggle('on', x.dataset.src === modelSource));
@@ -949,7 +952,7 @@ function openModelLibrary() {
 }
 $('#modelLibrary').addEventListener('click', openModelLibrary);
 $('#modelUpload').addEventListener('click', () => {
-  if (!account.user) return toast('Zum Hochladen bitte anmelden.');
+  if (!account.user) return toast(tr('Zum Hochladen bitte anmelden.'));
   $('#modelFile').click();
 });
 $<HTMLInputElement>('#modelFile').addEventListener('change', async (e) => {
@@ -974,16 +977,16 @@ const SLOT_ORDER: MaterialSlot[] = ['front', 'carcass', 'countertop', 'handle', 
 function slotLabel(p: Project, slot: MaterialSlot, override?: string, frontOverride?: string) {
   const m = slotMaterialDef(p, slot, override, frontOverride);
   const id = override ?? p.slots[slot];
-  return { m, name: id === MATCH_FRONT ? `Wie Fronten (${m.name})` : m.name };
+  return { m, name: id === MATCH_FRONT ? tr('Wie Fronten ({name})', { name: m.name }) : m.name };
 }
 
 function renderMaterialsTab() {
   const p = store.project;
   $('#slots').innerHTML = SLOT_ORDER.map((slot) => {
     const { m, name } = slotLabel(p, slot);
-    const hint = slot === 'channel' && !p.settings.handleless ? ' · nur bei grifflos' : slot === 'handle' && p.settings.handleless ? ' · grifflos aktiv' : '';
+    const hint = slot === 'channel' && !p.settings.handleless ? ` · ${tr('nur bei grifflos')}` : slot === 'handle' && p.settings.handleless ? ` · ${tr('grifflos aktiv')}` : '';
     const uvOn = p.uv?.[slot] && Object.keys(p.uv[slot]!).length;
-    return `<div class="slot" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><b>${SLOT_LABELS[slot]}</b><small>${esc(name)}${hint}</small></div><span class="slot-btns"><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-slot-adj="${slot}" title="Farbe anpassen: Farbton, Sättigung, Helligkeit, Tönung, Glanz">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvOn ? 'on' : ''}" data-slot-uv="${slot}" title="Textur ausrichten: Drehung in Grad, Größe, Verschiebung, Strecken">${ICON.rotate}</button>` : ''}</span></div>`;
+    return `<div class="slot" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><b>${SLOT_LABELS[slot]}</b><small>${esc(name)}${hint}</small></div><span class="slot-btns"><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-slot-adj="${slot}" title="${tr('Farbe anpassen: Farbton, Sättigung, Helligkeit, Tönung, Glanz')}">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvOn ? 'on' : ''}" data-slot-uv="${slot}" title="${tr('Textur ausrichten: Drehung in Grad, Größe, Verschiebung, Strecken')}">${ICON.rotate}</button>` : ''}</span></div>`;
   }).join('');
   document.querySelectorAll<HTMLElement>('[data-slot-adj]').forEach((b) =>
     b.addEventListener('click', (ev) => {
@@ -1000,7 +1003,7 @@ function renderMaterialsTab() {
   document.querySelectorAll<HTMLElement>('.slot').forEach((el) =>
     el.addEventListener('click', () => {
       const slot = el.dataset.slot as MaterialSlot;
-      openMaterialPicker(`${SLOT_LABELS[slot]} – Material wählen`, p.slots[slot], false, async (id) => {
+      openMaterialPicker(tr('{slot} – Material wählen', { slot: SLOT_LABELS[slot] }), p.slots[slot], false, async (id) => {
         if (!id) return;
         const proj = store.project;
         proj.slots[slot] = id;
@@ -1008,11 +1011,11 @@ function renderMaterialsTab() {
         const deviating = proj.items.filter((i) => i.materials?.[slot]);
         if (deviating.length) {
           const choice = await askChoice(
-            `${SLOT_LABELS[slot]} ändern`,
-            `<p>${deviating.length} Element${deviating.length > 1 ? 'e haben' : ' hat'} ein eigenes Material für „${SLOT_LABELS[slot]}“.</p><p class="hint">Sollen diese ebenfalls auf „${esc(slotLabel(proj, slot).name)}“ umgestellt werden?</p>`,
+            tr('{slot} ändern', { slot: SLOT_LABELS[slot] }),
+            `<p>${trn(deviating.length, '{n} Element hat ein eigenes Material für „{slot}“.', '{n} Elemente haben ein eigenes Material für „{slot}“.', { slot: SLOT_LABELS[slot] })}</p><p class="hint">${tr('Sollen diese ebenfalls auf „{name}“ umgestellt werden?', { name: esc(slotLabel(proj, slot).name) })}</p>`,
             [
-              { id: 'keep', label: 'Abweichungen behalten' },
-              { id: 'all', label: `Alle ${SLOT_LABELS[slot]} umstellen`, primary: true },
+              { id: 'keep', label: tr('Abweichungen behalten') },
+              { id: 'all', label: tr('Alle {slot} umstellen', { slot: SLOT_LABELS[slot] }), primary: true },
             ],
           );
           if (choice === 'all') deviating.forEach((i) => delete i.materials![slot]);
@@ -1022,7 +1025,7 @@ function renderMaterialsTab() {
     }),
   );
   $('#customMats').innerHTML = p.customMaterials
-    .map((m) => `<div class="mat-card" data-id="${m.id}"><span class="sw" style="${swatchStyle(m)}"></span><span>${esc(m.name)}</span><button class="del" title="Löschen">✕</button></div>`)
+    .map((m) => `<div class="mat-card" data-id="${m.id}"><span class="sw" style="${swatchStyle(m)}"></span><span>${esc(m.name)}</span><button class="del" title="${tr('Löschen')}">✕</button></div>`)
     .join('');
   document.querySelectorAll<HTMLElement>('#customMats .mat-card').forEach((el) => {
     el.addEventListener('click', () => {
@@ -1038,7 +1041,7 @@ function renderMaterialsTab() {
 
 function deleteCustomMaterial(id: string) {
   const p = store.project;
-  if (!confirm('Eigenes Material löschen? Verwendungen werden auf Standard zurückgesetzt.')) return;
+  if (!confirm(tr('Eigenes Material löschen? Verwendungen werden auf Standard zurückgesetzt.'))) return;
   p.customMaterials = p.customMaterials.filter((m) => m.id !== id);
   for (const s of SLOT_ORDER) if (p.slots[s] === id) p.slots[s] = LIBRARY[0].id;
   for (const it of p.items) if (it.materials) for (const k of Object.keys(it.materials) as MaterialSlot[]) if (it.materials[k] === id) delete it.materials[k];
@@ -1053,7 +1056,7 @@ $('#libraryMaterial').addEventListener('click', () => openLibraryDialog());
 function modal(title: string, body: string, footer = '') {
   const back = document.createElement('div');
   back.className = 'modal-back';
-  back.innerHTML = `<div class="modal" role="dialog" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="btn icon" data-close aria-label="Schließen">${ic('x')}</button></header><div class="body">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div>`;
+  back.innerHTML = `<div class="modal" role="dialog" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="btn icon" data-close aria-label="${tr('Schließen')}">${ic('x')}</button></header><div class="body">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div>`;
   document.body.appendChild(back);
   const close = () => back.remove();
   back.addEventListener('click', (e) => {
@@ -1092,11 +1095,11 @@ function openMaterialPicker(title: string, current: string | undefined, allowDef
   );
   const all = allMaterials(p);
   const body =
-    `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card upload color-card" data-library>${ICON.globe}<span>Online-Bibliothek…</span></button><button class="mat-card upload color-card" data-color>${ICON.palette}<span>Eigene Farbe mischen…</span></button></div>` +
+    `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card upload color-card" data-library>${ICON.globe}<span>${tr('Online-Bibliothek…')}</span></button><button class="mat-card upload color-card" data-color>${ICON.palette}<span>${tr('Eigene Farbe mischen…')}</span></button></div>` +
     (slotHint === 'channel'
-      ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${current === MATCH_FRONT ? 'on' : ''}" data-id="${MATCH_FRONT}"><span class="sw" style="${swatchStyle(slotMaterialDef(p, 'front'))}"></span><span>Wie Fronten</span></button></div>`
+      ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${current === MATCH_FRONT ? 'on' : ''}" data-id="${MATCH_FRONT}"><span class="sw" style="${swatchStyle(slotMaterialDef(p, 'front'))}"></span><span>${tr('Wie Fronten')}</span></button></div>`
       : '') +
-    (allowDefault ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${!current ? 'on' : ''}" data-id=""><span class="sw" style="background:repeating-linear-gradient(45deg,var(--panel-2) 0 6px,var(--line) 6px 12px)"></span><span>Standard (Projekt)</span></button></div>` : '') +
+    (allowDefault ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${!current ? 'on' : ''}" data-id=""><span class="sw" style="background:repeating-linear-gradient(45deg,var(--panel-2) 0 6px,var(--line) 6px 12px)"></span><span>${tr('Standard (Projekt)')}</span></button></div>` : '') +
     cats
       .map((c) => {
         const mats = all.filter((m) => m.category === c);
@@ -1106,7 +1109,7 @@ function openMaterialPicker(title: string, current: string | undefined, allowDef
           .join('')}</div>`;
       })
       .join('') +
-    `<h3>Eigene Textur</h3><div class="mat-grid"><button class="mat-card upload" data-upload>${ICON.image}<span>Textur hochladen…</span></button></div>`;
+    `<h3>${tr('Eigene Textur')}</h3><div class="mat-grid"><button class="mat-card upload" data-upload>${ICON.image}<span>${tr('Textur hochladen…')}</span></button></div>`;
   const m = modal(title, body);
   m.el.querySelectorAll<HTMLElement>('.mat-card[data-id]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1144,7 +1147,7 @@ function askChoice(title: string, body: string, options: { id: string; label: st
     const m = modal(
       title,
       body,
-      `<button class="btn" data-choice="">Abbrechen</button>${options.map((o) => `<button class="btn ${o.primary ? 'primary' : ''}" data-choice="${o.id}">${esc(o.label)}</button>`).join('')}`,
+      `<button class="btn" data-choice="">${tr('Abbrechen')}</button>${options.map((o) => `<button class="btn ${o.primary ? 'primary' : ''}" data-choice="${o.id}">${esc(o.label)}</button>`).join('')}`,
     );
     m.el.querySelector('.modal')!.classList.add('narrow');
     m.el.querySelectorAll<HTMLElement>('[data-choice]').forEach((b) =>
@@ -1186,8 +1189,8 @@ function itemUVTarget(it: Item, slot: MaterialSlot): UVTarget {
     base: p.uv?.[slot],
     scope:
       run && run.ids.length > 1
-        ? `Gilt für die gesamte Arbeitsplatte dieser Zeile (${run.ids.length} Schränke, ${Math.round((run.u1 - run.u0) * 100)} × ${Math.round((run.v1 - run.v0) * 100)} cm).`
-        : `Gilt nur für ${esc(getEntry(it.type).name)}.`,
+        ? tr('Gilt für die gesamte Arbeitsplatte dieser Zeile ({n} Schränke, {w} × {d} cm).', { n: run.ids.length, w: Math.round((run.u1 - run.u0) * 100), d: Math.round((run.v1 - run.v0) * 100) })
+        : tr('Gilt nur für {name}.', { name: esc(getEntry(it.type).name) }),
     get: () => store.item(it.id)?.uv?.[slot],
     set: (v) => {
       for (const id of ids) {
@@ -1203,10 +1206,17 @@ function itemUVTarget(it: Item, slot: MaterialSlot): UVTarget {
 
 function projectUVTarget(slot: MaterialSlot): UVTarget {
   const p = store.project;
-  const area = slot === 'floor' ? 'den ganzen Boden' : slot === 'wall' ? 'alle Wände' : slot === 'ceiling' ? 'die Decke' : `alle Elemente (${SLOT_LABELS[slot]})`;
+  const scope =
+    slot === 'floor'
+      ? tr('Gilt für den ganzen Boden.')
+      : slot === 'wall'
+        ? tr('Gilt für alle Wände.')
+        : slot === 'ceiling'
+          ? tr('Gilt für die Decke.')
+          : tr('Gilt für alle Elemente ({slot}) – einzelne Elemente können abweichen.', { slot: SLOT_LABELS[slot] });
   return {
     def: slotMaterialDef(p, slot),
-    scope: `Gilt für ${area}${['floor', 'wall', 'ceiling'].includes(slot) ? '' : ' – einzelne Elemente können abweichen'}.`,
+    scope,
     get: () => store.project.uv?.[slot],
     set: (v) => {
       const proj = store.project;
@@ -1226,11 +1236,11 @@ function openUVDialog(target: UVTarget) {
   const baseRot = def.rotation ?? (def.rotate ? 90 : 0);
   const body = `
     <p class="hint">${esc(def.name)} · ${target.scope}</p>
-    <div class="field"><span>Darstellung</span>
-      <div class="seg mode-seg"><button type="button" data-m="stretch">Einmal auf ganze Fläche strecken</button><button type="button" data-m="tile">Wiederholen (Kacheln)</button></div>
+    <div class="field"><span>${tr('Darstellung')}</span>
+      <div class="seg mode-seg"><button type="button" data-m="stretch">${tr('Einmal auf ganze Fläche strecken')}</button><button type="button" data-m="tile">${tr('Wiederholen (Kacheln)')}</button></div>
     </div>
-    <label class="field"><span>Größe <b id="uvScaleV"></b></span><input type="range" id="uvScale" min="-2" max="2" step="0.01" /></label>
-    <div class="field"><span>Drehung${baseRot ? ` <small>(zusätzlich zur Materialdrehung ${baseRot}°)</small>` : ''}</span>
+    <label class="field"><span>${tr('Größe')} <b id="uvScaleV"></b></span><input type="range" id="uvScale" min="-2" max="2" step="0.01" /></label>
+    <div class="field"><span>${tr('Drehung')}${baseRot ? ` <small>${tr('(zusätzlich zur Materialdrehung {deg}°)', { deg: baseRot })}</small>` : ''}</span>
       <div class="rot-row">
         <input type="range" id="uvRot" min="-180" max="180" step="1" />
         <span class="unit" data-unit="°"><input type="number" id="uvRotN" min="-360" max="360" step="0.5" /></span>
@@ -1238,11 +1248,11 @@ function openUVDialog(target: UVTarget) {
       <div class="chips">${[-90, -45, 0, 45, 90, 180].map((r) => `<button type="button" data-r="${r}">${r}°</button>`).join('')}</div>
     </div>
     <div class="grid2">
-      <label class="field"><span>Verschieben ↔ <b id="uvXV"></b></span><input type="range" id="uvX" min="-50" max="50" step="0.5" /></label>
-      <label class="field"><span>Verschieben ↕ <b id="uvYV"></b></span><input type="range" id="uvY" min="-50" max="50" step="0.5" /></label>
+      <label class="field"><span>${tr('Verschieben')} ↔ <b id="uvXV"></b></span><input type="range" id="uvX" min="-50" max="50" step="0.5" /></label>
+      <label class="field"><span>${tr('Verschieben')} ↕ <b id="uvYV"></b></span><input type="range" id="uvY" min="-50" max="50" step="0.5" /></label>
     </div>
-    <p class="hint">Änderungen sind sofort sichtbar – die Ansicht bleibt bedienbar. „Wiederholen“ nutzt die reale Bildgröße des Materials; „Strecken“ passt das Bild genau einmal auf die Fläche ein.</p>`;
-  const m = modal('Textur ausrichten', body, `<button class="btn" data-reset>Zurücksetzen</button><span class="spacer"></span><button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>Fertig</button>`);
+    <p class="hint">${tr('Änderungen sind sofort sichtbar – die Ansicht bleibt bedienbar. „Wiederholen“ nutzt die reale Bildgröße des Materials; „Strecken“ passt das Bild genau einmal auf die Fläche ein.')}</p>`;
+  const m = modal(tr('Textur ausrichten'), body, `<button class="btn" data-reset>${tr('Zurücksetzen')}</button><span class="spacer"></span><button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Fertig')}</button>`);
   m.el.querySelector('.modal')!.classList.add('narrow');
   // Dialog blockiert die Ansicht nicht: 3D/2D bleiben bedienbar (Kamera drehen, rendern …)
   m.el.classList.add('see-through');
@@ -1327,9 +1337,9 @@ interface LibraryHit {
 }
 
 const LIB_CHIPS: [string, string][] = [
-  ['Holz', 'wood'], ['Boden', 'floor'], ['Parkett', 'parquet'], ['Fliesen', 'tiles'], ['Marmor', 'marble'], ['Stein', 'stone'],
-  ['Granit', 'granite'], ['Beton', 'concrete'], ['Terrazzo', 'terrazzo'], ['Putz', 'plaster'], ['Ziegel', 'brick'], ['Metall', 'metal'],
-  ['Stoff', 'fabric'], ['Leder', 'leather'],
+  [tr('Holz'), 'wood'], [tr('Fußboden'), 'floor'], [tr('Parkett'), 'parquet'], [tr('Fliesen'), 'tiles'], [tr('Marmor'), 'marble'], [tr('Stein'), 'stone'],
+  [tr('Granit'), 'granite'], [tr('Beton'), 'concrete'], [tr('Terrazzo'), 'terrazzo'], [tr('Putz'), 'plaster'], [tr('Ziegel'), 'brick'], [tr('Metall'), 'metal'],
+  [tr('Stoff'), 'fabric'], [tr('Leder'), 'leather'],
 ];
 const SLOT_QUERY: Partial<Record<MaterialSlot, string>> = { floor: 'floor', countertop: 'marble', backsplash: 'tiles', wall: 'plaster', front: 'wood' };
 let libState = { source: 'polyhaven' as LibraryHit['source'], q: '', res: '2k' };
@@ -1337,13 +1347,13 @@ let libState = { source: 'polyhaven' as LibraryHit['source'], q: '', res: '2k' }
 async function libApi<T>(path: string, body?: unknown): Promise<T> {
   const r = await fetch('/api' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : undefined);
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
+  if (!r.ok) throw new Error(d.error ?? tr('Fehler {status}', { status: r.status }));
   return d as T;
 }
 
 function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialSlot) {
   if (!account.user) {
-    toast('Für die Online-Bibliothek bitte anmelden – importierte Texturen werden auf dem Server gespeichert.');
+    toast(tr('Für die Online-Bibliothek bitte anmelden – importierte Texturen werden auf dem Server gespeichert.'));
     account.openLogin();
     return;
   }
@@ -1351,14 +1361,14 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
   const body = `
     <div class="lib-bar">
       <div class="seg lib-src"><button data-src="polyhaven">Poly Haven</button><button data-src="ambientcg">ambientCG</button></div>
-      <form class="lib-search"><input type="text" id="libQ" placeholder="Suchen (englisch, z. B. oak, marble, tiles)" /><button class="btn primary" type="submit">Suchen</button></form>
-      <select id="libRes" title="Auflösung der Texturen"><option value="1k">1K (schnell)</option><option value="2k">2K (detailreich)</option></select>
+      <form class="lib-search"><input type="text" id="libQ" placeholder="${tr('Suchen (englisch, z. B. oak, marble, tiles)')}" /><button class="btn primary" type="submit">${tr('Suchen')}</button></form>
+      <select id="libRes" title="${tr('Auflösung der Texturen')}"><option value="1k">${tr('1K (schnell)')}</option><option value="2k">${tr('2K (detailreich)')}</option></select>
     </div>
     <div class="chips lib-chips">${LIB_CHIPS.map(([l, q]) => `<button data-q="${q}">${l}</button>`).join('')}</div>
     <div id="libResults" class="lib-grid"></div>
-    <div class="lib-more"><button class="btn" id="libMore" hidden>Weitere laden</button></div>
-    <p class="hint">Alle Materialien sind CC0 (gemeinfrei). Beim Import werden Farbe, Relief (Normal Map) und Rauheit einmalig auf den Server geladen; die reale Größe wird übernommen.</p>`;
-  const m = modal('Online-Bibliothek', body);
+    <div class="lib-more"><button class="btn" id="libMore" hidden>${tr('Weitere laden')}</button></div>
+    <p class="hint">${tr('Alle Materialien sind CC0 (gemeinfrei). Beim Import werden Farbe, Relief (Normal Map) und Rauheit einmalig auf den Server geladen; die reale Größe wird übernommen.')}</p>`;
+  const m = modal(tr('Online-Bibliothek'), body);
   m.el.querySelector('.modal')!.classList.add('wide');
   const el = m.el;
   const qIn = $<HTMLInputElement>('#libQ', el);
@@ -1381,7 +1391,7 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
     const my = ++seq;
     if (!append) {
       offset = 0;
-      results.innerHTML = '<p class="hint">Suche …</p>';
+      results.innerHTML = `<p class="hint">${tr('Suche …')}</p>`;
     }
     more.hidden = true;
     try {
@@ -1389,7 +1399,7 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
       if (my !== seq) return;
       total = r.total;
       if (!append) results.innerHTML = '';
-      if (!r.hits.length && !append) results.innerHTML = '<p class="hint">Keine Treffer. Tipp: englische Begriffe verwenden (wood, oak, marble, tiles, concrete …).</p>';
+      if (!r.hits.length && !append) results.innerHTML = `<p class="hint">${tr('Keine Treffer. Tipp: englische Begriffe verwenden (wood, oak, marble, tiles, concrete …).')}</p>`;
       results.insertAdjacentHTML('beforeend', r.hits.map(card).join(''));
       offset += r.hits.length;
       more.hidden = offset >= total;
@@ -1454,12 +1464,12 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
       }
       m.close();
       renderMaterialsTab();
-      toast(`„${def.name}“ importiert (${def.source}, ${def.tileSize} cm).`);
+      toast(tr('„{name}“ importiert ({source}, {size} cm).', { name: def.name, source: def.source, size: def.tileSize }));
       if (onPicked) onPicked(def.id);
       else {
         const slot = await askChoice(
-          `„${def.name}“ verwenden für …`,
-          '<p class="hint">Das Material ist unter „Eigene Oberflächen“ gespeichert. Wo soll es verwendet werden?</p>',
+          tr('„{name}“ verwenden für …', { name: def.name }),
+          `<p class="hint">${tr('Das Material ist unter „Eigene Oberflächen“ gespeichert. Wo soll es verwendet werden?')}</p>`,
           SLOT_ORDER.map((sl) => ({ id: sl, label: SLOT_LABELS[sl] })),
         );
         if (slot) {
@@ -1468,7 +1478,7 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
         }
       }
     } catch (err) {
-      toast('Import fehlgeschlagen: ' + (err as Error).message);
+      toast(tr('Import fehlgeschlagen: {msg}', { msg: (err as Error).message }));
     } finally {
       c.classList.remove('busy');
     }
@@ -1495,7 +1505,7 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
   let def: MaterialDef;
   if (isCustom) def = base;
   else {
-    def = { ...JSON.parse(JSON.stringify(base)), id: 'adj-' + uid(), name: `${base.name} (angepasst)`, category: 'eigene' };
+    def = { ...JSON.parse(JSON.stringify(base)), id: 'adj-' + uid(), name: tr('{name} (angepasst)', { name: base.name }), category: 'eigene' };
     p.customMaterials.push(def);
     if (item) item.materials = { ...(item.materials ?? {}), [slot]: def.id };
     else p.slots[slot] = def.id;
@@ -1504,23 +1514,31 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
   }
   const a: ColorAdjust = { ...(def.adjust ?? {}) };
   const textured = isTextured(def);
+  const scopeVars = { base: esc(base.name), name: item ? esc(getEntry(item.type).name) : '', slot: SLOT_LABELS[slot] };
+  const scopeText = item
+    ? isCustom
+      ? tr('{base} · nur {name}.', scopeVars)
+      : tr('{base} · nur {name} – es wird eine angepasste Kopie angelegt, das Original bleibt erhalten.', scopeVars)
+    : isCustom
+      ? tr('{base} · Bereich „{slot}“ im ganzen Projekt.', scopeVars)
+      : tr('{base} · Bereich „{slot}“ im ganzen Projekt – es wird eine angepasste Kopie angelegt, das Original bleibt erhalten.', scopeVars);
   const body = `
-    <p class="hint">${esc(base.name)} · ${item ? `nur ${esc(getEntry(item.type).name)}` : `Bereich „${SLOT_LABELS[slot]}“ im ganzen Projekt`}${isCustom ? '' : ' – es wird eine angepasste Kopie angelegt, das Original bleibt erhalten'}.</p>
+    <p class="hint">${scopeText}</p>
     <div class="adj-layout">
       <canvas class="adj-preview" width="200" height="200"></canvas>
       <div>
-        <label class="field"><span>Farbton <b data-v="hue"></b></span><input type="range" data-a="hue" min="-180" max="180" step="1" class="hue-range" /></label>
-        <label class="field"><span>Sättigung <b data-v="saturation"></b></span><input type="range" data-a="saturation" min="-100" max="100" step="1" /></label>
-        <label class="field"><span>Helligkeit <b data-v="brightness"></b></span><input type="range" data-a="brightness" min="-100" max="100" step="1" /></label>
-        <label class="field"><span>Kontrast <b data-v="contrast"></b></span><input type="range" data-a="contrast" min="-100" max="100" step="1" /></label>
-        <div class="field"><span>Einfärben (Farbe wählen) <b data-v="tintAmount"></b></span>
+        <label class="field"><span>${tr('Farbton')} <b data-v="hue"></b></span><input type="range" data-a="hue" min="-180" max="180" step="1" class="hue-range" /></label>
+        <label class="field"><span>${tr('Sättigung')} <b data-v="saturation"></b></span><input type="range" data-a="saturation" min="-100" max="100" step="1" /></label>
+        <label class="field"><span>${tr('Helligkeit')} <b data-v="brightness"></b></span><input type="range" data-a="brightness" min="-100" max="100" step="1" /></label>
+        <label class="field"><span>${tr('Kontrast')} <b data-v="contrast"></b></span><input type="range" data-a="contrast" min="-100" max="100" step="1" /></label>
+        <div class="field"><span>${tr('Einfärben (Farbe wählen)')} <b data-v="tintAmount"></b></span>
           <div class="rot-row"><input type="color" id="adjTint" style="width:44px;flex:none" /><input type="range" data-a="tintAmount" min="0" max="100" step="1" /></div>
         </div>
-        <label class="field"><span>Oberfläche: matt ↔ glänzend <b id="adjGlossV"></b></span><input type="range" id="adjGloss" min="0" max="1" step="0.01" /></label>
+        <label class="field"><span>${tr('Oberfläche: matt ↔ glänzend')} <b id="adjGlossV"></b></span><input type="range" id="adjGloss" min="0" max="1" step="0.01" /></label>
       </div>
     </div>
-    <p class="hint">Die Vorschau links reagiert sofort, die 3D-Ansicht beim Loslassen des Reglers.</p>`;
-  const m = modal('Material anpassen', body, `<button class="btn" data-reset>Zurücksetzen</button><span class="spacer"></span><button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>Übernehmen</button>`);
+    <p class="hint">${tr('Die Vorschau links reagiert sofort, die 3D-Ansicht beim Loslassen des Reglers.')}</p>`;
+  const m = modal(tr('Material anpassen'), body, `<button class="btn" data-reset>${tr('Zurücksetzen')}</button><span class="spacer"></span><button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Übernehmen')}</button>`);
   m.el.classList.add('see-through');
   const el = m.el;
   const canvas = el.querySelector<HTMLCanvasElement>('.adj-preview')!;
@@ -1578,7 +1596,7 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
     });
     tintIn.value = a.tint ?? '#c8a46e';
     gloss.value = String(1 - def.roughness);
-    $('#adjGlossV', el).textContent = def.roughness >= 0.55 ? 'matt' : def.roughness >= 0.2 ? 'seidenmatt' : 'glänzend';
+    $('#adjGlossV', el).textContent = def.roughness >= 0.55 ? tr('matt') : def.roughness >= 0.2 ? tr('seidenmatt') : tr('glänzend');
     draw();
   };
   const apply3D = () => {
@@ -1642,9 +1660,9 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
 // Eigene Farbe (Farbrad)
 
 const FINISHES = {
-  matt: { label: 'Matt', roughness: 0.7, clearcoat: 0 },
-  normal: { label: 'Normal (seidenmatt)', roughness: 0.4, clearcoat: 0 },
-  gloss: { label: 'Hochglanz', roughness: 0.08, clearcoat: 1 },
+  matt: { label: tr('Matt'), roughness: 0.7, clearcoat: 0 },
+  normal: { label: tr('Normal (seidenmatt)'), roughness: 0.4, clearcoat: 0 },
+  gloss: { label: tr('Hochglanz'), roughness: 0.08, clearcoat: 1 },
 } as const;
 type Finish = keyof typeof FINISHES;
 
@@ -1690,20 +1708,20 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
       <span class="wheel-dot"></span>
     </div>
     <div class="color-side">
-      <label class="field"><span>Helligkeit</span><input type="range" id="cBright" min="0" max="1" step="0.005" /></label>
+      <label class="field"><span>${tr('Helligkeit')}</span><input type="range" id="cBright" min="0" max="1" step="0.005" /></label>
       <div class="grid2">
-        <label class="field"><span>Hex-Code</span><input type="text" id="cHex" maxlength="7" spellcheck="false" /></label>
-        <label class="field"><span>Farbwähler</span><input type="color" id="cNative" /></label>
+        <label class="field"><span>${tr('Hex-Code')}</span><input type="text" id="cHex" maxlength="7" spellcheck="false" /></label>
+        <label class="field"><span>${tr('Farbwähler')}</span><input type="color" id="cNative" /></label>
       </div>
-      <div class="field"><span>Oberfläche</span>
+      <div class="field"><span>${tr('Oberfläche')}</span>
         <div class="seg finish-seg">${(Object.keys(FINISHES) as Finish[]).map((k) => `<button data-finish="${k}">${FINISHES[k].label}</button>`).join('')}</div>
       </div>
-      <label class="field"><span>Name (optional, z. B. RAL 9001 Cremeweiß)</span><input type="text" id="cName" maxlength="80" value="${esc(existing?.name ?? '')}" /></label>
+      <label class="field"><span>${tr('Name (optional, z. B. RAL 9001 Cremeweiß)')}</span><input type="text" id="cName" maxlength="80" value="${esc(existing?.name ?? '')}" /></label>
       <div class="color-preview"><span class="cp-swatch"></span><div><b id="cpTitle"></b><small id="cpSub"></small></div></div>
-      ${existing ? '' : `<label class="field"><span>Direkt verwenden für</span><select id="cSlot"><option value="">– nur speichern –</option>${SLOT_ORDER.map((s) => `<option value="${s}" ${s === 'front' && !onCreated ? 'selected' : ''}>${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
+      ${existing ? '' : `<label class="field"><span>${tr('Direkt verwenden für')}</span><select id="cSlot"><option value="">${tr('– nur speichern –')}</option>${SLOT_ORDER.map((s) => `<option value="${s}" ${s === 'front' && !onCreated ? 'selected' : ''}>${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
     </div>
   </div>`;
-  const m = modal(existing ? 'Eigene Farbe bearbeiten' : 'Eigene Farbe mischen', body, `<button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>${existing ? 'Übernehmen' : 'Speichern'}</button>`);
+  const m = modal(existing ? tr('Eigene Farbe bearbeiten') : tr('Eigene Farbe mischen'), body, `<button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${existing ? tr('Übernehmen') : tr('Speichern')}</button>`);
   const el = m.el;
   const canvas = el.querySelector<HTMLCanvasElement>('.wheel')!;
   const dot = el.querySelector<HTMLElement>('.wheel-dot')!;
@@ -1745,7 +1763,7 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
     const f = FINISHES[finish];
     const gloss = finish === 'gloss' ? 'linear-gradient(160deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 38%), ' : finish === 'normal' ? 'linear-gradient(160deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 45%), ' : '';
     el.querySelector<HTMLElement>('.cp-swatch')!.style.background = `${gloss}${def.color}`;
-    $('#cpTitle', el).textContent = $<HTMLInputElement>('#cName', el).value.trim() || `Eigene Farbe ${def.color.toUpperCase()}`;
+    $('#cpTitle', el).textContent = $<HTMLInputElement>('#cName', el).value.trim() || tr('Eigene Farbe {hex}', { hex: def.color.toUpperCase() });
     $('#cpSub', el).textContent = `${f.label} · ${def.color.toUpperCase()}`;
     el.querySelectorAll<HTMLElement>('[data-finish]').forEach((b) => b.classList.toggle('on', b.dataset.finish === finish));
   };
@@ -1802,7 +1820,7 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
     def.roughness = f.roughness;
     def.clearcoat = f.clearcoat;
     def.metalness = 0;
-    def.name = $<HTMLInputElement>('#cName', el).value.trim() || `Eigene Farbe ${def.color.toUpperCase()} ${f.label.split(' ')[0].toLowerCase()}`;
+    def.name = $<HTMLInputElement>('#cName', el).value.trim() || tr('Eigene Farbe {hex} {finish}', { hex: def.color.toUpperCase(), finish: f.label.split(' ')[0].toLowerCase() });
     delete def.image;
     delete def.procedural;
     const p = store.project;
@@ -1815,48 +1833,48 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
     m.close();
     renderMaterialsTab();
     onCreated?.(def.id);
-    toast(`„${def.name}“ gespeichert.`);
+    toast(tr('„{name}“ gespeichert.', { name: def.name }));
   });
 }
 
 function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => void) {
   const def: MaterialDef = existing
     ? { ...existing }
-    : { id: 'custom-' + uid(), name: 'Meine Oberfläche', category: 'eigene', color: '#ffffff', roughness: 0.5, metalness: 0, clearcoat: 0, tileSize: 60, bump: 1 };
+    : { id: 'custom-' + uid(), name: tr('Meine Oberfläche'), category: 'eigene', color: '#ffffff', roughness: 0.5, metalness: 0, clearcoat: 0, tileSize: 60, bump: 1 };
   const fileRow = (key: string, label: string) =>
-    `<div class="field"><span>${label}</span><div class="file-row"><button class="btn" data-pick="${key}">Datei wählen</button><span class="name" data-name="${key}">–</span><button class="btn icon" data-clear="${key}" title="Entfernen">✕</button></div></div>`;
+    `<div class="field"><span>${label}</span><div class="file-row"><button class="btn" data-pick="${key}">${tr('Datei wählen')}</button><span class="name" data-name="${key}">–</span><button class="btn icon" data-clear="${key}" title="${tr('Entfernen')}">✕</button></div></div>`;
   const body = `
   <div class="upload-layout">
     <div>
-      <div class="upload-preview" id="upPreview">Foto / Textur hierher ziehen<br>oder „Datei wählen“</div>
-      <p class="hint">Tipp: Frontal fotografierte, gleichmäßig ausgeleuchtete Muster wirken am besten. Gib unten die reale Kantenlänge des Bildausschnitts an, damit Maserung und Fugen maßstabsgetreu erscheinen.</p>
+      <div class="upload-preview" id="upPreview">${tr('Foto / Textur hierher ziehen<br>oder „Datei wählen“')}</div>
+      <p class="hint">${tr('Tipp: Frontal fotografierte, gleichmäßig ausgeleuchtete Muster wirken am besten. Gib unten die reale Kantenlänge des Bildausschnitts an, damit Maserung und Fugen maßstabsgetreu erscheinen.')}</p>
     </div>
     <div>
-      <label class="field"><span>Name</span><input type="text" id="upName" value="${esc(def.name)}" /></label>
-      ${fileRow('image', 'Farbtextur (Albedo) *')}
-      ${fileRow('normalImage', 'Normal Map (optional, Relief)')}
-      ${fileRow('roughnessImage', 'Roughness Map (optional)')}
-      <div class="field"><span>Darstellung auf den Flächen</span>
+      <label class="field"><span>${tr('Name')}</span><input type="text" id="upName" value="${esc(def.name)}" /></label>
+      ${fileRow('image', tr('Farbtextur (Albedo) *'))}
+      ${fileRow('normalImage', tr('Normal Map (optional, Relief)'))}
+      ${fileRow('roughnessImage', tr('Roughness Map (optional)'))}
+      <div class="field"><span>${tr('Darstellung auf den Flächen')}</span>
         <div class="seg mode-seg">
-          <button type="button" data-mapping="stretch">Einmal auf ganze Fläche strecken</button>
-          <button type="button" data-mapping="tile">Wiederholen (Kacheln)</button>
+          <button type="button" data-mapping="stretch">${tr('Einmal auf ganze Fläche strecken')}</button>
+          <button type="button" data-mapping="tile">${tr('Wiederholen (Kacheln)')}</button>
         </div>
         <small class="hint" id="upMapHint"></small>
       </div>
       <div class="grid2" id="upSizeRow">
-        <label class="field"><span>Bildbreite real</span><span class="unit" data-unit="cm"><input type="number" id="upTile" min="1" max="2000" step="0.5" value="${def.tileSize}" /></span></label>
-        <label class="field"><span>Bildhöhe real <small id="upAspect"></small></span><span class="unit" data-unit="cm"><input type="number" id="upTileH" min="1" max="2000" step="0.5" /></span></label>
+        <label class="field"><span>${tr('Bildbreite real')}</span><span class="unit" data-unit="cm"><input type="number" id="upTile" min="1" max="2000" step="0.5" value="${def.tileSize}" /></span></label>
+        <label class="field"><span>${tr('Bildhöhe real')} <small id="upAspect"></small></span><span class="unit" data-unit="cm"><input type="number" id="upTileH" min="1" max="2000" step="0.5" /></span></label>
       </div>
-      <label class="field"><span>Drehung (Grad, Standard für alle Flächen)</span><span class="unit" data-unit="°"><input type="number" id="upRotate" min="-360" max="360" step="1" value="${def.rotation ?? (def.rotate ? 90 : 0)}" /></span></label>
-      <label class="field"><span>Rauheit (matt ↔ glänzend): <b id="upRoughV">${def.roughness}</b></span><input type="range" id="upRough" min="0" max="1" step="0.01" value="${def.roughness}" /></label>
-      <label class="field"><span>Metallisch: <b id="upMetalV">${def.metalness}</b></span><input type="range" id="upMetal" min="0" max="1" step="0.01" value="${def.metalness}" /></label>
-      <label class="field"><span>Klarlack (Hochglanz-Schicht): <b id="upCoatV">${def.clearcoat ?? 0}</b></span><input type="range" id="upCoat" min="0" max="1" step="0.01" value="${def.clearcoat ?? 0}" /></label>
-      <label class="field"><span>Reliefstärke: <b id="upBumpV">${def.bump ?? 1}</b></span><input type="range" id="upBump" min="0" max="3" step="0.05" value="${def.bump ?? 1}" /></label>
-      ${existing ? '' : `<label class="field"><span>Direkt verwenden für</span><select id="upSlot"><option value="">– nur speichern –</option>${SLOT_ORDER.map((s) => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
+      <label class="field"><span>${tr('Drehung (Grad, Standard für alle Flächen)')}</span><span class="unit" data-unit="°"><input type="number" id="upRotate" min="-360" max="360" step="1" value="${def.rotation ?? (def.rotate ? 90 : 0)}" /></span></label>
+      <label class="field"><span>${tr('Rauheit (matt ↔ glänzend):')} <b id="upRoughV">${def.roughness}</b></span><input type="range" id="upRough" min="0" max="1" step="0.01" value="${def.roughness}" /></label>
+      <label class="field"><span>${tr('Metallisch:')} <b id="upMetalV">${def.metalness}</b></span><input type="range" id="upMetal" min="0" max="1" step="0.01" value="${def.metalness}" /></label>
+      <label class="field"><span>${tr('Klarlack (Hochglanz-Schicht):')} <b id="upCoatV">${def.clearcoat ?? 0}</b></span><input type="range" id="upCoat" min="0" max="1" step="0.01" value="${def.clearcoat ?? 0}" /></label>
+      <label class="field"><span>${tr('Reliefstärke:')} <b id="upBumpV">${def.bump ?? 1}</b></span><input type="range" id="upBump" min="0" max="3" step="0.05" value="${def.bump ?? 1}" /></label>
+      ${existing ? '' : `<label class="field"><span>${tr('Direkt verwenden für')}</span><select id="upSlot"><option value="">${tr('– nur speichern –')}</option>${SLOT_ORDER.map((s) => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
     </div>
   </div>
   <input type="file" accept="image/*" id="upFile" hidden />`;
-  const m = modal(existing ? 'Eigene Oberfläche bearbeiten' : 'Eigene Oberfläche hochladen', body, `<button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>${existing ? 'Übernehmen' : 'Speichern'}</button>`);
+  const m = modal(existing ? tr('Eigene Oberfläche bearbeiten') : tr('Eigene Oberfläche hochladen'), body, `<button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${existing ? tr('Übernehmen') : tr('Speichern')}</button>`);
   const el = m.el;
   const fileInput = $<HTMLInputElement>('#upFile', el);
   let pickKey: 'image' | 'normalImage' | 'roughnessImage' = 'image';
@@ -1874,8 +1892,8 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
     $('#upSizeRow', el).style.opacity = mapping === 'tile' ? '1' : '0.5';
     $('#upMapHint', el).textContent =
       mapping === 'stretch'
-        ? 'Das Bild wird ohne Wiederholung auf die ganze Fläche gezogen – bei der Arbeitsplatte über die gesamte zusammenhängende Platte. Ideal für ein Foto der kompletten Platte.'
-        : 'Das Bild wird in der angegebenen realen Größe wiederholt – ideal für Muster, Fliesen und Dekore.';
+        ? tr('Das Bild wird ohne Wiederholung auf die ganze Fläche gezogen – bei der Arbeitsplatte über die gesamte zusammenhängende Platte. Ideal für ein Foto der kompletten Platte.')
+        : tr('Das Bild wird in der angegebenen realen Größe wiederholt – ideal für Muster, Fliesen und Dekore.');
   };
   el.querySelectorAll<HTMLElement>('[data-mapping]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1894,13 +1912,13 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
       pv.textContent = '';
     }
     const a = aspect();
-    $('#upAspect', el).textContent = def.image ? `(Verhältnis ${a >= 1 ? `${Math.round(a * 100) / 100} : 1` : `1 : ${Math.round((1 / a) * 100) / 100}`})` : '';
+    $('#upAspect', el).textContent = def.image ? tr('(Verhältnis {ratio})', { ratio: a >= 1 ? `${Math.round(a * 100) / 100} : 1` : `1 : ${Math.round((1 / a) * 100) / 100}` }) : '';
     syncH();
-    for (const k of ['image', 'normalImage', 'roughnessImage'] as const) $(`[data-name="${k}"]`, el).textContent = def[k] ? 'geladen ✓' : '–';
+    for (const k of ['image', 'normalImage', 'roughnessImage'] as const) $(`[data-name="${k}"]`, el).textContent = def[k] ? tr('geladen ✓') : '–';
   };
   refresh();
   const load = async (f: File, key: typeof pickKey) => {
-    if (!f.type.startsWith('image/')) return toast('Bitte eine Bilddatei wählen.');
+    if (!f.type.startsWith('image/')) return toast(tr('Bitte eine Bilddatei wählen.'));
     def[key] = await readImageFile(f, 4096, key !== 'image');
     if (key === 'image') {
       // Seitenverhältnis des Bildes ermitteln
@@ -1914,7 +1932,7 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
         img.src = def.image!;
       });
     }
-    if (key === 'image' && def.name === 'Meine Oberfläche') {
+    if (key === 'image' && def.name === tr('Meine Oberfläche')) {
       def.name = f.name.replace(/\.[^.]+$/, '');
       $<HTMLInputElement>('#upName', el).value = def.name;
     }
@@ -1954,8 +1972,8 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
   }
   el.querySelector('[data-cancel]')!.addEventListener('click', m.close);
   el.querySelector('[data-ok]')!.addEventListener('click', () => {
-    if (!def.image) return toast('Bitte zuerst eine Farbtextur hochladen.');
-    def.name = $<HTMLInputElement>('#upName', el).value || 'Eigene Oberfläche';
+    if (!def.image) return toast(tr('Bitte zuerst eine Farbtextur hochladen.'));
+    def.name = $<HTMLInputElement>('#upName', el).value || tr('Eigene Oberfläche');
     def.tileSize = Math.max(1, +$<HTMLInputElement>('#upTile', el).value || 60);
     def.mapping = mapping;
     if (!def.aspect) def.aspect = aspect();
@@ -1975,7 +1993,7 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
     m.close();
     renderMaterialsTab();
     onCreated?.(def.id);
-    toast(`„${def.name}“ gespeichert.`);
+    toast(tr('„{name}“ gespeichert.', { name: def.name }));
   });
 }
 
@@ -1996,19 +2014,19 @@ function renderProps() {
     const withComps = all.filter(({ it }) => compartments(it, h.settings).length);
     const fachCount = withComps.reduce((n, { it }) => n + compartments(it, h.settings).length, 0);
     const filled = [...sync.storage.values()].filter((pl) => pl.items.length).length;
-    el.innerHTML = `<h2>${esc(h.name || 'Haus')}</h2><div class="sub">Nichts ausgewählt</div>
+    el.innerHTML = `<h2>${esc(h.name || tr('Haus'))}</h2><div class="sub">${tr('Nichts ausgewählt')}</div>
       <div class="stats">
-        <span>Etagen</span><span>${h.floors.length}</span>
-        <span>Räume</span><span>${h.floors.reduce((n, f) => n + f.rooms.length, 0)}</span>
-        <span>Möbel</span><span>${all.length}</span>
-        <span>Möbel mit Fächern</span><span>${withComps.length}</span>
-        <span>Fächer (Lagerplätze)</span><span>${fachCount}</span>
-        ${sync.online ? `<span>davon belegt</span><span>${filled}</span>` : ''}
+        <span>${tr('Etagen')}</span><span>${h.floors.length}</span>
+        <span>${tr('Räume')}</span><span>${h.floors.reduce((n, f) => n + f.rooms.length, 0)}</span>
+        <span>${tr('Möbel')}</span><span>${all.length}</span>
+        <span>${tr('Möbel mit Fächern')}</span><span>${withComps.length}</span>
+        <span>${tr('Fächer (Lagerplätze)')}</span><span>${fachCount}</span>
+        ${sync.online ? `<span>${tr('davon belegt')}</span><span>${filled}</span>` : ''}
       </div>
-      <h3>So geht's</h3>
-      <p class="hint">1. Etage anlegen und Wände zeichnen (oder Grundriss hochladen und nachzeichnen).<br>2. Mit <b>Raum festlegen</b> die Räume benennen – jeder Raum wird ein Lager.<br>3. Im Katalog Schränke, Regale und Küchenmöbel setzen – ihre Fächer werden Lagerplätze (Buchstabe am Möbel = Spalte).<br>4. In 3D <b>Lager</b> einschalten: Fach anklicken, einbuchen, entnehmen. Oben „Wo liegt …?“ sucht im ganzen Haus.</p>
-      <h3>Tastenkürzel</h3>
-      <p class="hint"><kbd>Entf</kbd> löschen · <kbd>R</kbd> drehen · <kbd>L</kbd> sperren · <kbd>Strg</kbd>+<kbd>D</kbd> duplizieren · <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig · <kbd>Esc</kbd> Werkzeug beenden · <kbd>Alt</kbd> beim Ziehen: frei platzieren</p>`;
+      <h3>${tr("So geht's")}</h3>
+      <p class="hint">${tr('1. Etage anlegen und Wände zeichnen (oder Grundriss hochladen und nachzeichnen).<br>2. Mit <b>Raum festlegen</b> die Räume benennen – jeder Raum wird ein Lager.<br>3. Im Katalog Schränke, Regale und Küchenmöbel setzen – ihre Fächer werden Lagerplätze (Buchstabe am Möbel = Spalte).<br>4. In 3D <b>Lager</b> einschalten: Fach anklicken, einbuchen, entnehmen. Oben „Wo liegt …?“ sucht im ganzen Haus.')}</p>
+      <h3>${tr('Tastenkürzel')}</h3>
+      <p class="hint">${tr('<kbd>Entf</kbd> löschen · <kbd>R</kbd> drehen · <kbd>L</kbd> sperren · <kbd>Strg</kbd>+<kbd>D</kbd> duplizieren · <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig · <kbd>Esc</kbd> Werkzeug beenden · <kbd>Alt</kbd> beim Ziehen: frei platzieren')}</p>`;
     return;
   }
 
@@ -2019,25 +2037,25 @@ function renderProps() {
     const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
     const furniture = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1));
     const floorDef = slotMaterialDef(p, 'floor', r.floorMaterial);
-    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">Raum auf ${esc(f.name)} · ${area.toFixed(1).replace('.', ',')} m²</div>
-      <div class="row"><label>Name</label><input type="text" data-rk="name" value="${esc(r.name)}" maxlength="40" style="width:160px" /></div>
-      <div class="row"><label title="Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.">Lager-Kürzel</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
-      ${r.manual ? `<p class="hint">Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.${f.walls.length ? ' <button class="btn mini" data-rk="detect">Aus Wänden erkennen</button>' : ''}</p>` : ''}
-      <h3>Bodenbelag</h3>
-      <div class="mat-row" data-floormat><span class="sw" style="${swatchStyle(floorDef)}"></span><div><span>Boden</span><small>${esc(floorDef.name)}${r.floorMaterial ? '' : ' (wie im ganzen Haus)'}</small></div></div>
-      <h3>Lager ${esc(r.code)}</h3>
+    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">${tr('Raum auf {floor} · {area} m²', { floor: esc(f.name), area: fixed(area, 1) })}</div>
+      <div class="row"><label>${tr('Name')}</label><input type="text" data-rk="name" value="${esc(r.name)}" maxlength="40" style="width:160px" /></div>
+      <div class="row"><label title="${tr('Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.')}">${tr('Lager-Kürzel')}</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
+      ${r.manual ? `<p class="hint">${tr('Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.')}${f.walls.length ? ` <button class="btn mini" data-rk="detect">${tr('Aus Wänden erkennen')}</button>` : ''}</p>` : ''}
+      <h3>${tr('Bodenbelag')}</h3>
+      <div class="mat-row" data-floormat><span class="sw" style="${swatchStyle(floorDef)}"></span><div><span>${tr('Fußboden')}</span><small>${esc(floorDef.name)}${r.floorMaterial ? '' : ` ${tr('(wie im ganzen Haus)')}`}</small></div></div>
+      <h3>${tr('Lager {code}', { code: esc(r.code) })}</h3>
       ${furniture.length ? `<div class="room-furniture">${furniture
         .map((it) => {
           const n = compartments(it, p.settings).length;
           const filled = Array.from({ length: n }, (_, i) => sync.fach(it.id, i)).filter((pl) => pl?.items.length).length;
-          return `<button class="room-row" data-it="${it.id}"><code>${esc(r.code)}-${it.storageCol}</code><b>${esc(itemName(it))}</b><small>${n} Fächer${sync.online ? ` · ${filled} belegt` : ''}</small></button>`;
+          return `<button class="room-row" data-it="${it.id}"><code>${esc(r.code)}-${it.storageCol}</code><b>${esc(itemName(it))}</b><small>${trn(n, '{n} Fach', '{n} Fächer')}${sync.online ? ` · ${tr('{n} belegt', { n: filled })}` : ''}</small></button>`;
         })
-        .join('')}</div>` : '<p class="hint">Noch keine Möbel mit Fächern in diesem Raum.</p>'}
-      <div class="actions"><button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button><button class="btn danger" data-act="del">${ICON.trash}Raum löschen</button></div>`;
+        .join('')}</div>` : `<p class="hint">${tr('Noch keine Möbel mit Fächern in diesem Raum.')}</p>`}
+      <div class="actions"><button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button><button class="btn danger" data-act="del">${ICON.trash}${tr('Raum löschen')}</button></div>`;
     el.querySelector('button[data-rk="detect"]')?.addEventListener('click', () => {
       delete r.manual;
       store.commit();
-      if (!r.polygon) toast('Kein geschlossener Bereich um den Raum – Umriss bleibt.');
+      if (!r.polygon) toast(tr('Kein geschlossener Bereich um den Raum – Umriss bleibt.'));
     });
     el.querySelectorAll<HTMLInputElement>('input[data-rk]').forEach((inp) =>
       inp.addEventListener('change', () => {
@@ -2045,7 +2063,7 @@ function renderProps() {
         else {
           const c = inp.value.trim().toUpperCase();
           if (!CODE_RE.test(c)) {
-            toast('Kürzel: 1–4 Zeichen, A–Z und 0–9, beginnt mit einem Buchstaben.');
+            toast(tr('Kürzel: 1–4 Zeichen, A–Z und 0–9, beginnt mit einem Buchstaben.'));
             inp.value = r.code;
             return;
           }
@@ -2055,7 +2073,7 @@ function renderProps() {
       }),
     );
     el.querySelector('[data-floormat]')!.addEventListener('click', () =>
-      openMaterialPicker(`Boden – ${r.name}`, r.floorMaterial, true, (id) => {
+      openMaterialPicker(tr('Boden – {name}', { name: r.name }), r.floorMaterial, true, (id) => {
         if (id) r.floorMaterial = id;
         else delete r.floorMaterial;
         store.commit();
@@ -2074,18 +2092,18 @@ function renderProps() {
     const hasFront = (['base', 'wall', 'island'].includes(e.kind) && it.front) || tallKind;
     const frontOptions: [string, string][] =
       e.kind === 'wall'
-        ? [['doors', 'Türen'], ['single', 'Eine Klappe / Tür'], ['open', 'Offen']]
+        ? [['doors', tr('Türen')], ['single', tr('Eine Klappe / Tür')], ['open', tr('Offen')]]
         : e.kind === 'tallOven'
-          ? [['drawers', 'Auszüge + Mikrowelle'], ['doors', 'Türen + Lifttür']]
+          ? [['drawers', tr('Auszüge + Mikrowelle')], ['doors', tr('Türen + Lifttür')]]
           : tallKind
-            ? [['doors', 'Zwei Türen'], ['single', 'Eine durchgehende Tür']]
-            : [['doors', 'Türen'], ['single', 'Eine Tür'], ['drawers', 'Auszüge'], ['mixed', 'Schublade + Tür']];
+            ? [['doors', tr('Zwei Türen')], ['single', tr('Eine durchgehende Tür')]]
+            : [['doors', tr('Türen')], ['single', tr('Eine Tür')], ['drawers', tr('Auszüge')], ['mixed', tr('Schublade + Tür')]];
     const curFront = it.front ?? (e.kind === 'tallOven' ? 'drawers' : 'doors');
     const matRow = (slot: MaterialSlot) => {
       const ov = it.materials?.[slot];
       const { m, name } = slotLabel(p, slot, ov, it.materials?.front);
       const uvSet = it.uv?.[slot] && Object.keys(it.uv[slot]!).length;
-      return `<div class="mat-row" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><span>${SLOT_LABELS[slot]}</span><small>${esc(name)}${ov ? '' : ' (Standard)'}</small></div><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-adj="${slot}" title="Farbe anpassen">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvSet ? 'on' : ''}" data-uv="${slot}" title="Textur ausrichten: strecken, skalieren, drehen, verschieben">${ICON.move}</button>` : ''}</div>`;
+      return `<div class="mat-row" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><span>${SLOT_LABELS[slot]}</span><small>${esc(name)}${ov ? '' : ` ${tr('(Standard)')}`}</small></div><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-adj="${slot}" title="${tr('Farbe anpassen')}">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvSet ? 'on' : ''}" data-uv="${slot}" title="${tr('Textur ausrichten: strecken, skalieren, drehen, verschieben')}">${ICON.move}</button>` : ''}</div>`;
     };
     const grip: MaterialSlot = p.settings.handleless ? 'channel' : 'handle';
     const slots: MaterialSlot[] = e.kind === 'model' ? [] : e.kind === 'rack' ? ['carcass'] : e.kind === 'heavyRack' ? [] : ['cupboard', 'wardrobe', 'sideboard', 'dresser'].includes(e.kind) ? ['front', grip, 'carcass'] : ['table', 'stool', 'shelf', 'workbench'].includes(e.kind) ? ['countertop'] : e.kind === 'pendant' || e.kind === 'fridgeFree' || e.kind === 'hood' ? [] : e.kind === 'sink' ? ['front', 'countertop', 'sink', grip, 'carcass'] : e.countertop || (e.object?.build.type === 'korpus' && e.object.build.countertop) ? ['front', 'countertop', grip, 'carcass'] : ['front', grip, 'carcass'];
@@ -2094,57 +2112,57 @@ function renderProps() {
     const lv = LEVEL_KINDS[e.kind];
     const code = storageCode(store.floor, it);
     const storageHtml = comps.length
-      ? `<h3>Lager ${code && it.storageCol ? `<code>${esc(code)}-${it.storageCol}</code>` : ''}</h3>
+      ? `<h3>${tr('Lager')} ${code && it.storageCol ? `<code>${esc(code)}-${it.storageCol}</code>` : ''}</h3>
         <div class="fach-list">${comps
           .map((c) => {
             const pl = sync.fach(it.id, c.row);
             const n = pl?.items.length ?? 0;
-            return `<button class="fach-row ${n ? 'full' : ''}" data-fach="${c.row}"><code>${pl ? esc(pl.address) : `${esc(code)}-${it.storageCol ?? '?'}${c.row}`}</code><span>${esc(c.label)}</span><small>${sync.online ? (n ? `${n} ${n === 1 ? 'Gegenstand' : 'Gegenstände'}` : 'leer') : ''}</small></button>`;
+            return `<button class="fach-row ${n ? 'full' : ''}" data-fach="${c.row}"><code>${pl ? esc(pl.address) : `${esc(code)}-${it.storageCol ?? '?'}${c.row}`}</code><span>${esc(c.label)}</span><small>${sync.online ? (n ? trn(n, '{n} Gegenstand', '{n} Gegenstände') : tr('leer')) : ''}</small></button>`;
           })
           .join('')}</div>
-        <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">${ic('tag')}Etiketten / QR-Schilder für die Fächer</a>
-        ${roomOf(store.floor, it) ? '' : '<p class="hint">Steht in keinem Raum – die Plätze gehören zum Lager der Etage. Mit „Raum festlegen“ einen Raum anlegen.</p>'}`
+        <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">${ic('tag')}${tr('Etiketten / QR-Schilder für die Fächer')}</a>
+        ${roomOf(store.floor, it) ? '' : `<p class="hint">${tr('Steht in keinem Raum – die Plätze gehören zum Lager der Etage. Mit „Raum festlegen“ einen Raum anlegen.')}</p>`}`
       : '';
     // Möbelart aus der Objektbibliothek: Kopie im Haus; neuere Version in der Bibliothek nur auf Wunsch übernehmen
     const obj = e.object;
     const libObj = obj && libraryObject(obj.id);
     const newer = !!(obj && libObj && compareVersions(libObj.version, obj.version) > 0);
     const objInfo = obj
-      ? `<div class="obj-info">${ic('box')}<div><b>${esc(obj.name)}</b><small>Objektbibliothek · Version ${esc(obj.version)}${obj.author ? ` · ${esc(obj.author)}` : ''}</small>
-        ${newer ? `<button class="btn mini primary" data-act="objUpdate" title="Die Bibliothek hat eine neuere Version dieser Möbelart">Version ${esc(libObj!.version)} übernehmen</button>` : ''}</div></div>`
+      ? `<div class="obj-info">${ic('box')}<div><b>${esc(obj.name)}</b><small>${tr('Objektbibliothek · Version {version}', { version: esc(obj.version) })}${obj.author ? ` · ${esc(obj.author)}` : ''}</small>
+        ${newer ? `<button class="btn mini primary" data-act="objUpdate" title="${tr('Die Bibliothek hat eine neuere Version dieser Möbelart')}">${tr('Version {version} übernehmen', { version: esc(libObj!.version) })}</button>` : ''}</div></div>`
       : '';
-    el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? 'Möbel &amp; Deko (3D-Modell)' : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
-      ${comps.length ? `<div class="row"><label title="Name im Lager, z. B. „Vorratsschrank“ oder „Besteckschublade“">Eigener Name</label><input type="text" data-key="label" value="${esc(it.label ?? '')}" placeholder="${esc(e.name)}" maxlength="40" style="width:160px" /></div>` : ''}
+    el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? tr('Möbel &amp; Deko (3D-Modell)') : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
+      ${comps.length ? `<div class="row"><label title="${tr('Name im Lager, z. B. „Vorratsschrank“ oder „Besteckschublade“')}">${tr('Eigener Name')}</label><input type="text" data-key="label" value="${esc(it.label ?? '')}" placeholder="${esc(e.name)}" maxlength="40" style="width:160px" /></div>` : ''}
       ${lv ? `<div class="row"><label>${lv.label}</label><select data-key="levels" style="width:160px">${Array.from({ length: lv.max - lv.min + 1 }, (_, i) => lv.min + i).map((n) => `<option value="${n}" ${levelsOf(it, e.kind) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
       ${objInfo}
-      ${e.kind === 'model' && it.model ? `<div class="model-info">${it.model.thumb ? `<img src="${esc(it.model.thumb)}" alt="" />` : ''}<div><b>${esc(it.model.name)}</b><small>${esc(it.model.license ?? '')}</small>${it.model.size ? `<button class="btn mini" data-act="modelSize" title="Auf die Originalmaße zurücksetzen">Originalmaße ${it.model.size.join(' × ')} cm</button>` : ''}</div></div>
-        <div class="row"><label for="mprop">Seitenverhältnis beibehalten</label><input type="checkbox" id="mprop" checked /></div>` : ''}
-      ${num('Breite', 'width', it.width)}
+      ${e.kind === 'model' && it.model ? `<div class="model-info">${it.model.thumb ? `<img src="${esc(it.model.thumb)}" alt="" />` : ''}<div><b>${esc(it.model.name)}</b><small>${esc(it.model.license ?? '')}</small>${it.model.size ? `<button class="btn mini" data-act="modelSize" title="${tr('Auf die Originalmaße zurücksetzen')}">${tr('Originalmaße {size} cm', { size: it.model.size.join(' × ') })}</button>` : ''}</div></div>
+        <div class="row"><label for="mprop">${tr('Seitenverhältnis beibehalten')}</label><input type="checkbox" id="mprop" checked /></div>` : ''}
+      ${num(tr('Breite'), 'width', it.width)}
       ${e.widths ? `<div class="chips">${e.widths.map((w) => `<button data-w="${w}" class="${w === it.width ? 'on' : ''}">${w}</button>`).join('')}</div>` : ''}
-      ${num('Tiefe', 'depth', it.depth)}
-      ${num('Höhe', 'height', it.height)}
-      ${num('Abstand Boden', 'elevation', it.elevation)}
-      ${num('Drehung', 'rotation', ((((it.rotation * 180) / Math.PI) % 360) + 360) % 360, '°', 15)}
-      ${hasFront ? `<div class="row"><label>Front</label><select data-key="front" style="width:160px">${frontOptions.map(([v, l]) => `<option value="${v}" ${curFront === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
-      ${e.kind === 'base' && it.front === 'drawers' ? `<div class="row"><label>Anzahl Auszüge</label><select data-key="drawers" style="width:160px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
-      ${e.kind === 'sink' ? `<div class="row"><label>Becken-Modell</label><select data-key="sinkModel" style="width:160px"><option value="standard" ${it.sinkModel !== 'subline500u' ? 'selected' : ''}>Standard</option><option value="subline500u" ${it.sinkModel === 'subline500u' ? 'selected' : ''}>BLANCO SUBLINE 500-U</option></select></div>
-        <div class="row"><label>Armatur</label><select data-key="faucet" style="width:160px"><option value="standard" ${it.faucet !== 'kano-s' ? 'selected' : ''}>Bogen (Standard)</option><option value="kano-s" ${it.faucet === 'kano-s' ? 'selected' : ''}>BLANCO KANO-S Vario</option></select></div>` : ''}
-      ${tallKind || ['cupboard', 'wardrobe'].includes(e.kind) ? `<div class="row"><label for="psg" title="Tür in Schrankoptik, z. B. zu einem Raum dahinter: kein Korpus, keine Fächer, Öffnung in der Wand dahinter">Durchgang (Tür in Schrankoptik)</label><input type="checkbox" id="psg" data-key="passage" ${it.passage ? 'checked' : ''} /></div>` : ''}
-      ${tallKind && p.settings.handleless ? `<div class="row"><label>Griffmulde</label><select data-key="grip" style="width:160px"><option value="horizontal" ${it.grip !== 'vertical' ? 'selected' : ''}>Waagerecht (in der Front)</option><option value="vertical" ${it.grip === 'vertical' ? 'selected' : ''}>Senkrechte Griffleiste daneben</option></select></div>` : ''}
+      ${num(tr('Tiefe'), 'depth', it.depth)}
+      ${num(tr('Höhe'), 'height', it.height)}
+      ${num(tr('Abstand Boden'), 'elevation', it.elevation)}
+      ${num(tr('Drehung'), 'rotation', ((((it.rotation * 180) / Math.PI) % 360) + 360) % 360, '°', 15)}
+      ${hasFront ? `<div class="row"><label>${tr('Front')}</label><select data-key="front" style="width:160px">${frontOptions.map(([v, l]) => `<option value="${v}" ${curFront === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
+      ${e.kind === 'base' && it.front === 'drawers' ? `<div class="row"><label>${tr('Anzahl Auszüge')}</label><select data-key="drawers" style="width:160px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
+      ${e.kind === 'sink' ? `<div class="row"><label>${tr('Becken-Modell')}</label><select data-key="sinkModel" style="width:160px"><option value="standard" ${it.sinkModel !== 'subline500u' ? 'selected' : ''}>${tr('Standard')}</option><option value="subline500u" ${it.sinkModel === 'subline500u' ? 'selected' : ''}>BLANCO SUBLINE 500-U</option></select></div>
+        <div class="row"><label>${tr('Armatur')}</label><select data-key="faucet" style="width:160px"><option value="standard" ${it.faucet !== 'kano-s' ? 'selected' : ''}>${tr('Bogen (Standard)')}</option><option value="kano-s" ${it.faucet === 'kano-s' ? 'selected' : ''}>BLANCO KANO-S Vario</option></select></div>` : ''}
+      ${tallKind || ['cupboard', 'wardrobe'].includes(e.kind) ? `<div class="row"><label for="psg" title="${tr('Tür in Schrankoptik, z. B. zu einem Raum dahinter: kein Korpus, keine Fächer, Öffnung in der Wand dahinter')}">${tr('Durchgang (Tür in Schrankoptik)')}</label><input type="checkbox" id="psg" data-key="passage" ${it.passage ? 'checked' : ''} /></div>` : ''}
+      ${tallKind && p.settings.handleless ? `<div class="row"><label>${tr('Griffmulde')}</label><select data-key="grip" style="width:160px"><option value="horizontal" ${it.grip !== 'vertical' ? 'selected' : ''}>${tr('Waagerecht (in der Front)')}</option><option value="vertical" ${it.grip === 'vertical' ? 'selected' : ''}>${tr('Senkrechte Griffleiste daneben')}</option></select></div>` : ''}
       ${e.kind === 'island' ? `
-        <div class="row"><label>Rückseite</label><select data-key="islandBack" style="width:150px"><option value="seating" ${it.islandBack !== 'doors' ? 'selected' : ''}>Theke (Sitzplatz)</option><option value="doors" ${it.islandBack === 'doors' ? 'selected' : ''}>Schranktüren</option></select></div>
-        <div class="row"><label>Spaltenbreiten</label><input type="text" data-key="columnWidths" style="width:150px" placeholder="z. B. 90/100/90" value="${it.columnWidths?.join('/') ?? ''}" title="Breiten in cm, mit / getrennt – leer = gleich breite Spalten" /></div>
-        <div class="row"><label>Spalten</label><select data-key="columns" style="width:150px" ${it.columnWidths?.length ? 'disabled title="durch Spaltenbreiten festgelegt"' : ''}><option value="">Automatisch (${Math.max(1, Math.round(it.width / 80))})</option>${[1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}" ${it.columns === n ? 'selected' : ''}>${n} × ${Math.round((it.width / n) * 10) / 10} cm</option>`).join('')}</select></div>
-        <div class="row"><label>Auszüge je Spalte</label><select data-key="drawers" style="width:150px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-        ${it.islandBack === 'doors' ? `<div class="row"><label>Türen je Spalte (Rückseite)</label><select data-key="doorsPerColumn" style="width:150px"><option value="">Automatisch</option><option value="1" ${it.doorsPerColumn === 1 ? 'selected' : ''}>1 Tür</option><option value="2" ${it.doorsPerColumn === 2 ? 'selected' : ''}>2 Türen</option></select></div>` : ''}
-        <div class="row"><label for="wf">Arbeitsplatte seitlich herunter</label><input type="checkbox" id="wf" data-key="waterfall" ${(it.waterfall ?? it.islandBack !== 'doors') ? 'checked' : ''} /></div>` : ''}
+        <div class="row"><label>${tr('Rückseite')}</label><select data-key="islandBack" style="width:150px"><option value="seating" ${it.islandBack !== 'doors' ? 'selected' : ''}>${tr('Theke (Sitzplatz)')}</option><option value="doors" ${it.islandBack === 'doors' ? 'selected' : ''}>${tr('Schranktüren')}</option></select></div>
+        <div class="row"><label>${tr('Spaltenbreiten')}</label><input type="text" data-key="columnWidths" style="width:150px" placeholder="${tr('z. B. 90/100/90')}" value="${it.columnWidths?.join('/') ?? ''}" title="${tr('Breiten in cm, mit / getrennt – leer = gleich breite Spalten')}" /></div>
+        <div class="row"><label>${tr('Spalten')}</label><select data-key="columns" style="width:150px" ${it.columnWidths?.length ? `disabled title="${tr('durch Spaltenbreiten festgelegt')}"` : ''}><option value="">${tr('Automatisch ({n})', { n: Math.max(1, Math.round(it.width / 80)) })}</option>${[1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}" ${it.columns === n ? 'selected' : ''}>${n} × ${Math.round((it.width / n) * 10) / 10} cm</option>`).join('')}</select></div>
+        <div class="row"><label>${tr('Auszüge je Spalte')}</label><select data-key="drawers" style="width:150px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        ${it.islandBack === 'doors' ? `<div class="row"><label>${tr('Türen je Spalte (Rückseite)')}</label><select data-key="doorsPerColumn" style="width:150px"><option value="">${tr('Automatisch')}</option><option value="1" ${it.doorsPerColumn === 1 ? 'selected' : ''}>${trn(1, '{n} Tür', '{n} Türen')}</option><option value="2" ${it.doorsPerColumn === 2 ? 'selected' : ''}>${trn(2, '{n} Tür', '{n} Türen')}</option></select></div>` : ''}
+        <div class="row"><label for="wf">${tr('Arbeitsplatte seitlich herunter')}</label><input type="checkbox" id="wf" data-key="waterfall" ${(it.waterfall ?? it.islandBack !== 'doors') ? 'checked' : ''} /></div>` : ''}
       ${storageHtml}
-      ${slots.length ? `<h3>Material dieses Elements</h3>${slots.map(matRow).join('')}` : ''}
+      ${slots.length ? `<h3>${tr('Material dieses Elements')}</h3>${slots.map(matRow).join('')}` : ''}
       <div class="actions">
-        <button class="btn" data-act="rotate">${ICON.rotate}Drehen</button>
-        <button class="btn" data-act="dup">${ICON.copy}Duplizieren</button>
-        <button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button>
-        <button class="btn danger" data-act="del">${ICON.trash}Löschen</button>
+        <button class="btn" data-act="rotate">${ICON.rotate}${tr('Drehen')}</button>
+        <button class="btn" data-act="dup">${ICON.copy}${tr('Duplizieren')}</button>
+        <button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button>
+        <button class="btn danger" data-act="del">${ICON.trash}${tr('Löschen')}</button>
       </div>`;
     el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-key]').forEach((inp) =>
       inp.addEventListener('change', () => {
@@ -2199,11 +2217,15 @@ function renderProps() {
       const users = store.house.floors.flatMap((f) => f.items).filter((x) => x.type === OBJ_PREFIX + obj.id).length;
       const before = objectCompartmentCount(obj);
       const after = objectCompartmentCount(libObj);
-      const warn = before !== after ? `\n\nAchtung: Die Fächerzahl ändert sich von ${before} auf ${after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.` : '';
-      if (!confirm(`„${obj.name}“ auf Version ${libObj.version} bringen? Das betrifft ${users === 1 ? 'dieses Möbel' : `alle ${users} Möbel dieser Art`} im Haus.${warn}`)) return;
+      const warn = before !== after ? '\n\n' + tr('Achtung: Die Fächerzahl ändert sich von {before} auf {after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.', { before, after }) : '';
+      const question =
+        users === 1
+          ? tr('„{name}“ auf Version {version} bringen? Das betrifft dieses Möbel im Haus.', { name: obj.name, version: libObj.version })
+          : tr('„{name}“ auf Version {version} bringen? Das betrifft alle {n} Möbel dieser Art im Haus.', { name: obj.name, version: libObj.version, n: users });
+      if (!confirm(question + warn)) return;
       store.house.objectTypes = { ...(store.house.objectTypes ?? {}), [obj.id]: structuredClone(libObj) };
       store.commit();
-      toast(`Version ${libObj.version} übernommen.`);
+      toast(tr('Version {version} übernommen.', { version: libObj.version }));
     });
     el.querySelector('[data-act="modelSize"]')?.addEventListener('click', () => {
       const s = it.model!.size!;
@@ -2232,16 +2254,16 @@ function renderProps() {
     el.querySelectorAll<HTMLElement>('.mat-row').forEach((row) =>
       row.addEventListener('click', () => {
         const slot = row.dataset.slot as MaterialSlot;
-        openMaterialPicker(`${SLOT_LABELS[slot]} – ${e.name}`, it.materials?.[slot], true, async (id) => {
+        openMaterialPicker(tr('{slot} – {name}', { slot: SLOT_LABELS[slot], name: e.name }), it.materials?.[slot], true, async (id) => {
           // Bei Fronten immer nachfragen: nur dieses Element oder alle Fronten?
           if (slot === 'front' && id) {
             const name = esc(findMaterialName(id));
             const choice = await askChoice(
-              'Front ändern',
-              `<p>Soll „${name}“ nur für <b>${esc(e.name)}</b> oder für <b>alle Fronten</b> der Küche verwendet werden?</p>`,
+              tr('Front ändern'),
+              `<p>${tr('Soll „{name}“ nur für <b>{item}</b> oder für <b>alle Fronten</b> der Küche verwendet werden?', { name, item: esc(e.name) })}</p>`,
               [
-                { id: 'one', label: 'Nur dieses Element' },
-                { id: 'all', label: 'Alle Fronten', primary: true },
+                { id: 'one', label: tr('Nur dieses Element') },
+                { id: 'all', label: tr('Alle Fronten'), primary: true },
               ],
             );
             if (!choice) return;
@@ -2267,11 +2289,11 @@ function renderProps() {
   if (s.kind === 'wall') {
     const w = store.wall(s.id);
     if (!w) return;
-    el.innerHTML = `<h2>Wand</h2><div class="sub">Endpunkte im Grundriss ziehen</div>
-      ${num('Länge', 'length', wallLength(w))}
-      ${num('Stärke', 'thickness', w.thickness)}
-      ${num('Höhe', 'height', w.height)}
-      <div class="actions"><button class="btn" data-act="allHeight">Höhe für alle Wände</button><button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button><button class="btn danger" data-act="del">${ICON.trash}Löschen</button></div>`;
+    el.innerHTML = `<h2>${tr('Wand')}</h2><div class="sub">${tr('Endpunkte im Grundriss ziehen')}</div>
+      ${num(tr('Länge'), 'length', wallLength(w))}
+      ${num(tr('Stärke'), 'thickness', w.thickness)}
+      ${num(tr('Höhe'), 'height', w.height)}
+      <div class="actions"><button class="btn" data-act="allHeight">${tr('Höhe für alle Wände')}</button><button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button><button class="btn danger" data-act="del">${ICON.trash}${tr('Löschen')}</button></div>`;
     el.querySelectorAll<HTMLInputElement>('[data-key]').forEach((inp) =>
       inp.addEventListener('change', () => {
         const v = Math.max(1, +inp.value || 1);
@@ -2291,13 +2313,13 @@ function renderProps() {
   if (s.kind === 'opening') {
     const o = store.opening(s.id);
     if (!o) return;
-    el.innerHTML = `<h2>${o.type === 'door' ? 'Tür' : o.type === 'passage' ? 'Durchgang' : 'Fenster'}</h2><div class="sub">Entlang der Wand ziehen</div>
-      <div class="row"><label>Typ</label><select data-key="type" style="width:120px"><option value="window" ${o.type === 'window' ? 'selected' : ''}>Fenster</option><option value="door" ${o.type === 'door' ? 'selected' : ''}>Tür</option><option value="passage" ${o.type === 'passage' ? 'selected' : ''}>Durchgang</option></select></div>
-      ${num('Breite', 'width', o.width)}
-      ${num('Höhe', 'height', o.height)}
-      ${num('Brüstung', 'sill', o.sill)}
-      ${num('Abstand Mitte', 'offset', o.offset)}
-      <div class="actions"><button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button><button class="btn danger" data-act="del">${ICON.trash}Löschen</button></div>`;
+    el.innerHTML = `<h2>${o.type === 'door' ? tr('Tür') : o.type === 'passage' ? tr('Durchgang') : tr('Fenster')}</h2><div class="sub">${tr('Entlang der Wand ziehen')}</div>
+      <div class="row"><label>${tr('Typ')}</label><select data-key="type" style="width:120px"><option value="window" ${o.type === 'window' ? 'selected' : ''}>${tr('Fenster')}</option><option value="door" ${o.type === 'door' ? 'selected' : ''}>${tr('Tür')}</option><option value="passage" ${o.type === 'passage' ? 'selected' : ''}>${tr('Durchgang')}</option></select></div>
+      ${num(tr('Breite'), 'width', o.width)}
+      ${num(tr('Höhe'), 'height', o.height)}
+      ${num(tr('Brüstung'), 'sill', o.sill)}
+      ${num(tr('Abstand Mitte'), 'offset', o.offset)}
+      <div class="actions"><button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button><button class="btn danger" data-act="del">${ICON.trash}${tr('Löschen')}</button></div>`;
     el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-key]').forEach((inp) =>
       inp.addEventListener('change', () => {
         const k = inp.dataset.key!;
@@ -2331,7 +2353,7 @@ function setPassage(it: Item, on: boolean) {
   const back = { x: it.x + Math.sin(it.rotation) * (it.depth / 2 + 5), y: it.y - Math.cos(it.rotation) * (it.depth / 2 + 5) };
   const w = (it.wallId && store.wall(it.wallId)) || [...proj.walls].map((x) => ({ x, pr: projectOnWall(x, back) })).filter((c) => c.pr.t > 0 && c.pr.t < c.pr.L && c.pr.distance < c.x.thickness / 2 + 30).sort((a, b) => a.pr.distance - b.pr.distance)[0]?.x;
   if (!w) {
-    toast('Hinter dem Schrank ist keine Wand – die Öffnung bitte selbst als Durchgang setzen.');
+    toast(tr('Hinter dem Schrank ist keine Wand – die Öffnung bitte selbst als Durchgang setzen.'));
     return;
   }
   const t = projectOnWall(w, { x: it.x, y: it.y }).t;
@@ -2361,7 +2383,7 @@ function bindActions(el: HTMLElement, it?: Item) {
   el.querySelector('[data-act="lock"]')?.addEventListener('click', () => {
     if (!store.selection) return;
     store.setLocked(store.selection, true);
-    toast('Gesperrt – entsperren unter „Etage“ → „Gesperrt“.');
+    toast(tr('Gesperrt – entsperren unter „Etage“ → „Gesperrt“.'));
   });
   el.querySelector('[data-act="dup"]')?.addEventListener('click', () => duplicateSelection());
   el.querySelector('[data-act="rotate"]')?.addEventListener('click', () => {
@@ -2462,7 +2484,7 @@ if (shareToken) {
   fetch(`/api/shared/${encodeURIComponent(shareToken)}`)
     .then(async (r) => {
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
+      if (!r.ok) throw new Error(d.error ?? tr('Fehler {status}', { status: r.status }));
       return d as { name: string; data: Project };
     })
     .then((d) => {
@@ -2472,7 +2494,7 @@ if (shareToken) {
       view.setView('perspective');
     })
     .catch((e) => {
-      $('#sharedTitle').textContent = 'Link nicht verfügbar';
+      $('#sharedTitle').textContent = tr('Link nicht verfügbar');
       toast((e as Error).message);
     });
 }
@@ -2586,8 +2608,8 @@ function renderFloorTabs() {
   // Etagen mit Suchtreffern bekommen einen Punkt
   const hl = new Set([...view.highlight].map((k) => findItem(k.split(':')[0])?.floor.id));
   $('#floorTabs').innerHTML =
-    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${(f.elevation / 100).toFixed(2).replace('.', ',')} m">${esc(f.name)}${hl.has(f.id) && f.id !== store.floorId ? '<span class="hl-dot" title="Treffer auf dieser Etage"></span>' : ''}</button>`).join('') +
-    `<button class="floor-tab add plan-only" data-add title="Etage hinzufügen">${ic('plus')}</button>`;
+    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${fixed(f.elevation / 100, 2)} m">${esc(f.name)}${hl.has(f.id) && f.id !== store.floorId ? `<span class="hl-dot" title="${tr('Treffer auf dieser Etage')}"></span>` : ''}</button>`).join('') +
+    `<button class="floor-tab add plan-only" data-add title="${tr('Etage hinzufügen')}">${ic('plus')}</button>`;
   $('#floorTabs').querySelectorAll<HTMLElement>('[data-f]').forEach((b) => b.addEventListener('click', () => store.setFloor(b.dataset.f!)));
   $('#floorTabs').querySelector('[data-add]')!.addEventListener('click', () => openAddFloor());
 }
@@ -2596,15 +2618,15 @@ function renderFloorPanel() {
   const f = store.floor;
   const el = $('#floorPanel');
   el.innerHTML = `
-    <label class="field"><span>Name</span><input type="text" data-fk="name" value="${esc(f.name)}" maxlength="40" /></label>
+    <label class="field"><span>${tr('Name')}</span><input type="text" data-fk="name" value="${esc(f.name)}" maxlength="40" /></label>
     <div class="grid2">
-      <label class="field"><span>Art</span><select data-fk="kind">${(Object.keys(FLOOR_KINDS) as FloorKind[]).map((k) => `<option value="${k}" ${f.kind === k ? 'selected' : ''}>${FLOOR_KINDS[k]}</option>`).join('')}</select></label>
-      <label class="field"><span>Höhenlage</span><span class="unit" data-unit="cm"><input type="number" data-fk="elevation" value="${f.elevation}" step="1" title="Fußbodenoberkante relativ zum Erdgeschoss (Keller negativ)" /></span></label>
-      <label class="field"><span>Raumhöhe</span><span class="unit" data-unit="cm"><input type="number" data-fk="height" value="${f.height}" min="180" max="600" /></span></label>
-      <label class="field"><span>&nbsp;</span><button class="btn" data-fk="heightAll" title="Raumhöhe auf alle Wände dieser Etage übertragen">Auf Wände</button></label>
+      <label class="field"><span>${tr('Art')}</span><select data-fk="kind">${(Object.keys(FLOOR_KINDS) as FloorKind[]).map((k) => `<option value="${k}" ${f.kind === k ? 'selected' : ''}>${FLOOR_KINDS[k]}</option>`).join('')}</select></label>
+      <label class="field"><span>${tr('Höhenlage')}</span><span class="unit" data-unit="cm"><input type="number" data-fk="elevation" value="${f.elevation}" step="1" title="${tr('Fußbodenoberkante relativ zum Erdgeschoss (Keller negativ)')}" /></span></label>
+      <label class="field"><span>${tr('Raumhöhe')}</span><span class="unit" data-unit="cm"><input type="number" data-fk="height" value="${f.height}" min="180" max="600" /></span></label>
+      <label class="field"><span>&nbsp;</span><button class="btn" data-fk="heightAll" title="${tr('Raumhöhe auf alle Wände dieser Etage übertragen')}">${tr('Auf Wände')}</button></label>
     </div>
     <div id="lockedList"></div>
-    ${store.house.floors.length > 1 ? `<details class="danger-zone"><summary>Etage entfernen …</summary><button class="btn danger" data-fk="delete" style="width:100%;justify-content:center;margin-top:8px">${ICON.trash}Etage „${esc(f.name)}“ löschen</button></details>` : ''}`;
+    ${store.house.floors.length > 1 ? `<details class="danger-zone"><summary>${tr('Etage entfernen …')}</summary><button class="btn danger" data-fk="delete" style="width:100%;justify-content:center;margin-top:8px">${ICON.trash}${tr('Etage „{name}“ löschen', { name: esc(f.name) })}</button></details>` : ''}`;
   renderLockedList();
   el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input[data-fk], select[data-fk]').forEach((inp) =>
     inp.addEventListener('change', () => {
@@ -2622,7 +2644,9 @@ function renderFloorPanel() {
   });
   el.querySelector('[data-fk="delete"]')?.addEventListener('click', () => {
     const n = f.items.filter((i) => compartments(i, store.house.settings).length).length;
-    if (!confirm(`Etage „${f.name}“ mit ${f.walls.length} Wänden und ${f.items.length} Möbeln löschen?${n ? `\n\n${n} Möbel mit Fächern verschwinden aus dem Lager (Plätze mit Inhalt bleiben erhalten).` : ''}`)) return;
+    const question = tr('Etage „{name}“ mit {walls} Wänden und {items} Möbeln löschen?', { name: f.name, walls: f.walls.length, items: f.items.length });
+    const lost = n ? '\n\n' + tr('{n} Möbel mit Fächern verschwinden aus dem Lager (Plätze mit Inhalt bleiben erhalten).', { n }) : '';
+    if (!confirm(question + lost)) return;
     store.removeFloor(f.id);
   });
 }
@@ -2635,21 +2659,21 @@ function renderLockedList() {
   const locked = store.lockedObjects();
   const name = (s: NonNullable<PlanSelection>) => {
     if (s.kind === 'item') return itemName(store.item(s.id)!);
-    if (s.kind === 'room') return `Raum ${store.room(s.id)!.name}`;
-    if (s.kind === 'wall') return `Wand ${(wallLength(store.wall(s.id)!) / 100).toFixed(2).replace('.', ',')} m`;
+    if (s.kind === 'room') return tr('Raum {name}', { name: store.room(s.id)!.name });
+    if (s.kind === 'wall') return tr('Wand {len} m', { len: fixed(wallLength(store.wall(s.id)!) / 100, 2) });
     const o = store.opening(s.id)!;
-    return `${o.type === 'window' ? 'Fenster' : o.type === 'door' ? 'Tür' : 'Durchgang'} ${o.width} cm`;
+    return o.type === 'window' ? tr('Fenster {w} cm', { w: o.width }) : o.type === 'door' ? tr('Tür {w} cm', { w: o.width }) : tr('Durchgang {w} cm', { w: o.width });
   };
   const openWalls = f.walls.filter((w) => !w.locked).length;
-  el.innerHTML = `<h3 class="locked-h">${ICON.lock}Gesperrt${locked.length ? ` (${locked.length})` : ''}</h3>
-    ${locked.length ? `<div class="locked-list">${locked.map((l, i) => `<div class="locked-row"><span>${esc(name(l.sel))}</span><button class="btn mini" data-unlock="${i}">Entsperren</button></div>`).join('')}</div>` : '<p class="hint">Nichts gesperrt. Ein ausgewähltes Objekt mit „Sperren“ oder Taste L sperren – es ist dann im Editor nicht mehr auswählbar oder veränderbar.</p>'}
-    <div class="actions">${openWalls ? `<button class="btn mini" data-lockwalls>Alle Wände sperren</button>` : ''}${locked.length > 1 ? `<button class="btn mini" data-unlockall>Alle entsperren</button>` : ''}</div>`;
+  el.innerHTML = `<h3 class="locked-h">${ICON.lock}${tr('Gesperrt')}${locked.length ? ` (${locked.length})` : ''}</h3>
+    ${locked.length ? `<div class="locked-list">${locked.map((l, i) => `<div class="locked-row"><span>${esc(name(l.sel))}</span><button class="btn mini" data-unlock="${i}">${tr('Entsperren')}</button></div>`).join('')}</div>` : `<p class="hint">${tr('Nichts gesperrt. Ein ausgewähltes Objekt mit „Sperren“ oder Taste L sperren – es ist dann im Editor nicht mehr auswählbar oder veränderbar.')}</p>`}
+    <div class="actions">${openWalls ? `<button class="btn mini" data-lockwalls>${tr('Alle Wände sperren')}</button>` : ''}${locked.length > 1 ? `<button class="btn mini" data-unlockall>${tr('Alle entsperren')}</button>` : ''}</div>`;
   el.querySelectorAll<HTMLElement>('[data-unlock]').forEach((b) => b.addEventListener('click', () => store.setLocked(locked[+b.dataset.unlock!].sel, false)));
   el.querySelector('[data-lockwalls]')?.addEventListener('click', () => {
     f.walls.forEach((w) => (w.locked = true));
     if (store.selection?.kind === 'wall') store.select(null);
     store.commit();
-    toast(`${f.walls.length} Wände gesperrt.`);
+    toast(trn(f.walls.length, '{n} Wand gesperrt.', '{n} Wände gesperrt.'));
   });
   el.querySelector('[data-unlockall]')?.addEventListener('click', () => {
     for (const l of locked) delete l.obj.locked;
@@ -2663,26 +2687,26 @@ function openAddFloor() {
   const low = [...h.floors].sort((a, b) => a.elevation - b.elevation)[0];
   const above = top.elevation + top.height + 30;
   const m = modal(
-    'Etage hinzufügen',
+    tr('Etage hinzufügen'),
     `<div class="choice-grid">
-      <button class="choice" data-k="floor"><b>Etage darüber</b><span>Obergeschoss auf ${(above / 100).toFixed(2).replace('.', ',')} m</span></button>
-      <button class="choice" data-k="attic"><b>Dachgeschoss</b><span>Ganz oben, mit Dachschräge</span></button>
-      <button class="choice" data-k="basement"><b>Keller</b><span>Unter „${esc(low.name)}“</span></button>
-      <button class="choice" data-k="outdoor"><b>Außenbereich</b><span>Garten, Garage, Carport, Gartenhaus</span></button>
+      <button class="choice" data-k="floor"><b>${tr('Etage darüber')}</b><span>${tr('Obergeschoss auf {h} m', { h: fixed(above / 100, 2) })}</span></button>
+      <button class="choice" data-k="attic"><b>${tr('Dachgeschoss')}</b><span>${tr('Ganz oben, mit Dachschräge')}</span></button>
+      <button class="choice" data-k="basement"><b>${tr('Keller')}</b><span>${tr('Unter „{name}“', { name: esc(low.name) })}</span></button>
+      <button class="choice" data-k="outdoor"><b>${tr('Außenbereich')}</b><span>${tr('Garten, Garage, Carport, Gartenhaus')}</span></button>
     </div>
-    <label class="row switch"><input type="checkbox" id="copyOutline" checked /><span><b>Außenwände von „${esc(store.floor.name)}“ übernehmen</b><small>Der Umriss der aktuellen Etage wird als Wände vorgegeben.</small></span></label>`,
+    <label class="row switch"><input type="checkbox" id="copyOutline" checked /><span><b>${tr('Außenwände von „{name}“ übernehmen', { name: esc(store.floor.name) })}</b><small>${tr('Der Umriss der aktuellen Etage wird als Wände vorgegeben.')}</small></span></label>`,
   );
   m.el.querySelectorAll<HTMLElement>('[data-k]').forEach((b) =>
     b.addEventListener('click', () => {
       const kind = b.dataset.k as FloorKind;
-      const names: Record<FloorKind, string> = { floor: h.floors.some((f) => f.name === 'Obergeschoss') ? 'Obergeschoss 2' : 'Obergeschoss', attic: 'Dachgeschoss', basement: 'Keller', outdoor: 'Außen' };
+      const names: Record<FloorKind, string> = { floor: h.floors.some((f) => f.name === tr('Obergeschoss')) ? tr('Obergeschoss 2') : tr('Obergeschoss'), attic: tr('Dachgeschoss'), basement: tr('Keller'), outdoor: tr('Außen') };
       const elevation = kind === 'basement' ? low.elevation - 280 : kind === 'outdoor' ? 0 : above;
       const copy = ($('#copyOutline', m.el) as HTMLInputElement).checked && kind !== 'outdoor';
       const walls = copy ? outlineWalls(store.floor) : [];
       m.close();
       store.addFloor({ name: names[kind], kind, elevation, height: kind === 'basement' ? 230 : 260, walls, underlay: undefined });
       afterLoad();
-      toast(`„${names[kind]}“ angelegt. Die Etage darunter erscheint gestrichelt als Hilfe zum Zeichnen.`);
+      toast(tr('„{name}“ angelegt. Die Etage darunter erscheint gestrichelt als Hilfe zum Zeichnen.', { name: names[kind] }));
     }),
   );
 }
@@ -2701,35 +2725,35 @@ function renderRoomList() {
   const sel = store.selection;
   const el = $('#roomList');
   if (!f.rooms.length) {
-    el.innerHTML = `<p class="hint">Noch keine Räume. Mit <b>Raum festlegen</b> in eine von Wänden umschlossene Fläche klicken. Jeder Raum wird ein Lager.</p>`;
+    el.innerHTML = `<p class="hint">${tr('Noch keine Räume. Mit <b>Raum festlegen</b> in eine von Wänden umschlossene Fläche klicken. Jeder Raum wird ein Lager.')}</p>`;
     return;
   }
   el.innerHTML = `<div class="room-list">${f.rooms
     .map((r, i) => {
       const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
       const n = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).length;
-      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${area.toFixed(1).replace('.', ',')} m²${n ? ` · ${n} Möbel` : ''}</small></button>`;
+      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${fixed(area, 1)} m²${n ? ` · ${trn(n, '{n} Möbelstück', '{n} Möbel')}` : ''}</small></button>`;
     })
     .join('')}</div>`;
   el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) =>
     b.addEventListener('click', () => {
-      if (store.room(b.dataset.r!)?.locked) return toast('Der Raum ist gesperrt – entsperren unter „Etage“ → „Gesperrt“.');
+      if (store.room(b.dataset.r!)?.locked) return toast(tr('Der Raum ist gesperrt – entsperren unter „Etage“ → „Gesperrt“.'));
       store.select({ kind: 'room', id: b.dataset.r! });
     }),
   );
 }
 
-const ROOM_NAMES = ['Küche', 'Wohnzimmer', 'Esszimmer', 'Schlafzimmer', 'Kinderzimmer', 'Arbeitszimmer', 'Bad', 'Gäste-WC', 'Flur', 'Diele', 'Abstellraum', 'Speisekammer', 'Hauswirtschaftsraum', 'Vorratskeller', 'Heizungsraum', 'Werkstatt', 'Garage', 'Dachboden', 'Gartenhaus'];
+const ROOM_NAMES = [tr('Küche'), tr('Wohnzimmer'), tr('Esszimmer'), tr('Schlafzimmer'), tr('Kinderzimmer'), tr('Arbeitszimmer'), tr('Bad'), tr('Gäste-WC'), tr('Flur'), tr('Diele'), tr('Abstellraum'), tr('Speisekammer'), tr('Hauswirtschaftsraum'), tr('Vorratskeller'), tr('Heizungsraum'), tr('Werkstatt'), tr('Garage'), tr('Dachboden'), tr('Gartenhaus')];
 
 plan.onRoomRequest = (seed: Vec2) => {
   const m = modal(
-    'Raum festlegen',
+    tr('Raum festlegen'),
     `<form class="auth-form">
-      <label class="field"><span>Name des Raums</span><input type="text" name="n" list="roomNames" maxlength="40" required /></label>
+      <label class="field"><span>${tr('Name des Raums')}</span><input type="text" name="n" list="roomNames" maxlength="40" required /></label>
       <datalist id="roomNames">${ROOM_NAMES.map((n) => `<option value="${n}">`).join('')}</datalist>
-      <p class="hint">Der Raum wird im Lager ein eigenes Lager mit Kürzel (z. B. „Küche“ → KU). Möbel mit Fächern darin bekommen automatisch Lagerplätze.</p>
+      <p class="hint">${tr('Der Raum wird im Lager ein eigenes Lager mit Kürzel (z. B. „Küche“ → KU). Möbel mit Fächern darin bekommen automatisch Lagerplätze.')}</p>
     </form>`,
-    '<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Raum anlegen</button>',
+    `<button class="btn" data-close>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Raum anlegen')}</button>`,
   );
   m.el.querySelector('.modal')!.classList.add('narrow');
   const input = m.el.querySelector<HTMLInputElement>('input')!;
@@ -2743,7 +2767,7 @@ plan.onRoomRequest = (seed: Vec2) => {
     m.close();
     store.commit();
     store.select({ kind: 'room', id: r.id });
-    toast(`Raum „${name}“ angelegt – Lager ${r.code}.`);
+    toast(tr('Raum „{name}“ angelegt – Lager {code}.', { name, code: r.code }));
   };
   m.el.querySelector('form')!.addEventListener('submit', (e) => {
     e.preventDefault();
@@ -2802,13 +2826,13 @@ async function setHeat(kind: string) {
     return Math.min(1, days / 365);
   };
   view.build();
-  toast(kind === 'moves' ? 'Bewegung: rot = oft gebucht (90 Tage), blau = selten.' : 'Lange unberührt: rot = seit einem Jahr nicht angefasst, blau = kürzlich, grau = leer.');
+  toast(kind === 'moves' ? tr('Bewegung: rot = oft gebucht (90 Tage), blau = selten.') : tr('Lange unberührt: rot = seit einem Jahr nicht angefasst, blau = kürzlich, grau = leer.'));
 }
 $('#heatSel').addEventListener('change', (e) => setHeat((e.target as HTMLSelectElement).value));
 $('#storageBtn').addEventListener('click', () => {
   setStorageMode(!view.storageMode);
-  if (view.storageMode && !sync.online) toast('Fächer werden angezeigt – Inhalte gibt es nach dem Anmelden.');
-  else if (view.storageMode) toast('Lager: blau = leer, grün = belegt, orange = läuft bald ab, rot = abgelaufen. Fach anklicken zeigt den Inhalt.');
+  if (view.storageMode && !sync.online) toast(tr('Fächer werden angezeigt – Inhalte gibt es nach dem Anmelden.'));
+  else if (view.storageMode) toast(tr('Lager: blau = leer, grün = belegt, orange = läuft bald ab, rot = abgelaufen. Fach anklicken zeigt den Inhalt.'));
 });
 view.fachInfo = (id, row) => {
   const pl = sync.fach(id, row);
@@ -2836,20 +2860,20 @@ const lagerApi = <T = any>(method: string, url: string, body?: unknown, label?: 
 
 function expiryBadge(i: { expires_in: number | null; expires_on: string | null }) {
   if (i.expires_in === null || !i.expires_on) return '';
-  const d = i.expires_on.split('-').reverse().join('.');
-  if (i.expires_in < 0) return `<span class="pill bad">abgelaufen ${d}</span>`;
-  if (i.expires_in <= 30) return `<span class="pill warn">bis ${d}</span>`;
-  return `<span class="pill">bis ${d}</span>`;
+  const d = new Date(i.expires_on + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (i.expires_in < 0) return `<span class="pill bad">${tr('abgelaufen {date}', { date: d })}</span>`;
+  if (i.expires_in <= 30) return `<span class="pill warn">${tr('bis {date}', { date: d })}</span>`;
+  return `<span class="pill">${tr('bis {date}', { date: d })}</span>`;
 }
 
 function openFach(itemId: string, row: number) {
   // Ansehen: Inhalt in der Seitenleiste, der Plan bleibt sichtbar
   if (!document.body.classList.contains('haus-plan')) return showFach(itemId, row);
   if (!sync.online) {
-    toast('Zum Ein- und Ausbuchen bitte anmelden.');
+    toast(tr('Zum Ein- und Ausbuchen bitte anmelden.'));
     return;
   }
-  const m = modal('Fach', '<p class="hint">Lade …</p>');
+  const m = modal(tr('Fach'), `<p class="hint">${tr('Lade …')}</p>`);
   m.el.querySelector('.modal')!.classList.add('fach-modal');
   fachView(m.el.querySelector('header h2')!, m.el.querySelector('.body')!, itemId, row);
 }
@@ -2866,30 +2890,30 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
     const roomName = roomOf(found.floor, found.item)?.name ?? found.floor.name;
     if (!pl) {
       head.textContent = comp.label;
-      body.innerHTML = `<p class="hint">Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert. ${sync.canEdit ? '' : 'Den Hausplan speichern nur Personen mit dem Recht „Haus planen“.'}</p>`;
+      body.innerHTML = `<p class="hint">${tr('Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert.')} ${sync.canEdit ? '' : tr('Den Hausplan speichern nur Personen mit dem Recht „Haus planen“.')}</p>`;
       return;
     }
     head.textContent = `${pl.address} · ${comp.label}`;
     body.innerHTML = `
-      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">als Liste öffnen</a></p>
+      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">${tr('als Liste öffnen')}</a></p>
       ${pl.items.length ? `<div class="fach-items">${pl.items
         .map((i) => `<div class="fach-item" data-id="${i.id}">
           ${i.photo_at ? `<img src="/api/items/${i.id}/photo?size=thumb&v=${encodeURIComponent(i.photo_at)}" alt="">` : `<span class="ph">${ic(i.container ? 'box' : 'tag')}</span>`}
-          <div><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.code)}${i.parent_id ? ' · im Behälter' : ''}</small>${expiryBadge(i)}</div>
-          <button class="btn mini" data-out title="1 Stück entnehmen" ${i.quantity < 1 ? 'disabled' : ''}>${ic('minus')}1</button>
-          <a class="btn mini icon" href="#/item/${i.id}" title="Gegenstand öffnen" aria-label="Gegenstand öffnen">${ic('chev')}</a>
+          <div><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.code)}${i.parent_id ? ` · ${tr('im Behälter')}` : ''}</small>${expiryBadge(i)}</div>
+          <button class="btn mini" data-out title="${tr('1 Stück entnehmen')}" ${i.quantity < 1 ? 'disabled' : ''}>${ic('minus')}1</button>
+          <a class="btn mini icon" href="#/item/${i.id}" title="${tr('Gegenstand öffnen')}" aria-label="${tr('Gegenstand öffnen')}">${ic('chev')}</a>
         </div>`)
-        .join('')}</div>` : '<p class="hint">Das Fach ist leer.</p>'}
-      <h3>Hineinlegen</h3>
+        .join('')}</div>` : `<p class="hint">${tr('Das Fach ist leer.')}</p>`}
+      <h3>${tr('Hineinlegen')}</h3>
       <form class="fach-in">
-        <input type="text" name="name" placeholder="Was kommt hinein?" required maxlength="80" autocomplete="off" />
+        <input type="text" name="name" placeholder="${tr('Was kommt hinein?')}" required maxlength="80" autocomplete="off" />
         <div class="fach-sug"></div>
-        <input type="number" name="qty" value="1" min="1" max="9999" title="Menge" />
+        <input type="number" name="qty" value="1" min="1" max="9999" title="${tr('Menge')}" />
         ${expiryField('exp')}
-        <button class="btn primary" type="submit">${ic('in')}Einbuchen</button>
+        <button class="btn primary" type="submit">${ic('in')}${tr('Einbuchen')}</button>
       </form>
-      <h3>Vorhandenen Gegenstand hierher umlagern</h3>
-      <input type="search" class="fach-search" placeholder="Gegenstand suchen …" />
+      <h3>${tr('Vorhandenen Gegenstand hierher umlagern')}</h3>
+      <input type="search" class="fach-search" placeholder="${tr('Gegenstand suchen …')}" />
       <div class="fach-results"></div>
       <p class="form-error" hidden></p>`;
     bindExpiry(body);
@@ -2910,7 +2934,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
     body.querySelectorAll<HTMLElement>('.fach-item').forEach((row) =>
       row.querySelector('[data-out]')?.addEventListener('click', () => {
         const i = pl.items.find((x) => x.id === Number(row.dataset.id))!;
-        run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }, i.name), `1× ${i.name} entnommen.`);
+        run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }, i.name), tr('1× {name} entnommen.', { name: i.name }));
       }),
     );
     // Vorschläge aus vorhandenen Gegenständen: gewählt → dieser Gegenstand wird hierher gebucht (kein Doppel)
@@ -2932,7 +2956,11 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
             const i = list.find((x) => x.id === Number(b.dataset.id));
             chosen = { id: i.id, name: i.name };
             nameIn.value = i.name;
-            sug.innerHTML = `<p class="hint">Vorhandener Gegenstand – Zugang wird gebucht${i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row ? '' : `, er liegt danach hier statt in <code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code>`}.</p>`;
+            sug.innerHTML = `<p class="hint">${
+              i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row
+                ? tr('Vorhandener Gegenstand – Zugang wird gebucht.')
+                : tr('Vorhandener Gegenstand – Zugang wird gebucht, er liegt danach hier statt in {place}.', { place: `<code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code>` })
+            }</p>`;
           }),
         );
       }, 200);
@@ -2945,7 +2973,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
       const what = chosen && chosen.name === name ? { item_id: chosen.id } : { name };
       run(
         () => lagerApi('POST', '/api/checkin', { ...what, quantity: Number(fd.get('qty')) || 1, warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null, expires_on: parseExpiry(fd.get('exp')) ?? undefined }, name),
-        `${name} liegt jetzt in ${pl.address}.`,
+        tr('{name} liegt jetzt in {place}.', { name, place: pl.address }),
       );
     });
     const search = body.querySelector<HTMLInputElement>('.fach-search')!;
@@ -2960,11 +2988,11 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
         results.innerHTML = list
           .filter((i) => !(i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row))
           .map((i) => `<button class="fach-hit" data-id="${i.id}"><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.wh_code)}-${esc(i.col)}${i.row}${i.place_name ? ` · ${esc(i.place_name)}` : ''}</small></button>`)
-          .join('') || '<p class="hint">Nichts gefunden.</p>';
+          .join('') || `<p class="hint">${tr('Nichts gefunden.')}</p>`;
         results.querySelectorAll<HTMLElement>('.fach-hit').forEach((b) =>
           b.addEventListener('click', () => {
             const i = list.find((x) => x.id === Number(b.dataset.id));
-            run(() => lagerApi('PATCH', `/api/items/${i.id}`, { warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null }), `${i.name} liegt jetzt in ${pl.address}.`);
+            run(() => lagerApi('PATCH', `/api/items/${i.id}`, { warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null }), tr('{name} liegt jetzt in {place}.', { name: i.name, place: pl.address }));
             search.value = '';
           }),
         );
@@ -2986,7 +3014,7 @@ async function runSearch() {
     return;
   }
   if (!sync.online) {
-    searchPop.innerHTML = '<p class="hint">Zum Suchen im Lager bitte anmelden.</p>';
+    searchPop.innerHTML = `<p class="hint">${tr('Zum Suchen im Lager bitte anmelden.')}</p>`;
     searchPop.hidden = false;
     return;
   }
@@ -2999,11 +3027,11 @@ async function runSearch() {
     ? hits
         .map(({ i, pl }) => {
           const f = pl && findItem(pl.plan_item);
-          const where = pl && f ? `${esc(f.floor.name)} · ${esc(roomOf(f.floor, f.item)?.name ?? '')} · ${esc(pl.name)}` : `${esc(i.wh_name ?? '')} – nicht im Hausplan`;
+          const where = pl && f ? `${esc(f.floor.name)} · ${esc(roomOf(f.floor, f.item)?.name ?? '')} · ${esc(pl.name)}` : tr('{area} – nicht im Hausplan', { area: esc(i.wh_name ?? '') });
           return `<button class="search-hit" data-plan="${pl ? `${pl.plan_item}:${pl.plan_slot}` : ''}" data-id="${i.id}"><b>${esc(i.name)}</b> <code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code><small>${i.quantity}× · ${where}</small></button>`;
         })
         .join('')
-    : '<p class="hint">Nichts gefunden.</p>';
+    : `<p class="hint">${tr('Nichts gefunden.')}</p>`;
   searchPop.hidden = false;
   searchPop.querySelectorAll<HTMLElement>('.search-hit').forEach((b) =>
     b.addEventListener('click', () => {
@@ -3219,7 +3247,7 @@ function renderViewPanelContent() {
   const sel = store.selection;
   const S = store.house.settings;
   document.body.classList.toggle('sheet-open', !!viewFach || sel?.kind === 'item' || sel?.kind === 'room');
-  const close = `<button class="vp-x" data-x aria-label="Schließen">${ic('x')}</button>`;
+  const close = `<button class="vp-x" data-x aria-label="${tr('Schließen')}">${ic('x')}</button>`;
   const bind = () => {
     el.querySelector('[data-x]')?.addEventListener('click', () => {
       viewFach = null;
@@ -3239,8 +3267,8 @@ function renderViewPanelContent() {
       renderViewPanel();
     });
     if (!sync.online) {
-      el.querySelector('.vp-title')!.textContent = compartments(found.item, S)[viewFach.row]?.label ?? 'Fach';
-      el.querySelector('.vp-body')!.innerHTML = '<p class="hint">Zum Ansehen des Inhalts, Ein- und Ausbuchen bitte anmelden.</p>';
+      el.querySelector('.vp-title')!.textContent = compartments(found.item, S)[viewFach.row]?.label ?? tr('Fach');
+      el.querySelector('.vp-body')!.innerHTML = `<p class="hint">${tr('Zum Ansehen des Inhalts, Ein- und Ausbuchen bitte anmelden.')}</p>`;
       return;
     }
     fachView(el.querySelector('.vp-title')!, el.querySelector('.vp-body')!, viewFach.itemId, viewFach.row);
@@ -3254,14 +3282,14 @@ function renderViewPanelContent() {
       const code = it.storageCol ? `${storageCode(f, it)}-${it.storageCol}` : '';
       el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(room?.name ?? f.name)}</button>${close}</div>
         <h2 class="vp-title">${code ? `<code>${esc(code)}</code>` : ''}${esc(itemName(it))}</h2>
-        <p class="vp-sub">${esc(room?.name ?? f.name)} · ${esc(f.name)}${comps.length ? ` · ${comps.length} Fächer` : ''}</p>
+        <p class="vp-sub">${esc(room?.name ?? f.name)} · ${esc(f.name)}${comps.length ? ` · ${trn(comps.length, '{n} Fach', '{n} Fächer')}` : ''}</p>
         ${comps.length
           ? `<div class="vp-list">${comps.map((c, r) => {
               const pl = sync.fach(it.id, r);
               const items = pl?.items ?? [];
-              return `<button class="vp-row" data-r="${r}"><code>${esc(pl?.address ?? `${code}${r}`)}</code><span class="grow"><b>${esc(c.label)}</b><small>${items.length ? esc(items.slice(0, 3).map((i) => i.name).join(', ')) + (items.length > 3 ? ` und ${items.length - 3} weitere` : '') : 'leer'}</small></span><i class="lv lv${items.length ? (items.length < 3 ? 1 : 2) : 0}"></i></button>`;
+              return `<button class="vp-row" data-r="${r}"><code>${esc(pl?.address ?? `${code}${r}`)}</code><span class="grow"><b>${esc(c.label)}</b><small>${items.length ? (items.length > 3 ? tr('{list} und {n} weitere', { list: esc(items.slice(0, 3).map((i) => i.name).join(', ')), n: items.length - 3 }) : esc(items.map((i) => i.name).join(', '))) : tr('leer')}</small></span><i class="lv lv${items.length ? (items.length < 3 ? 1 : 2) : 0}"></i></button>`;
             }).join('')}</div>`
-          : '<p class="hint">Dieses Möbel hat keine Fächer.</p>'}`;
+          : `<p class="hint">${tr('Dieses Möbel hat keine Fächer.')}</p>`}`;
       bind();
       el.querySelector('[data-up]')!.addEventListener('click', () => store.select(room ? { kind: 'room', id: room.id } : null));
       el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) => b.addEventListener('click', () => showFach(it.id, Number(b.dataset.r))));
@@ -3277,10 +3305,10 @@ function renderViewPanelContent() {
       const list = roomItems(r.id);
       el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(f.name)}</button>${close}</div>
         <h2 class="vp-title"><code>${esc(r.code)}</code>${esc(r.name)}</h2>
-        <p class="vp-sub">${list.length ? `${list.length} Möbel mit Fächern` : 'Keine Möbel mit Fächern'}</p>
+        <p class="vp-sub">${list.length ? trn(list.length, '{n} Möbelstück mit Fächern', '{n} Möbel mit Fächern') : tr('Keine Möbel mit Fächern')}</p>
         <div class="vp-list">${list.map((it) => {
           const fl = itemFill(it);
-          return `<button class="vp-row" data-it="${it.id}"><code>${esc(r.code)}-${esc(it.storageCol ?? '')}</code><span class="grow"><b>${esc(itemName(it))}</b><small>${fl.count} Gegenstände · ${fl.used} von ${fl.all} Fächern belegt</small></span>${bar(fl.used, fl.all)}</button>`;
+          return `<button class="vp-row" data-it="${it.id}"><code>${esc(r.code)}-${esc(it.storageCol ?? '')}</code><span class="grow"><b>${esc(itemName(it))}</b><small>${trn(fl.count, '{n} Gegenstand', '{n} Gegenstände')} · ${tr('{used} von {all} Fächern belegt', { used: fl.used, all: fl.all })}</small></span>${bar(fl.used, fl.all)}</button>`;
         }).join('')}</div>`;
       bind();
       el.querySelector('[data-up]')!.addEventListener('click', () => store.select(null));
@@ -3303,9 +3331,9 @@ function renderViewPanelContent() {
       }
       return { fl, all, used, count };
     });
-    el.innerHTML = `<h2 class="vp-title">${esc(store.house.name || 'Haus')}</h2><p class="vp-sub">Etage antippen, um ihre Räume zu sehen.</p>
-      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(fl.name)}</b><small>${fl.rooms.length} Räume${all ? ` · ${count} Gegenstände` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
-      <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
+    el.innerHTML = `<h2 class="vp-title">${esc(store.house.name || tr('Haus'))}</h2><p class="vp-sub">${tr('Etage antippen, um ihre Räume zu sehen.')}</p>
+      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(fl.name)}</b><small>${trn(fl.rooms.length, '{n} Raum', '{n} Räume')}${all ? ` · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
+      <p class="vp-legend"><span><i class="lv lv0"></i>${tr('leer')}</span><span><i class="lv lv1"></i>${tr('teils')}</span><span><i class="lv lv2"></i>${tr('voll')}</span></p>`;
     el.querySelectorAll<HTMLElement>('[data-floor]').forEach((b) =>
       b.addEventListener('click', () => {
         viewHouse = false;
@@ -3334,9 +3362,9 @@ function renderViewPanelContent() {
     }
     return { r, i, list, all, used, count };
   });
-  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}Haus</button></div><h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">Möbel antippen, um Fächer und Inhalt zu sehen.</p>
-    ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${list.length} Möbel · ${count} Gegenstände` : 'keine Fächer'}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : '<p class="hint">Auf dieser Etage sind noch keine Räume festgelegt.</p>'}
-    <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
+  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}${tr('Haus')}</button></div><h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">${tr('Möbel antippen, um Fächer und Inhalt zu sehen.')}</p>
+    ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${trn(list.length, '{n} Möbelstück', '{n} Möbel')} · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : tr('keine Fächer')}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : `<p class="hint">${tr('Auf dieser Etage sind noch keine Räume festgelegt.')}</p>`}
+    <p class="vp-legend"><span><i class="lv lv0"></i>${tr('leer')}</span><span><i class="lv lv1"></i>${tr('teils')}</span><span><i class="lv lv2"></i>${tr('voll')}</span></p>`;
   el.querySelectorAll<HTMLElement>('[data-room]').forEach((b) => b.addEventListener('click', () => store.select({ kind: 'room', id: b.dataset.room! })));
   el.querySelector('[data-house]')?.addEventListener('click', showHouse);
 }
@@ -3365,9 +3393,9 @@ onPrefs((p) => {
 // Nachgebuchte Buchungen (nach schlechtem WLAN): Ergebnis melden, Fehler einzeln zeigen
 document.addEventListener('zh-outbox-flushed', (e) => {
   const { sent, failed } = (e as CustomEvent<{ sent: number; failed: number }>).detail;
-  if (sent) toast(`${sent} vorgemerkte Buchung${sent === 1 ? '' : 'en'} nachgebucht.`);
+  if (sent) toast(trn(sent, '{n} vorgemerkte Buchung nachgebucht.', '{n} vorgemerkte Buchungen nachgebucht.'));
   if (failed) {
-    const m = modal('Nicht nachgebucht', `<p>Diese Buchungen hat der Server abgelehnt – bitte von Hand prüfen:</p><ul>${failures().map((f) => `<li><b>${esc(f.label)}</b>: ${esc(f.error)}</li>`).join('')}</ul>`, '<button class="btn primary" data-ok>Verstanden</button>');
+    const m = modal(tr('Nicht nachgebucht'), `<p>${tr('Diese Buchungen hat der Server abgelehnt – bitte von Hand prüfen:')}</p><ul>${failures().map((f) => `<li><b>${esc(f.label)}</b>: ${esc(f.error)}</li>`).join('')}</ul>`, `<button class="btn primary" data-ok>${tr('Verstanden')}</button>`);
     m.el.querySelector('[data-ok]')!.addEventListener('click', () => {
       clearFailures();
       m.close();
@@ -3396,17 +3424,17 @@ updatePlanButton();
 
 function openLocation() {
   const cur = store.house.settings.location;
-  const m = modal('Lage des Hauses', `<form class="l-form loc-form">
-    <p class="hint">Mit der Lage stehen Sonne und Himmel im 3D so, wie es draußen gerade ist; das Wetter kommt vom Ort des Hauses.</p>
-    <label>Adresse, Ort oder Postleitzahl suchen<span class="loc-search"><input id="locQ" placeholder="z. B. Königstraße 1, Stuttgart" autocomplete="off" /><button type="button" class="btn" id="locGo">${ic('search')}Suchen</button></span></label>
+  const m = modal(tr('Lage des Hauses'), `<form class="l-form loc-form">
+    <p class="hint">${tr('Mit der Lage stehen Sonne und Himmel im 3D so, wie es draußen gerade ist; das Wetter kommt vom Ort des Hauses.')}</p>
+    <label>${tr('Adresse, Ort oder Postleitzahl suchen')}<span class="loc-search"><input id="locQ" placeholder="${tr('z. B. Königstraße 1, Stuttgart')}" autocomplete="off" /><button type="button" class="btn" id="locGo">${ic('search')}${tr('Suchen')}</button></span></label>
     <div class="loc-hits" id="locHits"></div>
-    <div class="grid2"><label>Breitengrad<input id="locLat" type="number" step="0.00001" min="-90" max="90" value="${cur?.lat ?? ''}" /></label>
-    <label>Längengrad<input id="locLon" type="number" step="0.00001" min="-180" max="180" value="${cur?.lon ?? ''}" /></label></div>
-    <label>Nordrichtung im Grundriss: <b id="locNV">${cur?.north ?? 0}°</b><span class="loc-north"><input id="locN" type="range" min="0" max="359" step="1" value="${cur?.north ?? 0}" />
+    <div class="grid2"><label>${tr('Breitengrad')}<input id="locLat" type="number" step="0.00001" min="-90" max="90" value="${cur?.lat ?? ''}" /></label>
+    <label>${tr('Längengrad')}<input id="locLon" type="number" step="0.00001" min="-180" max="180" value="${cur?.lon ?? ''}" /></label></div>
+    <label>${tr('Nordrichtung im Grundriss:')} <b id="locNV">${cur?.north ?? 0}°</b><span class="loc-north"><input id="locN" type="range" min="0" max="359" step="1" value="${cur?.north ?? 0}" />
       <svg class="loc-compass" viewBox="-50 -50 100 100"><circle r="46" /><g id="locArrow"><path d="M0 -40 L9 0 L0 -6 L-9 0Z" /><text y="-28" text-anchor="middle">N</text></g></svg></span></label>
-    <p class="hint">Der Pfeil zeigt, wohin im Grundriss Norden liegt (0° = oben). Tipp: Ausrichtung aus einer Karte übernehmen – die Straßenseite des Hauses im Plan mit der Karte vergleichen.</p>
+    <p class="hint">${tr('Der Pfeil zeigt, wohin im Grundriss Norden liegt (0° = oben). Tipp: Ausrichtung aus einer Karte übernehmen – die Straßenseite des Hauses im Plan mit der Karte vergleichen.')}</p>
     <p class="form-error" hidden></p>
-  </form>`, `${cur ? '<button class="btn danger" data-del>Lage entfernen</button><span class="spacer"></span>' : ''}<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Übernehmen</button>`);
+  </form>`, `${cur ? `<button class="btn danger" data-del>${tr('Lage entfernen')}</button><span class="spacer"></span>` : ''}<button class="btn" data-close>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Übernehmen')}</button>`);
   const $m = <T extends HTMLElement>(s: string) => m.el.querySelector<T>(s)!;
   let label = cur?.label ?? '';
   const north = () => {
@@ -3419,17 +3447,17 @@ function openLocation() {
   const search = async () => {
     const q = $m<HTMLInputElement>('#locQ').value.trim();
     const hits = $m('#locHits');
-    hits.innerHTML = '<p class="hint">Suche …</p>';
+    hits.innerHTML = `<p class="hint">${tr('Suche …')}</p>`;
     try {
       const list = await api<{ name: string; label: string; lat: number; lon: number }[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`);
-      hits.innerHTML = list.length ? list.map((h, i) => `<button type="button" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.label)}</small></button>`).join('') : '<p class="hint">Nichts gefunden.</p>';
+      hits.innerHTML = list.length ? list.map((h, i) => `<button type="button" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.label)}</small></button>`).join('') : `<p class="hint">${tr('Nichts gefunden.')}</p>`;
       hits.querySelectorAll<HTMLElement>('[data-i]').forEach((b) =>
         b.addEventListener('click', () => {
           const h = list[Number(b.dataset.i)];
           $m<HTMLInputElement>('#locLat').value = h.lat.toFixed(5);
           $m<HTMLInputElement>('#locLon').value = h.lon.toFixed(5);
           label = h.name;
-          hits.innerHTML = `<p class="hint">Übernommen: ${esc(h.label)}</p>`;
+          hits.innerHTML = `<p class="hint">${tr('Übernommen: {place}', { place: esc(h.label) })}</p>`;
         }),
       );
     } catch (e) {
@@ -3448,7 +3476,7 @@ function openLocation() {
     const lon = Number($m<HTMLInputElement>('#locLon').value);
     const err = $m('.form-error');
     if (!$m<HTMLInputElement>('#locLat').value || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
-      err.textContent = 'Bitte einen Ort suchen oder Breiten- und Längengrad eingeben.';
+      err.textContent = tr('Bitte einen Ort suchen oder Breiten- und Längengrad eingeben.');
       err.hidden = false;
       return;
     }
@@ -3456,7 +3484,7 @@ function openLocation() {
     store.commit();
     m.close();
     plan.draw();
-    toast('Lage gespeichert – Sonne und Wetter folgen jetzt dem Ort.');
+    toast(tr('Lage gespeichert – Sonne und Wetter folgen jetzt dem Ort.'));
     updateOutdoor(true);
   });
   m.el.querySelector('[data-del]')?.addEventListener('click', () => {
@@ -3474,17 +3502,17 @@ plan.north = () => store.house.settings.location?.north ?? null;
 let outdoorWeather: { at: number; data: any; q: string } | null = null;
 /** Testwetter zum Ausprobieren am Terminal: Adresse mit ?testwetter=schnee (siehe TEST_WEATHER) – nur dieses Fenster */
 const TEST_WEATHER: Record<string, Record<string, unknown>> = {
-  'schnee-hauch': { temperature: 0, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.05, rain_rate: 0, snowfall: 0.05, snow_depth: 0.004, visibility: 10000, wind_speed: 5, wind_direction: 240 },
-  'schnee-leicht': { temperature: -1, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.1, rain_rate: 0, snowfall: 0.1, snow_depth: 0.03, visibility: 8000, wind_speed: 8, wind_direction: 240 },
-  schnee: { temperature: -2, code: 73, text: 'Schneefall', kind: 'snow', cloud: 100, precipitation: 0.3, rain_rate: 0, snowfall: 0.4, snow_depth: 0.12, visibility: 3000, wind_speed: 15, wind_direction: 250 },
-  schneesturm: { temperature: -6, code: 75, text: 'starker Schneefall', kind: 'snow', cloud: 100, precipitation: 0.8, rain_rate: 0, snowfall: 1.2, snow_depth: 0.35, visibility: 600, wind_speed: 45, wind_direction: 270 },
-  niesel: { temperature: 9, code: 53, text: 'Nieselregen', kind: 'drizzle', cloud: 100, precipitation: 0.1, rain_rate: 0.4, snowfall: 0, snow_depth: 0, visibility: 9000, wind_speed: 10, wind_direction: 240 },
-  regen: { temperature: 12, code: 63, text: 'Regen', kind: 'rain', cloud: 100, precipitation: 1, rain_rate: 4, snowfall: 0, snow_depth: 0, visibility: 10000, wind_speed: 20, wind_direction: 240 },
-  wolkenbruch: { temperature: 18, code: 65, text: 'starker Regen', kind: 'rain', cloud: 100, precipitation: 6, rain_rate: 24, snowfall: 0, snow_depth: 0, visibility: 4000, wind_speed: 35, wind_direction: 250 },
-  gewitter: { temperature: 21, code: 95, text: 'Gewitter', kind: 'thunder', cloud: 100, precipitation: 2.5, rain_rate: 10, snowfall: 0, snow_depth: 0, visibility: 7000, wind_speed: 30, wind_direction: 240 },
-  nebel: { temperature: 6, code: 45, text: 'Nebel', kind: 'fog', cloud: 100, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 250, wind_speed: 3, wind_direction: 0 },
-  wolkig: { temperature: 15, code: 2, text: 'wolkig', kind: 'clouds', cloud: 55, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 20000, wind_speed: 15, wind_direction: 240 },
-  klar: { temperature: 20, code: 0, text: 'klar', kind: 'clear', cloud: 0, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 30000, wind_speed: 5, wind_direction: 90 },
+  'schnee-hauch': { temperature: 0, code: 71, text: tr('leichter Schneefall'), kind: 'snow', cloud: 90, precipitation: 0.05, rain_rate: 0, snowfall: 0.05, snow_depth: 0.004, visibility: 10000, wind_speed: 5, wind_direction: 240 },
+  'schnee-leicht': { temperature: -1, code: 71, text: tr('leichter Schneefall'), kind: 'snow', cloud: 90, precipitation: 0.1, rain_rate: 0, snowfall: 0.1, snow_depth: 0.03, visibility: 8000, wind_speed: 8, wind_direction: 240 },
+  schnee: { temperature: -2, code: 73, text: tr('Schneefall'), kind: 'snow', cloud: 100, precipitation: 0.3, rain_rate: 0, snowfall: 0.4, snow_depth: 0.12, visibility: 3000, wind_speed: 15, wind_direction: 250 },
+  schneesturm: { temperature: -6, code: 75, text: tr('starker Schneefall'), kind: 'snow', cloud: 100, precipitation: 0.8, rain_rate: 0, snowfall: 1.2, snow_depth: 0.35, visibility: 600, wind_speed: 45, wind_direction: 270 },
+  niesel: { temperature: 9, code: 53, text: tr('Nieselregen'), kind: 'drizzle', cloud: 100, precipitation: 0.1, rain_rate: 0.4, snowfall: 0, snow_depth: 0, visibility: 9000, wind_speed: 10, wind_direction: 240 },
+  regen: { temperature: 12, code: 63, text: tr('Regen'), kind: 'rain', cloud: 100, precipitation: 1, rain_rate: 4, snowfall: 0, snow_depth: 0, visibility: 10000, wind_speed: 20, wind_direction: 240 },
+  wolkenbruch: { temperature: 18, code: 65, text: tr('starker Regen'), kind: 'rain', cloud: 100, precipitation: 6, rain_rate: 24, snowfall: 0, snow_depth: 0, visibility: 4000, wind_speed: 35, wind_direction: 250 },
+  gewitter: { temperature: 21, code: 95, text: tr('Gewitter'), kind: 'thunder', cloud: 100, precipitation: 2.5, rain_rate: 10, snowfall: 0, snow_depth: 0, visibility: 7000, wind_speed: 30, wind_direction: 240 },
+  nebel: { temperature: 6, code: 45, text: tr('Nebel'), kind: 'fog', cloud: 100, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 250, wind_speed: 3, wind_direction: 0 },
+  wolkig: { temperature: 15, code: 2, text: tr('wolkig'), kind: 'clouds', cloud: 55, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 20000, wind_speed: 15, wind_direction: 240 },
+  klar: { temperature: 20, code: 0, text: tr('klar'), kind: 'clear', cloud: 0, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 30000, wind_speed: 5, wind_direction: 90 },
 };
 const testWeather = TEST_WEATHER[new URLSearchParams(location.search).get('testwetter') ?? ''] ?? null;
 async function updateOutdoor(force = false) {
@@ -3502,13 +3530,13 @@ async function updateOutdoor(force = false) {
     if (outdoorWeather?.data?.place !== 'Testwetter') {
       outdoorWeather = { at: Date.now(), data: { ...testWeather, place: 'Testwetter' }, q };
       const d = outdoorWeather.data;
-      setTermWeather(`Testwetter: ${d.temperature} °C · ${d.text}`);
+      setTermWeather(tr('Testwetter: {temp} °C · {text}', { temp: d.temperature, text: d.text }));
     }
   } else if ((force || due) && (loc || t.settings.plz)) {
     // ohne Lage und ohne Postleitzahl gibt es kein Wetter (z. B. bevor der Hausplan geladen ist)
     const data = await fetch(`/api/weather${q}`, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     outdoorWeather = { at: Date.now(), data, q };
-    setTermWeather(data ? `${data.temperature} °C · ${data.text}${data.rain_rate >= 0.1 ? ` · ${String(data.rain_rate).replace('.', ',')} mm/h` : ''}` : '');
+    setTermWeather(data ? `${data.temperature} °C · ${data.text}${data.rain_rate >= 0.1 ? ` · ${Number(data.rain_rate).toLocaleString(locale())} mm/h` : ''}` : '');
   }
   const w = outdoorWeather?.data ?? null;
   const sun = loc ? sunPosition(new Date(), loc.lat, loc.lon) : null;
@@ -3565,7 +3593,7 @@ const rest = document.createElement('div');
 rest.id = 'rest';
 rest.className = 'rest';
 rest.hidden = true;
-rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><div class="rest-storm" hidden><canvas class="rest-radar" width="360" height="360"></canvas><div><b class="storm-title"></b><span class="storm-text"></span><small class="storm-src">Blitzdaten: Blitzortung.org</small></div></div><p class="rest-hint">Zum Bedienen antippen</p>`;
+rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><div class="rest-storm" hidden><canvas class="rest-radar" width="360" height="360"></canvas><div><b class="storm-title"></b><span class="storm-text"></span><small class="storm-src">${tr('Blitzdaten: Blitzortung.org')}</small></div></div><p class="rest-hint">${tr('Zum Bedienen antippen')}</p>`;
 document.body.appendChild(rest);
 let restTimer = 0;
 let restClock = 0;
@@ -3672,7 +3700,7 @@ async function paintRest(key: string) {
       const t0 = performance.now();
       progress.hidden = false;
       while (!rest.hidden && !document.hidden && ptSamples < q.samples && performance.now() - t0 < q.ms) {
-        progress.textContent = `Bild wird fotorealistisch gerechnet … ${Math.min(100, Math.round(Math.max(ptSamples / q.samples, (performance.now() - t0) / q.ms) * 100))} %`;
+        progress.textContent = tr('Bild wird fotorealistisch gerechnet … {pct} %', { pct: Math.min(100, Math.round(Math.max(ptSamples / q.samples, (performance.now() - t0) / q.ms) * 100)) });
         await frames(10);
       }
       progress.hidden = true;
@@ -3702,9 +3730,9 @@ async function paintRest(key: string) {
     ]);
     const due = (tasks.open ?? []).filter((t: any) => t.overdue || t.due_today);
     rest.querySelector('.rest-notes')!.innerHTML = [
-      due.length ? `${ic('check')} ${due.length === 1 ? `Heute: ${esc(due[0].title)}` : `${due.length} Aufgaben fällig`}` : '',
-      shop.open?.length ? `${ic('cart')} ${shop.open.length} auf der Einkaufsliste` : '',
-      exp.length ? `${ic('clock')} ${exp.length} läuft in 7 Tagen ab` : '',
+      due.length ? `${ic('check')} ${due.length === 1 ? tr('Heute: {title}', { title: esc(due[0].title) }) : trn(due.length, '{n} Aufgabe fällig', '{n} Aufgaben fällig')}` : '',
+      shop.open?.length ? `${ic('cart')} ${tr('{n} auf der Einkaufsliste', { n: shop.open.length })}` : '',
+      exp.length ? `${ic('clock')} ${tr('{n} läuft in 7 Tagen ab', { n: exp.length })}` : '',
     ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
   } finally {
     painting = false;
@@ -3727,8 +3755,8 @@ function startRest() {
   document.body.classList.add('resting');
   const clock = () => {
     const d = new Date();
-    rest.querySelector('.rest-clock')!.textContent = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    rest.querySelector('.rest-date')!.textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    rest.querySelector('.rest-clock')!.textContent = d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+    rest.querySelector('.rest-date')!.textContent = d.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
   };
   clock();
   restClock = window.setInterval(clock, 15000);
@@ -3783,24 +3811,27 @@ function showLightning(r: { strikes: { km: number; bearing: number; age_s: numbe
     const near = Math.min(...fresh.map((s: any) => s.km));
     weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - near / 30)));
   }
-  const ago = (sec: number) => (sec < 10 ? 'gerade eben' : sec < 90 ? `vor ${sec} s` : `vor ${Math.round(sec / 60)} Min.`);
-  const km = (x: number) => x.toLocaleString('de-DE');
+  const ago = (sec: number) => (sec < 10 ? tr('gerade eben') : sec < 90 ? tr('vor {s} s', { s: sec }) : tr('vor {m} Min.', { m: Math.round(sec / 60) }));
+  const km = (x: number) => x.toLocaleString(locale());
   const n = r.nearest;
-  const title = r.level >= 3 ? 'Gewitter direkt über uns' : r.level === 2 ? 'Gewitter in der Nähe' : r.level === 1 ? 'Gewitter in der Region' : '';
+  const title = r.level >= 3 ? tr('Gewitter direkt über uns') : r.level === 2 ? tr('Gewitter in der Nähe') : r.level === 1 ? tr('Gewitter in der Region') : '';
   // „Letzter Blitz“ = der neueste (den man gerade sieht), getrennt vom nächstgelegenen der letzten 15 Min.
   const l = r.latest ?? n;
   const text = l && n
-    ? `Letzter Blitz ${km(l.km)} km im ${l.direction}, ${ago(l.age_s)}\n${r.count15} Blitze in 15 Min.${n !== l && (n.km < l.km - 0.5) ? ` · am nächsten ${km(n.km)} km im ${n.direction} (${ago(n.age_s)})` : ''}`
+    ? tr('Letzter Blitz {km} km im {direction}, {ago}', { km: km(l.km), direction: l.direction, ago: ago(l.age_s) }) +
+      '\n' +
+      trn(r.count15, '{n} Blitz in 15 Min.', '{n} Blitze in 15 Min.') +
+      (n !== l && n.km < l.km - 0.5 ? ' · ' + tr('am nächsten {km} km im {direction} ({ago})', { km: km(n.km), direction: n.direction, ago: ago(n.age_s) }) : '')
     : '';
   // Kopfzeile des Terminals: Warnung ab „in der Nähe“
-  setTermStorm(r.level >= 2 && l ? `Gewitter · ${km(Math.round(l.km))} km ${l.direction}` : '', r.level);
+  setTermStorm(r.level >= 2 && l ? tr('Gewitter · {km} km {direction}', { km: km(Math.round(l.km)), direction: l.direction }) : '', r.level);
   // Ruhezustand: Hinweis und Karte, sobald es in 100 km blitzt
   const box = document.querySelector<HTMLElement>('#rest .rest-storm');
   if (!box) return;
   // nur bei Blitzen in der Nähe (bis 50 km, letzte 15 Min.) – sonst ausgeblendet
   box.hidden = r.level === 0;
   box.dataset.level = String(r.level);
-  box.querySelector('.storm-title')!.textContent = title || 'Blitze in der Ferne';
+  box.querySelector('.storm-title')!.textContent = title || tr('Blitze in der Ferne');
   box.querySelector('.storm-text')!.textContent = text;
   drawRadar(box.querySelector('canvas')!, r.strikes, loc.north);
 }
@@ -3899,7 +3930,7 @@ if (projectParam) {
       importPlan(p, p.name || file, 'new');
       history.replaceState(null, '', location.pathname);
     })
-    .catch((err) => toast(`Projekt „${file}“ konnte nicht geladen werden: ${err.message}`));
+    .catch((err) => toast(tr('Projekt „{file}“ konnte nicht geladen werden: {msg}', { file, msg: err.message })));
 }
 
 // Nur in der Entwicklung: Zugriff für automatisierte Ansichtstests

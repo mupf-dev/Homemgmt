@@ -15,6 +15,7 @@ import { viewLabels } from './labels';
 import { viewHelp } from './help';
 import { viewAdmin, viewAiSettings, viewBackups, viewKeys, viewPersons, viewTerminals, viewTransfer, viewWarehouses } from './admin';
 import { stopScanner, viewScan } from './scan';
+import { tr } from '../i18n';
 
 const ROUTES: [RegExp, View, (m: RegExpMatchArray, p: URLSearchParams) => void][] = [
   [/^#\/lager$/, viewHome, () => {}],
@@ -91,7 +92,7 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
       try {
         await view(box, ctx, params);
       } catch (e) {
-        box.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p><p><a class="btn" href="#/lager">Zur Übersicht</a></p>`;
+        box.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p><p><a class="btn" href="#/lager">${tr('Zur Übersicht')}</a></p>`;
       }
       return;
     }
@@ -100,18 +101,18 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
   /** Anmeldung: Kachel antippen + Passwort/PIN (wie bisher im Lager), E-Mail-Konto, beim ersten Start Ersteinrichtung */
   async function loginPage() {
     const st = await fetch('/api/auth/status', { credentials: 'same-origin' }).then((r) => r.json()).catch(() => ({ users: [], setup: false }));
-    page.innerHTML = `<h1>${st.setup ? 'Willkommen bei homemgmt-ng' : 'Wer bist du?'}</h1>
-      ${st.setup ? '<p>Ersteinrichtung: Wer wird <b>Admin</b>? Person antippen (oder neue anlegen) und ein Passwort vergeben.</p>' : ''}
+    page.innerHTML = `<h1>${st.setup ? tr('Willkommen bei homemgmt-ng') : tr('Wer bist du?')}</h1>
+      ${st.setup ? `<p>${tr('Ersteinrichtung: Wer wird <b>Admin</b>? Person antippen (oder neue anlegen) und ein Passwort vergeben.')}</p>` : ''}
       <div class="l-tiles login">${st.users.map((p: any) => `<button class="l-tile who" data-id="${p.id}"><span class="avatar big" style="background:${esc(p.color)}">${esc(p.name.slice(0, 1).toUpperCase())}</span><b>${esc(p.name)}</b></button>`).join('')}
-        ${st.setup ? '<button class="l-tile who" data-id="new"><span class="avatar big" style="background:#888">+</span><b>Neue Person</b></button>' : ''}</div>
+        ${st.setup ? `<button class="l-tile who" data-id="new"><span class="avatar big" style="background:#888">+</span><b>${tr('Neue Person')}</b></button>` : ''}</div>
       <form class="l-form l-card" id="pw" hidden>
-        <label id="nameRow" hidden>Name<input name="name" maxlength="40" /></label>
-        <label>Passwort oder PIN<input name="password" type="password" autocomplete="current-password" /></label>
-        ${st.setup ? '<label>Passwort wiederholen<input name="password2" type="password" autocomplete="new-password" /></label>' : ''}
+        <label id="nameRow" hidden>${tr('Name')}<input name="name" maxlength="40" /></label>
+        <label>${tr('Passwort oder PIN')}<input name="password" type="password" autocomplete="current-password" /></label>
+        ${st.setup ? `<label>${tr('Passwort wiederholen')}<input name="password2" type="password" autocomplete="new-password" /></label>` : ''}
         <p class="form-error" hidden></p>
-        <button class="btn primary big">${st.setup ? 'Einrichten' : 'Anmelden'}</button>
+        <button class="btn primary big">${st.setup ? tr('Einrichten') : tr('Anmelden')}</button>
       </form>
-      ${st.setup ? '' : '<p class="hint">Oder <a href="#" id="mail">mit E-Mail anmelden</a>.</p>'}`;
+      ${st.setup ? '' : `<p class="hint">${tr('Oder <a href="#" id="mail">mit E-Mail anmelden</a>.')}</p>`}`;
     let who: string | null = null;
     const form = page.querySelector<HTMLFormElement>('#pw')!;
     const err = form.querySelector<HTMLElement>('.form-error')!;
@@ -131,7 +132,7 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
       const fd = new FormData(form);
       err.hidden = true;
       if (st.setup && fd.get('password') !== fd.get('password2')) {
-        err.textContent = 'Die Passwörter stimmen nicht überein.';
+        err.textContent = tr('Die Passwörter stimmen nicht überein.');
         err.hidden = false;
         return;
       }
@@ -141,7 +142,7 @@ export function initLager(ctx: LagerCtx, onHouse: (params: URLSearchParams) => v
       const r = await fetch(`/api/auth/${st.setup ? 'setup' : 'login'}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body), credentials: 'same-origin' });
       const d = await r.json().catch(() => ({}));
       if (!r.ok) {
-        err.textContent = d.error ?? 'Anmeldung fehlgeschlagen.';
+        err.textContent = d.error ?? tr('Anmeldung fehlgeschlagen.');
         err.hidden = false;
         return;
       }

@@ -7,6 +7,10 @@ import { parseCode } from './scan';
 import type { View } from './views';
 import { ic } from '../icons';
 import { pickWho, terminal } from '../terminal';
+import { getLang, tr } from '../i18n';
+
+/** Sprache für Spracheingabe und Vorlesen – folgt der Sprache der App */
+const speechLang = () => (getLang() === 'en' ? 'en-GB' : 'de-DE');
 
 type Msg =
   | { role: 'divider'; content: string }
@@ -54,8 +58,8 @@ function speak(text: string) {
   if (!speakOn() || !window.speechSynthesis || !text) return;
   speechSynthesis.cancel();
   const u = new SpeechSynthesisUtterance(text.replace(/[*_#`]/g, ''));
-  u.lang = 'de-DE';
-  const v = speechSynthesis.getVoices().find((x) => x.lang?.startsWith('de'));
+  u.lang = speechLang();
+  const v = speechSynthesis.getVoices().find((x) => x.lang?.startsWith(getLang()));
   if (v) u.voice = v;
   speechSynthesis.speak(u);
 }
@@ -109,7 +113,7 @@ async function who(): Promise<{ person_id?: number } | null> {
 export const viewAssistant: View = async (el, ctx, params) => {
   const status = await api<{ enabled: boolean; confirm_from: number }>('GET', '/api/assistant/status').catch(() => ({ enabled: false, confirm_from: 4 }));
   if (!status.enabled) {
-    el.innerHTML = `<h1>Assistent</h1><p>Der Assistent ist noch nicht eingerichtet.</p>${ctx.user()?.role === 'admin' ? '<a class="btn primary" href="#/verwaltung/assistent">Jetzt einrichten</a>' : '<p class="hint">Ein Admin richtet ihn unter Verwaltung → Assistent ein.</p>'}`;
+    el.innerHTML = `<h1>${tr('Assistent')}</h1><p>${tr('Der Assistent ist noch nicht eingerichtet.')}</p>${ctx.user()?.role === 'admin' ? `<a class="btn primary" href="#/verwaltung/assistent">${tr('Jetzt einrichten')}</a>` : `<p class="hint">${tr('Ein Admin richtet ihn unter Verwaltung → Assistent ein.')}</p>`}`;
     return;
   }
   // Kontext: aus Gegenstand oder Fach geöffnet („das“, „hier“)
@@ -130,17 +134,17 @@ export const viewAssistant: View = async (el, ctx, params) => {
   const SpeechRec = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
 
   el.innerHTML = `
-    <div class="ai-head"><h1>Assistent</h1>
-      <span class="ai-tools">${window.speechSynthesis ? `<label class="l-check"><input type="checkbox" id="speak" ${speakOn() ? 'checked' : ''}/> Vorlesen</label>` : ''}<button class="btn mini" id="clear">Neues Gespräch</button></span></div>
-    ${contextLabel ? `<p class="ai-context">Bezogen auf <b>${esc(contextLabel)}</b> <a href="#/assistent">entfernen</a></p>` : ''}
+    <div class="ai-head"><h1>${tr('Assistent')}</h1>
+      <span class="ai-tools">${window.speechSynthesis ? `<label class="l-check"><input type="checkbox" id="speak" ${speakOn() ? 'checked' : ''}/> ${tr('Vorlesen')}</label>` : ''}<button class="btn mini" id="clear">${tr('Neues Gespräch')}</button></span></div>
+    ${contextLabel ? `<p class="ai-context">${tr('Bezogen auf {what}', { what: `<b>${esc(contextLabel)}</b>` })} <a href="#/assistent">${tr('entfernen')}</a></p>` : ''}
     <div class="ai-chat" id="chat"></div>
     <form class="ai-composer" id="form">
       <div class="ai-previews" id="prev" hidden></div>
       <div class="ai-row">
-        ${terminal() ? '' : `<button type="button" class="btn icon" id="photo" title="Foto aufnehmen" aria-label="Foto aufnehmen">${ic('camera')}</button>`}
-        ${SpeechRec ? `<button type="button" class="btn icon" id="mic" title="Sprechen" aria-label="Sprechen">${ic('mic')}</button>` : ''}
-        <textarea id="text" rows="1" placeholder="z. B. „Leg 3 Dosen Tomaten in den Vorratsschrank“"></textarea>
-        <button class="btn primary" id="send" title="Senden">➤</button>
+        ${terminal() ? '' : `<button type="button" class="btn icon" id="photo" title="${tr('Foto aufnehmen')}" aria-label="${tr('Foto aufnehmen')}">${ic('camera')}</button>`}
+        ${SpeechRec ? `<button type="button" class="btn icon" id="mic" title="${tr('Sprechen')}" aria-label="${tr('Sprechen')}">${ic('mic')}</button>` : ''}
+        <textarea id="text" rows="1" placeholder="${tr('z. B. „Leg 3 Dosen Tomaten in den Vorratsschrank“')}"></textarea>
+        <button class="btn primary" id="send" title="${tr('Senden')}">➤</button>
       </div>
     </form>`;
   const chat = el.querySelector<HTMLElement>('#chat')!;
@@ -149,23 +153,23 @@ export const viewAssistant: View = async (el, ctx, params) => {
 
   const msgHtml = (m: Msg, i: number) => {
     if (m.role === 'divider') return `<div class="ai-divider"><span>${esc(m.content)}</span></div>`;
-    if (m.role === 'user') return `<div class="ai-msg user">${m.photos?.length ? `<div class="ai-photos">${m.photos.map((p) => `<img src="${p}" alt="Foto">`).join('')}</div>` : ''}${m.content ? `<div class="ai-bubble">${esc(m.content)}</div>` : ''}</div>`;
+    if (m.role === 'user') return `<div class="ai-msg user">${m.photos?.length ? `<div class="ai-photos">${m.photos.map((p) => `<img src="${p}" alt="${tr('Foto')}">`).join('')}</div>` : ''}${m.content ? `<div class="ai-bubble">${esc(m.content)}</div>` : ''}</div>`;
     const places = planPlaces(ctx, m.places ?? []);
     const c = m.confirm;
     return `<div class="ai-msg bot ${m.error ? 'error' : ''}"><div class="ai-bubble">${esc(m.content)}</div>
-      ${m.bookings?.length ? `<ul class="ai-bookings">${m.bookings.map((b, j) => `<li class="${b.undone ? 'undone' : ''}"><span>${b.item_id ? `<a href="#/item/${b.item_id}">${esc(b.text || b.item)}</a>` : esc(b.text)}</span>${b.movement_id && !b.undone ? `<button class="btn mini" data-undo="${i}:${j}">rückgängig</button>` : b.undone ? '<small>rückgängig gemacht</small>' : ''}</li>`).join('')}</ul>` : ''}
+      ${m.bookings?.length ? `<ul class="ai-bookings">${m.bookings.map((b, j) => `<li class="${b.undone ? 'undone' : ''}"><span>${b.item_id ? `<a href="#/item/${b.item_id}">${esc(b.text || b.item)}</a>` : esc(b.text)}</span>${b.movement_id && !b.undone ? `<button class="btn mini" data-undo="${i}:${j}">${tr('rückgängig')}</button>` : b.undone ? `<small>${tr('rückgängig gemacht')}</small>` : ''}</li>`).join('')}</ul>` : ''}
       ${places.length ? `<div class="ai-places">${places.map((p) => {
         const info = placeInfo(ctx, p);
         return `<span><code>${esc(p.address)}</code> ${esc(info.title)} · ${esc(info.plan?.fach ?? '')}</span>`;
-      }).join('')}<button class="btn" data-house="${i}">${ic('plan')}Im Haus zeigen</button></div>` : ''}
-      ${c ? `<div class="ai-confirm ${c.done ? 'done' : ''}"><b>${c.count} Buchungen:</b><ul>${c.actions.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
-        ${c.done ? `<small>${c.done === 'ok' ? 'ausgeführt' : 'abgebrochen'}</small>` : `<div class="l-actions"><button class="btn in" data-ok="${i}">Ausführen</button><button class="btn" data-no="${i}">Abbrechen</button></div>`}</div>` : ''}
+      }).join('')}<button class="btn" data-house="${i}">${ic('plan')}${tr('Im Haus zeigen')}</button></div>` : ''}
+      ${c ? `<div class="ai-confirm ${c.done ? 'done' : ''}"><b>${tr('{n} Buchungen:', { n: c.count })}</b><ul>${c.actions.map((a) => `<li>${esc(a)}</li>`).join('')}</ul>
+        ${c.done ? `<small>${c.done === 'ok' ? tr('ausgeführt') : tr('abgebrochen')}</small>` : `<div class="l-actions"><button class="btn in" data-ok="${i}">${tr('Ausführen')}</button><button class="btn" data-no="${i}">${tr('Abbrechen')}</button></div>`}</div>` : ''}
     </div>`;
   };
   const render = () => {
-    chat.innerHTML = msgs.length ? msgs.map(msgHtml).join('') : `<div class="ai-hello"><p><b>Was soll ich tun?</b> Schreib, sprich oder fotografiere – zum Beispiel:</p>
-      <ul><li>„3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“</li><li>Foto vom Gegenstand und vom Fach-Etikett: „das kommt hierhin“</li><li>„Wo ist der Akkuschrauber?“</li><li>„Was läuft diese Woche ab?“</li></ul>
-      <p class="hint">Fächer kennt er beim Namen: „in die Besteckschublade“, „Küche Kühlschrank oben“, „Kellerregal Boden 2“.</p></div>`;
+    chat.innerHTML = msgs.length ? msgs.map(msgHtml).join('') : `<div class="ai-hello"><p>${tr('<b>Was soll ich tun?</b> Schreib, sprich oder fotografiere – zum Beispiel:')}</p>
+      <ul><li>${tr('„3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“')}</li><li>${tr('Foto vom Gegenstand und vom Fach-Etikett: „das kommt hierhin“')}</li><li>${tr('„Wo ist der Akkuschrauber?“')}</li><li>${tr('„Was läuft diese Woche ab?“')}</li></ul>
+      <p class="hint">${tr('Fächer kennt er beim Namen: „in die Besteckschublade“, „Küche Kühlschrank oben“, „Kellerregal Boden 2“.')}</p></div>`;
     if (busy) chat.insertAdjacentHTML('beforeend', '<div class="ai-msg bot"><div class="ai-bubble typing"><span></span><span></span><span></span></div></div>');
     chat.lastElementChild?.scrollIntoView({ block: 'end' });
   };
@@ -185,7 +189,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
     const person = await who();
     if (!person) return;
     const last = [...msgs].reverse().find((m) => 'at' in m && m.at) as any;
-    if (last && Date.now() - last.at > PAUSE && msgs.at(-1)?.role !== 'divider') msgs.push({ role: 'divider', content: 'Neues Gespräch nach längerer Pause' });
+    if (last && Date.now() - last.at > PAUSE && msgs.at(-1)?.role !== 'divider') msgs.push({ role: 'divider', content: tr('Neues Gespräch nach längerer Pause') });
     const hist = history(msgs);
     const sent = photos;
     photos = [];
@@ -199,7 +203,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
       const r = await api<any>('POST', '/api/assistant', { message, history: hist, context, images: sent.map((p) => ({ image: p.image, thumb: p.thumb, codes: p.codes })), ...person });
       if (r.reset) msgs.length = 0;
       msgs.push({ role: 'assistant', content: r.reply, bookings: r.bookings, confirm: r.confirm, places: r.places ?? [], at: Date.now() });
-      if (r.reset) msgs.push({ role: 'divider', content: 'Verlauf gelöscht – neues Gespräch' });
+      if (r.reset) msgs.push({ role: 'divider', content: tr('Verlauf gelöscht – neues Gespräch') });
       if (r.bookings?.length) ctx.sync.loadStorage();
       speak(r.reply);
     } catch (e) {
@@ -223,7 +227,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
     send(text.value);
   });
   el.querySelector('#photo')?.addEventListener('click', async () => {
-    if (photos.length >= 4) return ctx.toast('Höchstens 4 Fotos je Nachricht.');
+    if (photos.length >= 4) return ctx.toast(tr('Höchstens 4 Fotos je Nachricht.'));
     const p = await pickPhoto();
     if (!p) return;
     photos.push({ ...p, codes: await qrCodesIn(p.image) });
@@ -258,7 +262,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
     // am Terminal zuerst „wer spricht“ – sonst würde nach dem Sprechen noch gefragt
     if (terminal() && !(await who())) return;
     const rec = new SpeechRec();
-    rec.lang = 'de-DE';
+    rec.lang = speechLang();
     rec.interimResults = true;
     let final = '';
     const before = text.value ? `${text.value.trim()} ` : '';
@@ -272,7 +276,7 @@ export const viewAssistant: View = async (el, ctx, params) => {
       autosize();
     };
     rec.onerror = (e: any) => {
-      if (e.error === 'not-allowed') ctx.toast('Mikrofon nicht erlaubt – bitte im Browser freigeben.');
+      if (e.error === 'not-allowed') ctx.toast(tr('Mikrofon nicht erlaubt – bitte im Browser freigeben.'));
     };
     rec.onend = () => {
       recog = null;
@@ -338,10 +342,10 @@ export const viewAssistant: View = async (el, ctx, params) => {
     }
   });
   render();
-  if (!SpeechRec) text.placeholder = 'Nachricht schreiben … (Spracheingabe gibt es in diesem Browser nicht)';
+  if (!SpeechRec) text.placeholder = tr('Nachricht schreiben … (Spracheingabe gibt es in diesem Browser nicht)');
   if (params.get('sprechen')) {
     window.history.replaceState(null, '', '#/assistent');
     if (SpeechRec) void listen();
-    else ctx.toast('Spracheingabe gibt es in diesem Browser nicht – bitte tippen.');
+    else ctx.toast(tr('Spracheingabe gibt es in diesem Browser nicht – bitte tippen.'));
   }
 };

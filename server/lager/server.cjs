@@ -6,6 +6,7 @@ const path = require('node:path');
 const crypto = require('node:crypto');
 const { DatabaseSync } = require('node:sqlite');
 const { hashPassword, verifyPassword } = require('./password.cjs');
+const { tr, trn, locale } = require('../i18n.cjs');
 
 const ROOT = path.join(__dirname, '..', '..');
 const DB_PATH = process.env.DB_PATH || path.join(ROOT, 'data', 'zuhause.db');
@@ -376,8 +377,8 @@ const randomToken = (bytes = 32) => crypto.randomBytes(bytes).toString('base64ur
 
 function checkNewPassword(pw) {
   const s = String(pw ?? '');
-  if (s.length < 4) throw new HttpError(400, 'Das Passwort muss mindestens 4 Zeichen haben.');
-  if (s.length > 200) throw new HttpError(400, 'Das Passwort ist zu lang.');
+  if (s.length < 4) throw new HttpError(400, tr('Das Passwort muss mindestens 4 Zeichen haben.'));
+  if (s.length > 200) throw new HttpError(400, tr('Das Passwort ist zu lang.'));
   return s;
 }
 
@@ -460,7 +461,7 @@ const loginFails = new Map();
 function loginThrottle(key) {
   const f = loginFails.get(key);
   if (f && f.until > Date.now()) {
-    throw new HttpError(429, `Zu viele Fehlversuche. Bitte in ${Math.ceil((f.until - Date.now()) / 1000)} Sekunden erneut versuchen.`);
+    throw new HttpError(429, tr('Zu viele Fehlversuche. Bitte in {n} Sekunden erneut versuchen.', { n: Math.ceil((f.until - Date.now()) / 1000) }));
   }
 }
 function loginFailed(key) {
@@ -472,9 +473,9 @@ function loginFailed(key) {
 
 function normalizeLocation(col, row) {
   const c = String(col || '').trim().toUpperCase();
-  if (!/^[A-Z]{1,3}$/.test(c)) throw new HttpError(400, 'Spalte muss aus 1–3 Buchstaben (A–Z) bestehen.');
+  if (!/^[A-Z]{1,3}$/.test(c)) throw new HttpError(400, tr('Spalte muss aus 1–3 Buchstaben (A–Z) bestehen.'));
   const r = Number(row);
-  if (!Number.isInteger(r) || r < 0 || r > 99) throw new HttpError(400, 'Zeile muss eine Zahl von 0 bis 99 sein.');
+  if (!Number.isInteger(r) || r < 0 || r > 99) throw new HttpError(400, tr('Zeile muss eine Zahl von 0 bis 99 sein.'));
   return { col: c, row: r };
 }
 
@@ -488,11 +489,11 @@ function expiryDate(value) {
   if (x) [y, m, d] = [x[1], x[2], x[3]].map(Number);
   else if ((x = s.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/))) [d, m, y] = [x[1], x[2], x[3]].map(Number);
   else if ((x = s.match(/^(\d{1,2})[./](\d{2}|\d{4})$/))) { [m, y] = [x[1], x[2]].map(Number); d = 0; }
-  else throw new HttpError(400, `Haltbarkeitsdatum „${s}“ nicht verstanden (z. B. 31.03.2027 oder 03/2027).`);
+  else throw new HttpError(400, tr('Haltbarkeitsdatum „{value}“ nicht verstanden (z. B. 31.03.2027 oder 03/2027).', { value: s }));
   if (y < 100) y += 2000;
   const date = d === 0 ? new Date(Date.UTC(y, m, 0)) : new Date(Date.UTC(y, m - 1, d));
   if (m < 1 || m > 12 || (d !== 0 && date.getUTCDate() !== d) || y < 2000 || y > 2200) {
-    throw new HttpError(400, `Haltbarkeitsdatum „${s}“ gibt es nicht.`);
+    throw new HttpError(400, tr('Haltbarkeitsdatum „{value}“ gibt es nicht.', { value: s }));
   }
   return date.toISOString().slice(0, 10);
 }
@@ -503,7 +504,7 @@ const sourceOf = (body) => (SOURCES.includes(body?.source) ? body.source : 'app'
 
 function positiveInt(value, label) {
   const n = Number(value);
-  if (!Number.isInteger(n) || n <= 0) throw new HttpError(400, `${label} muss eine positive ganze Zahl sein.`);
+  if (!Number.isInteger(n) || n <= 0) throw new HttpError(400, tr('{label} muss eine positive ganze Zahl sein.', { label }));
   return n;
 }
 
@@ -522,7 +523,7 @@ function ensurePlace(wid, col, row) {
 const WH_CODE_RE = /^[A-Z][A-Z0-9]{0,3}$/;
 function getWarehouse(id) {
   const w = db.prepare('SELECT * FROM warehouses WHERE id = ?').get(Number(id));
-  if (!w) throw new HttpError(404, 'Lager nicht gefunden.');
+  if (!w) throw new HttpError(404, tr('Lager nicht gefunden.'));
   return w;
 }
 // Lager aus ?wh=<id> (fehlt es, gilt das erste Lager – so bleiben alte Aufrufe gültig)
@@ -562,7 +563,7 @@ const PLACE_SELECT = `
 
 function getItem(id) {
   const item = db.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(id);
-  if (!item) throw new HttpError(404, 'Gegenstand nicht gefunden.');
+  if (!item) throw new HttpError(404, tr('Gegenstand nicht gefunden.'));
   return item;
 }
 
@@ -583,10 +584,10 @@ const containerContents = (id) => db.prepare(`${ITEM_SELECT} WHERE i.parent_id =
 // Behälter holen; nicht das Objekt selbst und nichts, was (auch indirekt) in ihm liegt
 function getContainer(id, itemId = null) {
   const box = db.prepare(`${ITEM_SELECT} WHERE i.id = ?`).get(Number(id));
-  if (!box) throw new HttpError(404, 'Behälter nicht gefunden.');
+  if (!box) throw new HttpError(404, tr('Behälter nicht gefunden.'));
   for (let cur = box; cur; cur = cur.parent_id ? db.prepare('SELECT id, name, parent_id FROM items WHERE id = ?').get(cur.parent_id) : null) {
     if (itemId && cur.id === Number(itemId)) {
-      throw new HttpError(400, cur.id === box.id ? 'Ein Gegenstand kann nicht in sich selbst liegen.' : `${box.name} liegt selbst in diesem Gegenstand.`);
+      throw new HttpError(400, cur.id === box.id ? tr('Ein Gegenstand kann nicht in sich selbst liegen.') : tr('{name} liegt selbst in diesem Gegenstand.', { name: box.name }));
     }
   }
   return box;
@@ -677,7 +678,7 @@ const SHOPPING_SELECT = `
 
 function getShopping(id) {
   const row = db.prepare(`${SHOPPING_SELECT} WHERE s.id = ?`).get(id);
-  if (!row) throw new HttpError(404, 'Eintrag nicht gefunden.');
+  if (!row) throw new HttpError(404, tr('Eintrag nicht gefunden.'));
   return row;
 }
 
@@ -697,8 +698,8 @@ const personWithStats = (where = '') => db.prepare(`
 
 function personName(raw) {
   const name = String(raw || '').trim();
-  if (!name) throw new HttpError(400, 'Name darf nicht leer sein.');
-  if (name.length > 40) throw new HttpError(400, 'Name ist zu lang.');
+  if (!name) throw new HttpError(400, tr('Name darf nicht leer sein.'));
+  if (name.length > 40) throw new HttpError(400, tr('Name ist zu lang.'));
   return name;
 }
 const COLOR_RE = /^#[0-9a-f]{6}$/i;
@@ -707,7 +708,7 @@ const activeAdmins = (exceptId = 0) => db.prepare(
   "SELECT COUNT(*) AS n FROM persons WHERE role = 'admin' AND archived = 0 AND password_hash IS NOT NULL AND id != ?").get(exceptId).n;
 const uniqueName = (fn) => {
   try { return fn(); } catch (e) {
-    if (/UNIQUE/.test(e.message)) throw new HttpError(409, 'Diesen Namen gibt es schon.');
+    if (/UNIQUE/.test(e.message)) throw new HttpError(409, tr('Diesen Namen gibt es schon.'));
     throw e;
   }
 };
@@ -717,7 +718,7 @@ const dropSessions = (personId, keepHash = '') =>
 // Standard: aktive Personen (z. B. für Auswahllisten), ?all=1: alle mit Buchungsstatistik (Verwaltung, nur Admins)
 route('GET', '/api/persons', (_p, _b, qs, ctx) => {
   if (!qs.get('all')) return db.prepare(`SELECT ${PERSON_COLS} FROM persons p WHERE p.archived = 0 ORDER BY p.name COLLATE NOCASE`).all();
-  if (ctx.via !== 'session' || ctx.person.role !== 'admin') throw new HttpError(403, 'Nur für Admins.');
+  if (ctx.via !== 'session' || ctx.person.role !== 'admin') throw new HttpError(403, tr('Nur für Admins.'));
   return personWithStats().all();
 });
 
@@ -736,19 +737,19 @@ route('POST', '/api/persons', async (_p, body) => {
 // Ändern: {name?, color?, archived?, role?, can_plan?, password?}
 route('PATCH', '/api/persons/:id', async (p, body, _qs, ctx) => {
   const person = db.prepare('SELECT * FROM persons WHERE id = ?').get(p.id);
-  if (!person) throw new HttpError(404, 'Person nicht gefunden.');
+  if (!person) throw new HttpError(404, tr('Person nicht gefunden.'));
   const name = body.name !== undefined ? personName(body.name) : person.name;
-  if (body.color !== undefined && !COLOR_RE.test(body.color)) throw new HttpError(400, 'Ungültige Farbe.');
+  if (body.color !== undefined && !COLOR_RE.test(body.color)) throw new HttpError(400, tr('Ungültige Farbe.'));
   const color = body.color ?? person.color;
   const archived = body.archived !== undefined ? (body.archived ? 1 : 0) : person.archived;
-  if (body.role !== undefined && !ROLES.includes(body.role)) throw new HttpError(400, 'Ungültige Rolle.');
+  if (body.role !== undefined && !ROLES.includes(body.role)) throw new HttpError(400, tr('Ungültige Rolle.'));
   const role = body.role ?? person.role;
   const hash = body.password ? await hashPassword(checkNewPassword(body.password)) : person.password_hash;
   const canPlan = body.can_plan !== undefined ? (body.can_plan ? 1 : 0) : person.can_plan;
   const self = person.id === ctx.person.id;
-  if (self && (archived || role !== 'admin')) throw new HttpError(409, 'Du kannst dich nicht selbst archivieren oder dir die Admin-Rechte nehmen.');
+  if (self && (archived || role !== 'admin')) throw new HttpError(409, tr('Du kannst dich nicht selbst archivieren oder dir die Admin-Rechte nehmen.'));
   if (person.role === 'admin' && (archived || role !== 'admin') && activeAdmins(person.id) === 0) {
-    throw new HttpError(409, 'Es muss mindestens einen Admin geben.');
+    throw new HttpError(409, tr('Es muss mindestens einen Admin geben.'));
   }
   uniqueName(() => db.prepare('UPDATE persons SET name = ?, color = ?, archived = ?, role = ?, can_plan = ?, password_hash = ? WHERE id = ?')
     .run(name, color, archived, role, canPlan, hash, person.id));
@@ -760,19 +761,19 @@ route('PATCH', '/api/persons/:id', async (p, body, _qs, ctx) => {
 // Löschen. Hat die Person Buchungen, müssen diese per ?merge_into=<id> einer anderen Person übertragen werden.
 route('DELETE', '/api/persons/:id', (p, _b, qs, ctx) => {
   const person = db.prepare('SELECT * FROM persons WHERE id = ?').get(p.id);
-  if (!person) throw new HttpError(404, 'Person nicht gefunden.');
-  if (person.id === ctx.person.id) throw new HttpError(409, 'Du kannst dich nicht selbst löschen.');
-  if (person.role === 'admin' && activeAdmins(person.id) === 0) throw new HttpError(409, 'Es muss mindestens einen Admin geben.');
+  if (!person) throw new HttpError(404, tr('Person nicht gefunden.'));
+  if (person.id === ctx.person.id) throw new HttpError(409, tr('Du kannst dich nicht selbst löschen.'));
+  if (person.role === 'admin' && activeAdmins(person.id) === 0) throw new HttpError(409, tr('Es muss mindestens einen Admin geben.'));
   const used = db.prepare('SELECT COUNT(*) AS n FROM movements WHERE person_id = ?').get(person.id).n;
   const mergeInto = qs.get('merge_into');
   if (used > 0 && !mergeInto) {
-    throw new HttpError(409, 'Person hat bereits Buchungen. Archivieren oder die Buchungen einer anderen Person übertragen.');
+    throw new HttpError(409, tr('Person hat bereits Buchungen. Archivieren oder die Buchungen einer anderen Person übertragen.'));
   }
   db.exec('BEGIN');
   try {
     if (mergeInto) {
       const target = db.prepare('SELECT * FROM persons WHERE id = ?').get(mergeInto);
-      if (!target || target.id === person.id) throw new HttpError(400, 'Ungültige Zielperson.');
+      if (!target || target.id === person.id) throw new HttpError(400, tr('Ungültige Zielperson.'));
       db.prepare('UPDATE movements SET person_id = ? WHERE person_id = ?').run(target.id, person.id);
       db.prepare('UPDATE kitchen_projects SET person_id = ? WHERE person_id = ?').run(target.id, person.id);
     }
@@ -798,12 +799,12 @@ route('GET', '/api/auth/status', (_p, _b, _qs, ctx) => ({
 
 // Ersteinrichtung: ersten Admin festlegen {person_id | name, password}
 route('POST', '/api/auth/setup', async (_p, body, _qs, ctx) => {
-  if (!setupNeeded()) throw new HttpError(409, 'Die Einrichtung ist bereits abgeschlossen.');
+  if (!setupNeeded()) throw new HttpError(409, tr('Die Einrichtung ist bereits abgeschlossen.'));
   const hash = await hashPassword(checkNewPassword(body.password));
   let id;
   if (body.person_id) {
     const person = db.prepare('SELECT * FROM persons WHERE id = ? AND archived = 0').get(body.person_id);
-    if (!person) throw new HttpError(404, 'Person nicht gefunden.');
+    if (!person) throw new HttpError(404, tr('Person nicht gefunden.'));
     id = person.id;
     db.prepare("UPDATE persons SET role = 'admin', password_hash = ? WHERE id = ?").run(hash, id);
   } else {
@@ -827,10 +828,10 @@ route('POST', '/api/auth/login', async (_p, body, _qs, ctx) => {
     : db.prepare('SELECT * FROM persons WHERE id = ? AND archived = 0').get(Number(body.person_id));
   if (!person || !(await verifyPassword(body.password, person.password_hash))) {
     loginFailed(key);
-    throw new HttpError(401, byEmail ? 'E-Mail oder Passwort ist falsch.' : 'Passwort ist falsch.');
+    throw new HttpError(401, byEmail ? tr('E-Mail oder Passwort ist falsch.') : tr('Passwort ist falsch.'));
   }
   loginFails.delete(key);
-  if (person.status !== 'active') throw new HttpError(403, 'Dein Konto wurde noch nicht von einem Admin freigegeben.');
+  if (person.status !== 'active') throw new HttpError(403, tr('Dein Konto wurde noch nicht von einem Admin freigegeben.'));
   ctx.cookies.push(sessionCookie(ctx.req, createSession(person.id)));
   return { me: publicPerson(person) };
 }, { auth: 'public' });
@@ -844,8 +845,8 @@ route('POST', '/api/auth/logout', (_p, _b, _qs, ctx) => {
 
 // Eigenes Passwort ändern {current, password}; andere Anmeldungen werden beendet
 route('POST', '/api/auth/password', async (_p, body, _qs, ctx) => {
-  if (ctx.via !== 'session') throw new HttpError(403, 'Nur mit Anmeldung möglich.');
-  if (!(await verifyPassword(body.current, ctx.person.password_hash))) throw new HttpError(400, 'Das aktuelle Passwort ist falsch.');
+  if (ctx.via !== 'session') throw new HttpError(403, tr('Nur mit Anmeldung möglich.'));
+  if (!(await verifyPassword(body.current, ctx.person.password_hash))) throw new HttpError(400, tr('Das aktuelle Passwort ist falsch.'));
   const hash = await hashPassword(checkNewPassword(body.password));
   db.prepare('UPDATE persons SET password_hash = ? WHERE id = ?').run(hash, ctx.person.id);
   dropSessions(ctx.person.id, ctx.sessionHash);
@@ -875,6 +876,7 @@ const PREFS = {
   houseView: ['2d', '3d'],
   theme: ['auto', 'light', 'dark'],
   fontSize: ['normal', 'large', 'xlarge'],
+  lang: ['auto', 'de', 'en'],
 };
 function readPrefs(raw) {
   let o = {};
@@ -897,13 +899,13 @@ route('GET', '/api/auth/me', (_p, _b, _qs, ctx) => {
   };
 }, { auth: 'public' });
 
-// Eigene Einstellungen ändern {start?, houseView?, theme?, fontSize?}
+// Eigene Einstellungen ändern {start?, houseView?, theme?, fontSize?, lang?}
 route('PATCH', '/api/auth/me/prefs', (_p, body, _qs, ctx) => {
-  if (ctx.via !== 'session') throw new HttpError(403, 'Nur mit Anmeldung.');
+  if (ctx.via !== 'session') throw new HttpError(403, tr('Nur mit Anmeldung.'));
   const prefs = readPrefs(ctx.person.prefs);
   for (const [k, vals] of Object.entries(PREFS)) {
     if (body[k] === undefined) continue;
-    if (!vals.includes(body[k])) throw new HttpError(400, `Ungültiger Wert für ${k}.`);
+    if (!vals.includes(body[k])) throw new HttpError(400, tr('Ungültiger Wert für {key}.', { key: k }));
     prefs[k] = body[k];
   }
   db.prepare('UPDATE persons SET prefs = ? WHERE id = ?').run(JSON.stringify(prefs), ctx.person.id);
@@ -935,14 +937,14 @@ function mergeTerminalSettings(row, patch) {
   const next = { ...cur };
   for (const [k, vals] of Object.entries(TERMINAL_SETTINGS)) {
     if (patch[k] === undefined) continue;
-    if (!vals.includes(patch[k])) throw new HttpError(400, `Ungültiger Wert für ${k}.`);
+    if (!vals.includes(patch[k])) throw new HttpError(400, tr('Ungültiger Wert für {key}.', { key: k }));
     next[k] = patch[k];
   }
   if (patch.idleMinutes !== undefined) next.idleMinutes = patch.idleMinutes;
   if (patch.screensaver !== undefined) next.screensaver = !!patch.screensaver;
   if (patch.plz !== undefined) {
     const plz = String(patch.plz ?? '').trim();
-    if (plz && !/^\d{4,5}$/.test(plz)) throw new HttpError(400, 'Postleitzahl bitte mit 4 oder 5 Ziffern.');
+    if (plz && !/^\d{4,5}$/.test(plz)) throw new HttpError(400, tr('Postleitzahl bitte mit 4 oder 5 Ziffern.'));
     next.plz = plz;
   }
   return readTerminalSettings(JSON.stringify(next));
@@ -950,8 +952,8 @@ function mergeTerminalSettings(row, patch) {
 const terminalPublic = (t) => t && { id: t.id, name: t.name, settings: readTerminalSettings(t.settings), created_at: t.created_at, last_seen_at: t.last_seen_at, paired: !!t.token_hash };
 function terminalName(raw) {
   const name = String(raw ?? '').trim();
-  if (!name) throw new HttpError(400, 'Bitte einen Namen angeben, z. B. „Diele“.');
-  if (name.length > 40) throw new HttpError(400, 'Der Name ist zu lang.');
+  if (!name) throw new HttpError(400, tr('Bitte einen Namen angeben, z. B. „Diele“.'));
+  if (name.length > 40) throw new HttpError(400, tr('Der Name ist zu lang.'));
   return name;
 }
 /** neuen Einrichtungslink erzeugen (ersetzt den alten – ein damit eingerichtetes Gerät muss neu verbunden werden) */
@@ -970,7 +972,7 @@ route('POST', '/api/terminals', (_p, body) => {
 }, { auth: 'admin' });
 route('PATCH', '/api/terminals/:id', (p, body) => {
   const row = db.prepare('SELECT * FROM terminals WHERE id = ?').get(Number(p.id));
-  if (!row) throw new HttpError(404, 'Terminal nicht gefunden.');
+  if (!row) throw new HttpError(404, tr('Terminal nicht gefunden.'));
   const name = body.name !== undefined ? terminalName(body.name) : row.name;
   const settings = mergeTerminalSettings(row, body.settings ?? {});
   db.prepare('UPDATE terminals SET name = ?, settings = ? WHERE id = ?').run(name, JSON.stringify(settings), row.id);
@@ -978,7 +980,7 @@ route('PATCH', '/api/terminals/:id', (p, body) => {
 }, { auth: 'admin' });
 route('POST', '/api/terminals/:id/link', (p) => {
   const row = db.prepare('SELECT id FROM terminals WHERE id = ?').get(Number(p.id));
-  if (!row) throw new HttpError(404, 'Terminal nicht gefunden.');
+  if (!row) throw new HttpError(404, tr('Terminal nicht gefunden.'));
   return { path: `/terminal/${newTerminalToken(row.id)}` };
 }, { auth: 'admin' });
 route('DELETE', '/api/terminals/:id', (p) => {
@@ -989,10 +991,10 @@ route('DELETE', '/api/terminals/:id', (p) => {
 // Wetter am Ort des Terminals (Ort: OpenStreetMap, Wetter: Open-Meteo – beides ohne Konto/Schlüssel) – für Licht und Anzeige im Ruhezustand
 const weatherCache = new Map();
 const geoCache = new Map();
-const WEATHER_TEXT = [[0, 'klar'], [1, 'heiter'], [2, 'wolkig'], [3, 'bedeckt'], [45, 'Nebel'], [51, 'Niesel'], [61, 'Regen'], [66, 'Eisregen'], [71, 'Schnee'], [80, 'Schauer'], [85, 'Schneeschauer'], [95, 'Gewitter']];
+const WEATHER_TEXT = () => [[0, tr('klar')], [1, tr('heiter')], [2, tr('wolkig')], [3, tr('bedeckt')], [45, tr('Nebel')], [51, tr('Niesel')], [61, tr('Regen')], [66, tr('Eisregen')], [71, tr('Schnee')], [80, tr('Schauer')], [85, tr('Schneeschauer')], [95, tr('Gewitter')]];
 /** Wetterart für die Darstellung (WMO-Code) */
 const weatherKind = (code) => (code >= 95 ? 'thunder' : code >= 85 || (code >= 71 && code <= 77) ? 'snow' : code >= 61 || code >= 80 ? 'rain' : code >= 51 ? 'drizzle' : code >= 45 ? 'fog' : code >= 2 ? 'clouds' : 'clear');
-const weatherText = (code) => [...WEATHER_TEXT].reverse().find(([c]) => code >= c)?.[1] ?? '';
+const weatherText = (code) => WEATHER_TEXT().reverse().find(([c]) => code >= c)?.[1] ?? '';
 /** Ort suchen (Adresse, Ort oder Postleitzahl) über OpenStreetMap/Nominatim – ohne Schlüssel */
 async function geocode(q, { postal = false } = {}) {
   const key = `${postal ? 'p' : 'q'}:${q}`;
@@ -1011,10 +1013,10 @@ async function geocode(q, { postal = false } = {}) {
 async function weatherAt(lat, lon, place) {
   const key = `${lat.toFixed(2)},${lon.toFixed(2)}`;
   const hit = weatherCache.get(key);
-  if (hit && Date.now() - hit.at < 15 * 60000) return hit.data;
+  if (hit && Date.now() - hit.at < 15 * 60000) return { ...hit.data, text: weatherText(hit.data.code) };
   const w = await fetch(`https://api.open-meteo.com/v1/forecast?latitude=${lat}&longitude=${lon}&current=temperature_2m,weather_code,cloud_cover,is_day,precipitation,snowfall,snow_depth,visibility,wind_speed_10m,wind_direction_10m&daily=sunrise,sunset&timezone=auto&forecast_days=1`, { signal: AbortSignal.timeout(8000) }).then((r) => r.json());
   const c = w?.current;
-  if (!c) throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
+  if (!c) throw new HttpError(502, tr('Wetterdienst nicht erreichbar.'));
   const data = {
     place, temperature: Math.round(c.temperature_2m), code: c.weather_code, text: weatherText(c.weather_code), cloud: c.cloud_cover,
     precipitation: c.precipitation, is_day: !!c.is_day, sunrise: w.daily?.sunrise?.[0] ?? null, sunset: w.daily?.sunset?.[0] ?? null,
@@ -1035,13 +1037,13 @@ route('GET', '/api/weather', async (_p, _b, qs, ctx) => {
       return await weatherAt(lat, lon, String(qs.get('place') || '').slice(0, 60));
     }
     const plz = String(qs.get('plz') || (ctx.terminal ? readTerminalSettings(ctx.terminal.settings).plz : '') || '').trim();
-    if (!/^\d{4,5}$/.test(plz)) throw new HttpError(400, 'Keine Lage des Hauses und keine Postleitzahl hinterlegt.');
+    if (!/^\d{4,5}$/.test(plz)) throw new HttpError(400, tr('Keine Lage des Hauses und keine Postleitzahl hinterlegt.'));
     const g = (await geocode(plz, { postal: true }))[0];
-    if (!g) throw new HttpError(404, `Zur Postleitzahl ${plz} wurde kein Ort gefunden.`);
+    if (!g) throw new HttpError(404, tr('Zur Postleitzahl {plz} wurde kein Ort gefunden.', { plz }));
     return await weatherAt(g.lat, g.lon, g.name);
   } catch (e) {
     if (e instanceof HttpError) throw e;
-    throw new HttpError(502, 'Wetterdienst nicht erreichbar.');
+    throw new HttpError(502, tr('Wetterdienst nicht erreichbar.'));
   }
 });
 // Blitze rund ums Haus in Echtzeit (Blitzortung.org) – für Hinweise und die Blitzkarte im Ruhezustand des Terminals
@@ -1049,17 +1051,17 @@ const lightning = process.env.LIGHTNING === '0' ? null : require('./lightning.cj
 route('GET', '/api/lightning', (_p, _b, qs) => {
   const lat = Number(qs.get('lat'));
   const lon = Number(qs.get('lon'));
-  if (!qs.get('lat') || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) throw new HttpError(400, 'Lage des Hauses fehlt.');
+  if (!qs.get('lat') || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) throw new HttpError(400, tr('Lage des Hauses fehlt.'));
   if (!lightning) return { connected: false, strikes: [], count15: 0, nearest: null, level: 0 };
   return lightning.around(lat, lon, Math.max(10, Math.min(300, Number(qs.get('radius')) || 100)));
 });
 route('GET', '/api/geocode', async (_p, _b, qs) => {
   const q = String(qs.get('q') || '').trim().slice(0, 120);
-  if (q.length < 3) throw new HttpError(400, 'Bitte mindestens 3 Zeichen eingeben.');
+  if (q.length < 3) throw new HttpError(400, tr('Bitte mindestens 3 Zeichen eingeben.'));
   try {
     return await geocode(q, { postal: /^\d{5}$/.test(q) });
   } catch {
-    throw new HttpError(502, 'Ortssuche nicht erreichbar.');
+    throw new HttpError(502, tr('Ortssuche nicht erreichbar.'));
   }
 });
 
@@ -1067,9 +1069,9 @@ route('GET', '/api/geocode', async (_p, _b, qs) => {
 // (z. B. im Lager angelegt), wird sie übernommen statt doppelt angelegt.
 route('POST', '/api/auth/register', async (_p, body, _qs, ctx) => {
   const email = String(body.email ?? '').trim().toLowerCase().slice(0, 200);
-  if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Bitte eine gültige E-Mail-Adresse angeben.');
+  if (!EMAIL_RE.test(email)) throw new HttpError(400, tr('Bitte eine gültige E-Mail-Adresse angeben.'));
   const pw = String(body.password ?? '');
-  if (pw.length < 8) throw new HttpError(400, 'Das Passwort muss mindestens 8 Zeichen haben.');
+  if (pw.length < 8) throw new HttpError(400, tr('Das Passwort muss mindestens 8 Zeichen haben.'));
   const name = personName(String(body.name ?? '').trim() || email.split('@')[0]);
   const hash = await hashPassword(checkNewPassword(pw));
   db.exec('BEGIN IMMEDIATE');
@@ -1077,8 +1079,8 @@ route('POST', '/api/auth/register', async (_p, body, _qs, ctx) => {
   try {
     const first = setupNeeded();
     const st = authSettings();
-    if (!first && !st.registrationEnabled) throw new HttpError(403, 'Die Registrierung ist derzeit deaktiviert.');
-    if (db.prepare('SELECT 1 FROM persons WHERE email = ?').get(email)) throw new HttpError(409, 'Diese E-Mail ist bereits registriert.');
+    if (!first && !st.registrationEnabled) throw new HttpError(403, tr('Die Registrierung ist derzeit deaktiviert.'));
+    if (db.prepare('SELECT 1 FROM persons WHERE email = ?').get(email)) throw new HttpError(409, tr('Diese E-Mail ist bereits registriert.'));
     const role = first ? 'admin' : 'user';
     const status = !first && st.requireApproval ? 'pending' : 'active';
     const free = db.prepare('SELECT id FROM persons WHERE name = ? COLLATE NOCASE AND email IS NULL AND password_hash IS NULL').get(name);
@@ -1094,7 +1096,7 @@ route('POST', '/api/auth/register', async (_p, body, _qs, ctx) => {
   } catch (e) { db.exec('ROLLBACK'); throw e; }
   const person = db.prepare('SELECT * FROM persons WHERE id = ?').get(id);
   if (person.status !== 'active') {
-    return { user: null, pending: true, message: 'Dein Konto wurde angelegt und muss noch von einem Admin freigegeben werden.' };
+    return { user: null, pending: true, message: tr('Dein Konto wurde angelegt und muss noch von einem Admin freigegeben werden.') };
   }
   ctx.cookies.push(sessionCookie(ctx.req, createSession(person.id)));
   return { user: accountUser(person) };
@@ -1115,12 +1117,12 @@ route('GET', '/api/keys/info', () => ({
 // {name, person_id, scope: 'read'|'write', expires_days?}
 route('POST', '/api/keys', (_p, body) => {
   const name = String(body.name || '').trim();
-  if (!name) throw new HttpError(400, 'Bitte einen Namen angeben (z. B. „Claude Handy“).');
-  if (name.length > 60) throw new HttpError(400, 'Name ist zu lang.');
+  if (!name) throw new HttpError(400, tr('Bitte einen Namen angeben (z. B. „Claude Handy“).'));
+  if (name.length > 60) throw new HttpError(400, tr('Name ist zu lang.'));
   const person = db.prepare('SELECT * FROM persons WHERE id = ? AND archived = 0').get(Number(body.person_id));
-  if (!person) throw new HttpError(400, 'Bitte eine aktive Person auswählen.');
+  if (!person) throw new HttpError(400, tr('Bitte eine aktive Person auswählen.'));
   const scope = body.scope === 'read' ? 'read' : 'write';
-  const days = body.expires_days ? positiveInt(body.expires_days, 'Gültigkeit') : null;
+  const days = body.expires_days ? positiveInt(body.expires_days, tr('Gültigkeit')) : null;
   const key = `hlk_${randomToken(24)}`;
   const { lastInsertRowid } = db.prepare(`INSERT INTO api_keys (name, prefix, key_hash, person_id, scope, expires_at)
     VALUES (?, ?, ?, ?, ?, ${days ? `datetime('now', '+${days} days')` : 'NULL'})`)
@@ -1129,7 +1131,7 @@ route('POST', '/api/keys', (_p, body) => {
 }, { auth: 'admin' });
 
 route('DELETE', '/api/keys/:id', (p) => {
-  if (!db.prepare('DELETE FROM api_keys WHERE id = ?').run(Number(p.id)).changes) throw new HttpError(404, 'Schlüssel nicht gefunden.');
+  if (!db.prepare('DELETE FROM api_keys WHERE id = ?').run(Number(p.id)).changes) throw new HttpError(404, tr('Schlüssel nicht gefunden.'));
   return { ok: true };
 }, { auth: 'admin' });
 
@@ -1144,16 +1146,16 @@ const WAREHOUSE_SELECT = `
 
 function warehouseFields(body, cur = { code: '', name: '', description: '' }) {
   const name = body.name !== undefined ? String(body.name).trim() : cur.name;
-  if (!name) throw new HttpError(400, 'Name darf nicht leer sein.');
-  if (name.length > 60) throw new HttpError(400, 'Name ist zu lang.');
+  if (!name) throw new HttpError(400, tr('Name darf nicht leer sein.'));
+  if (name.length > 60) throw new HttpError(400, tr('Name ist zu lang.'));
   const code = body.code !== undefined ? String(body.code).trim().toUpperCase() : cur.code;
-  if (!WH_CODE_RE.test(code)) throw new HttpError(400, 'Kürzel: 1–4 Zeichen, Buchstaben und Ziffern, beginnend mit einem Buchstaben.');
+  if (!WH_CODE_RE.test(code)) throw new HttpError(400, tr('Kürzel: 1–4 Zeichen, Buchstaben und Ziffern, beginnend mit einem Buchstaben.'));
   const description = body.description !== undefined ? String(body.description).trim() : cur.description;
   return { name, code, description };
 }
 const uniqueCode = (fn) => {
   try { return fn(); } catch (e) {
-    if (/UNIQUE/.test(e.message)) throw new HttpError(409, 'Dieses Kürzel ist schon vergeben.');
+    if (/UNIQUE/.test(e.message)) throw new HttpError(409, tr('Dieses Kürzel ist schon vergeben.'));
     throw e;
   }
 };
@@ -1178,9 +1180,9 @@ route('PATCH', '/api/warehouses/:id', (p, body) => {
 // Nur leere Lager löschen; ihre (leeren) Plätze werden mitgelöscht
 route('DELETE', '/api/warehouses/:id', (p) => {
   const w = getWarehouse(p.id);
-  if (db.prepare('SELECT COUNT(*) AS n FROM warehouses').get().n <= 1) throw new HttpError(409, 'Das letzte Lager kann nicht gelöscht werden.');
+  if (db.prepare('SELECT COUNT(*) AS n FROM warehouses').get().n <= 1) throw new HttpError(409, tr('Das letzte Lager kann nicht gelöscht werden.'));
   const n = db.prepare('SELECT COUNT(*) AS n FROM items WHERE warehouse_id = ?').get(w.id).n;
-  if (n > 0) throw new HttpError(409, `Im Lager liegen noch ${n} Gegenstände. Bitte zuerst umlagern oder löschen.`);
+  if (n > 0) throw new HttpError(409, trn(n, 'Im Lager liegt noch {n} Gegenstand. Bitte zuerst umlagern oder löschen.', 'Im Lager liegen noch {n} Gegenstände. Bitte zuerst umlagern oder löschen.'));
   db.exec('BEGIN');
   try {
     db.prepare('DELETE FROM places WHERE warehouse_id = ?').run(w.id);
@@ -1226,16 +1228,16 @@ function siteOf() {
 function mmValue(v, label, min, max) {
   const n = Math.round(Number(v));
   if (v === null || v === '' || !Number.isFinite(Number(v)) || n < min || n > max) {
-    throw new HttpError(400, `${label}: bitte eine Zahl von ${min} bis ${max} angeben.`);
+    throw new HttpError(400, tr('{label}: bitte eine Zahl von {min} bis {max} angeben.', { label, min, max }));
   }
   return n;
 }
 function polygon(v, label, { min = 3, optional = false } = {}) {
   if ((v === undefined || v === null || (Array.isArray(v) && !v.length)) && optional) return [];
-  if (!Array.isArray(v) || v.length < min || v.length > 200) throw new HttpError(400, `${label}: braucht ${min} bis 200 Eckpunkte.`);
+  if (!Array.isArray(v) || v.length < min || v.length > 200) throw new HttpError(400, tr('{label}: braucht {min} bis 200 Eckpunkte.', { label, min }));
   return v.map((pt, i) => {
-    if (!Array.isArray(pt) || pt.length !== 2) throw new HttpError(400, `${label}: Eckpunkt ${i + 1} ist ungültig.`);
-    return [mmValue(pt[0], `${label}, Eckpunkt ${i + 1} x`, -COORD, COORD), mmValue(pt[1], `${label}, Eckpunkt ${i + 1} y`, -COORD, COORD)];
+    if (!Array.isArray(pt) || pt.length !== 2) throw new HttpError(400, tr('{label}: Eckpunkt {n} ist ungültig.', { label, n: i + 1 }));
+    return [mmValue(pt[0], tr('{label}, Eckpunkt {n} x', { label, n: i + 1 }), -COORD, COORD), mmValue(pt[1], tr('{label}, Eckpunkt {n} y', { label, n: i + 1 }), -COORD, COORD)];
   });
 }
 const angle = (v) => ((Math.round(Number(v) || 0) % 360) + 360) % 360;
@@ -1243,87 +1245,87 @@ const text = (v, max = 40) => String(v ?? '').trim().slice(0, max);
 
 function siteFields(body) {
   const floors = Array.isArray(body.floors) ? body.floors : [];
-  if (floors.length > 30) throw new HttpError(400, 'Zu viele Etagen.');
+  if (floors.length > 30) throw new HttpError(400, tr('Zu viele Etagen.'));
   const seen = new Map();
   const placeExists = db.prepare('SELECT 1 FROM places WHERE warehouse_id = ? AND col = ? AND row = ?');
   const warehouses = new Map(db.prepare('SELECT id, code FROM warehouses').all().map((w) => [w.id, w.code]));
   const codes = new Map([...warehouses].map(([id, code]) => [code, id]));
   return floors.map((fl, fi) => {
-    const fname = text(fl.name) || `Etage ${fi + 1}`;
-    const L = `„${fname}“`;
-    if (!FLOOR_KINDS.includes(fl.kind ?? 'floor')) throw new HttpError(400, `${L}: unbekannte Art.`);
+    const fname = text(fl.name) || tr('Etage {n}', { n: fi + 1 });
+    const L = tr('„{name}“', { name: fname });
+    if (!FLOOR_KINDS.includes(fl.kind ?? 'floor')) throw new HttpError(400, tr('{label}: unbekannte Art.', { label: L }));
     const kind = fl.kind ?? 'floor';
     const f = {
       id: Number.isInteger(fl.id) ? fl.id : null, name: fname, kind, sort: fi,
-      elevation: mmValue(fl.elevation ?? 0, `${L}: Höhenlage`, -20000, 50000),
-      height: mmValue(fl.height ?? 2500, `${L}: Raumhöhe`, kind === 'outdoor' ? 0 : 1000, 10000),
-      slab: mmValue(fl.slab ?? 200, `${L}: Deckenstärke`, 0, 1000),
-      outline: polygon(fl.outline, `${L}: Umriss`, { optional: kind === 'outdoor' }),
+      elevation: mmValue(fl.elevation ?? 0, tr('{label}: Höhenlage', { label: L }), -20000, 50000),
+      height: mmValue(fl.height ?? 2500, tr('{label}: Raumhöhe', { label: L }), kind === 'outdoor' ? 0 : 1000, 10000),
+      slab: mmValue(fl.slab ?? 200, tr('{label}: Deckenstärke', { label: L }), 0, 1000),
+      outline: polygon(fl.outline, tr('{label}: Umriss', { label: L }), { optional: kind === 'outdoor' }),
     };
     f.rooms = (Array.isArray(fl.rooms) ? fl.rooms : []).map((r, i) => {
-      const rl = `${L}, Raum ${text(r.name) || i + 1}`;
-      if (!ROOM_KINDS.includes(r.kind ?? 'room')) throw new HttpError(400, `${rl}: unbekannte Art.`);
+      const rl = tr('{label}, Raum {name}', { label: L, name: text(r.name) || i + 1 });
+      if (!ROOM_KINDS.includes(r.kind ?? 'room')) throw new HttpError(400, tr('{label}: unbekannte Art.', { label: rl }));
       const room = { name: text(r.name), kind: r.kind ?? 'room', polygon: polygon(r.polygon, rl) };
-      if (r.height !== undefined && r.height !== null) room.height = mmValue(r.height, `${rl}: Höhe`, 0, 10000);
+      if (r.height !== undefined && r.height !== null) room.height = mmValue(r.height, tr('{label}: Höhe', { label: rl }), 0, 10000);
       return room;
     });
-    if (f.rooms.length > 200) throw new HttpError(400, `${L}: zu viele Räume.`);
+    if (f.rooms.length > 200) throw new HttpError(400, tr('{label}: zu viele Räume.', { label: L }));
     f.openings = (Array.isArray(fl.openings) ? fl.openings : []).map((o, i) => {
-      const ol = `${L}, Öffnung ${i + 1}`;
-      if (!OPENING_KINDS.includes(o.kind)) throw new HttpError(400, `${ol}: Art muss Tür, Durchgang oder Fenster sein.`);
-      const sill = o.kind !== 'window' ? 0 : mmValue(o.sill ?? 0, `${ol}: Brüstung`, 0, 10000);
+      const ol = tr('{label}, Öffnung {n}', { label: L, n: i + 1 });
+      if (!OPENING_KINDS.includes(o.kind)) throw new HttpError(400, tr('{label}: Art muss Tür, Durchgang oder Fenster sein.', { label: ol }));
+      const sill = o.kind !== 'window' ? 0 : mmValue(o.sill ?? 0, tr('{label}: Brüstung', { label: ol }), 0, 10000);
       return {
         kind: o.kind, x: mmValue(o.x, `${ol}: x`, -COORD, COORD), y: mmValue(o.y, `${ol}: y`, -COORD, COORD),
-        rotation: angle(o.rotation), width: mmValue(o.width, `${ol}: Breite`, 100, 20000),
-        height: mmValue(o.height, `${ol}: Höhe`, 100, 10000), sill,
+        rotation: angle(o.rotation), width: mmValue(o.width, tr('{label}: Breite', { label: ol }), 100, 20000),
+        height: mmValue(o.height, tr('{label}: Höhe', { label: ol }), 100, 10000), sill,
       };
     });
-    if (f.openings.length > 300) throw new HttpError(400, `${L}: zu viele Öffnungen.`);
+    if (f.openings.length > 300) throw new HttpError(400, tr('{label}: zu viele Öffnungen.', { label: L }));
     if (fl.roof) {
-      if (fl.roof.type !== 'gable') throw new HttpError(400, `${L}: unbekannte Dachform.`);
+      if (fl.roof.type !== 'gable') throw new HttpError(400, tr('{label}: unbekannte Dachform.', { label: L }));
       f.roof = {
-        type: 'gable', pitch: mmValue(fl.roof.pitch, `${L}: Dachneigung (°)`, 5, 75),
-        knee: mmValue(fl.roof.knee ?? 0, `${L}: Kniestock`, 0, 5000), ridge: fl.roof.ridge === 'y' ? 'y' : 'x',
+        type: 'gable', pitch: mmValue(fl.roof.pitch, tr('{label}: Dachneigung (°)', { label: L }), 5, 75),
+        knee: mmValue(fl.roof.knee ?? 0, tr('{label}: Kniestock', { label: L }), 0, 5000), ridge: fl.roof.ridge === 'y' ? 'y' : 'x',
       };
     } else f.roof = null;
     if (fl.background) {
       const b = fl.background;
       f.background = {
-        x: mmValue(b.x ?? 0, `${L}: Hintergrund x`, -COORD, COORD), y: mmValue(b.y ?? 0, `${L}: Hintergrund y`, -COORD, COORD),
+        x: mmValue(b.x ?? 0, tr('{label}: Hintergrund x', { label: L }), -COORD, COORD), y: mmValue(b.y ?? 0, tr('{label}: Hintergrund y', { label: L }), -COORD, COORD),
         scale: Math.max(0.001, Math.min(10000, Number(b.scale) || 1)), rotation: angle(b.rotation),
         opacity: Math.max(0, Math.min(1, Number(b.opacity ?? 0.5))),
       };
     } else f.background = null;
 
     const fixtures = Array.isArray(fl.fixtures) ? fl.fixtures : [];
-    if (fixtures.length > 500) throw new HttpError(400, `${L}: zu viele Einbauten.`);
+    if (fixtures.length > 500) throw new HttpError(400, tr('{label}: zu viele Einbauten.', { label: L }));
     f.fixtures = fixtures.map((x, i) => {
       const name = text(x.name);
-      const label = `${L}, ${name ? `„${name}“` : `Einbau ${i + 1}`}`;
-      if (!FIXTURE_KINDS.includes(x.kind)) throw new HttpError(400, `${label}: unbekannte Art.`);
+      const label = `${L}, ${name ? tr('„{name}“', { name }) : tr('Einbau {n}', { n: i + 1 })}`;
+      if (!FIXTURE_KINDS.includes(x.kind)) throw new HttpError(400, tr('{label}: unbekannte Art.', { label }));
       const fx = {
         kind: x.kind, name,
-        x: mmValue(x.x, `${label}: Position x`, -COORD, COORD), y: mmValue(x.y, `${label}: Position y`, -COORD, COORD),
+        x: mmValue(x.x, tr('{label}: Position x', { label }), -COORD, COORD), y: mmValue(x.y, tr('{label}: Position y', { label }), -COORD, COORD),
         rotation: angle(x.rotation),
-        width: mmValue(x.width, `${label}: Breite`, 50, 20000), depth: mmValue(x.depth, `${label}: Tiefe`, 50, 20000),
-        height: mmValue(x.height, `${label}: Höhe`, 10, 10000), elevation: mmValue(x.elevation ?? 0, `${label}: Abstand zum Boden`, 0, 10000),
-        levels: mmValue(x.levels ?? 1, `${label}: ${x.kind === 'stairs' ? 'Stufen' : 'Böden'}`, 1, 50),
+        width: mmValue(x.width, tr('{label}: Breite', { label }), 50, 20000), depth: mmValue(x.depth, tr('{label}: Tiefe', { label }), 50, 20000),
+        height: mmValue(x.height, tr('{label}: Höhe', { label }), 10, 10000), elevation: mmValue(x.elevation ?? 0, tr('{label}: Abstand zum Boden', { label }), 0, 10000),
+        levels: mmValue(x.levels ?? 1, x.kind === 'stairs' ? tr('{label}: Stufen', { label }) : tr('{label}: Böden', { label }), 1, 50),
         source: x.source ? text(x.source, 80) : null,
       };
       const slots = Array.isArray(x.slots) ? x.slots : [];
-      if (x.kind === 'stairs' && slots.length) throw new HttpError(400, `${label}: Auf einer Treppe gibt es keine Fächer.`);
+      if (x.kind === 'stairs' && slots.length) throw new HttpError(400, tr('{label}: Auf einer Treppe gibt es keine Fächer.', { label }));
       fx.slots = slots.map((sl) => {
         const wid = sl.warehouse_id !== undefined ? Number(sl.warehouse_id) : codes.get(String(sl.wh_code || '').toUpperCase());
-        if (!warehouses.has(wid)) throw new HttpError(400, `${label}: unbekanntes Lager.`);
+        if (!warehouses.has(wid)) throw new HttpError(400, tr('{label}: unbekanntes Lager.', { label }));
         const loc = normalizeLocation(sl.col, sl.row);
         const key = `${warehouses.get(wid)}-${loc.col}${loc.row}`;
-        if (seen.has(key)) throw new HttpError(400, `Platz ${key} ist zweimal zugeordnet (${seen.get(key)} und ${label}).`);
+        if (seen.has(key)) throw new HttpError(400, tr('Platz {code} ist zweimal zugeordnet ({first} und {second}).', { code: key, first: seen.get(key), second: label }));
         seen.set(key, label);
-        if (!placeExists.get(wid, loc.col, loc.row)) throw new HttpError(400, `Platz ${key} gibt es nicht.`);
+        if (!placeExists.get(wid, loc.col, loc.row)) throw new HttpError(400, tr('Platz {code} gibt es nicht.', { code: key }));
         return {
           warehouse_id: wid, ...loc,
-          level: mmValue(sl.level ?? 0, `${label}, Platz ${key}: Boden`, 0, fx.levels - 1),
-          pos: mmValue(sl.pos ?? 0, `${label}, Platz ${key}: Position`, 0, 99),
+          level: mmValue(sl.level ?? 0, tr('{label}, Platz {code}: Boden', { label, code: key }), 0, fx.levels - 1),
+          pos: mmValue(sl.pos ?? 0, tr('{label}, Platz {code}: Position', { label, code: key }), 0, 99),
         };
       });
       return fx;
@@ -1339,7 +1341,7 @@ route('GET', '/api/site', () => siteOf());
 function saveSite(body) {
   const cur = db.prepare("SELECT value FROM settings WHERE key = 'site_updated_at'").get()?.value ?? null;
   if (body.if_updated_at !== undefined && cur !== body.if_updated_at) {
-    throw new HttpError(409, 'Das Haus wurde inzwischen woanders geändert. Bitte neu laden.');
+    throw new HttpError(409, tr('Das Haus wurde inzwischen woanders geändert. Bitte neu laden.'));
   }
   const floors = siteFields(body);
   const known = new Set(db.prepare('SELECT id FROM floors').all().map((r) => r.id));
@@ -1412,13 +1414,13 @@ function floorImage(b64) {
   if (buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff) type = 'image/jpeg';
   else if (buf.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))) type = 'image/png';
   else if (buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP') type = 'image/webp';
-  if (!type) throw new HttpError(400, 'Hintergrund: nur PNG, JPEG oder WebP.');
-  if (buf.length > 15 * 1024 * 1024) throw new HttpError(413, 'Hintergrundbild ist zu groß (max. 15 MB).');
+  if (!type) throw new HttpError(400, tr('Hintergrund: nur PNG, JPEG oder WebP.'));
+  if (buf.length > 15 * 1024 * 1024) throw new HttpError(413, tr('Hintergrundbild ist zu groß (max. 15 MB).'));
   return { type, buf };
 }
 const getFloor = (id) => {
   const f = db.prepare('SELECT id FROM floors WHERE id = ?').get(Number(id));
-  if (!f) throw new HttpError(404, 'Etage nicht gefunden.');
+  if (!f) throw new HttpError(404, tr('Etage nicht gefunden.'));
   return f;
 };
 route('PUT', '/api/floors/:id/image', (p, body) => {
@@ -1430,7 +1432,7 @@ route('PUT', '/api/floors/:id/image', (p, body) => {
 }, { auth: 'admin' });
 route('GET', '/api/floors/:id/image', (p, _b, qs) => {
   const row = db.prepare('SELECT type, data FROM floor_images WHERE floor_id = ?').get(Number(p.id));
-  if (!row) throw new HttpError(404, 'Kein Hintergrundbild.');
+  if (!row) throw new HttpError(404, tr('Kein Hintergrundbild.'));
   return { [SEND_DATA]: Buffer.from(row.data), type: row.type, cache: qs.get('v') ? 'private, max-age=31536000, immutable' : 'private, no-cache' };
 });
 route('DELETE', '/api/floors/:id/image', (p) => {
@@ -1445,7 +1447,7 @@ route('GET', '/api/places/:col/:row', (p, _b, qs) => {
   const w = whFrom(qs.get('wh'));
   const loc = normalizeLocation(p.col, p.row);
   const place = getPlace(w.id, loc.col, loc.row);
-  if (!place) throw new HttpError(404, 'Lagerplatz nicht angelegt.');
+  if (!place) throw new HttpError(404, tr('Lagerplatz nicht angelegt.'));
   const inRoom = !!db.prepare('SELECT 1 FROM fixture_slots WHERE warehouse_id = ? AND col = ? AND row = ?').get(w.id, loc.col, loc.row);
   return { ...place, in_room: inRoom, items: placeItems(w.id, loc.col, loc.row) };
 });
@@ -1470,9 +1472,9 @@ route('POST', '/api/places/bulk', (_p, body, qs) => {
   const from = normalizeLocation(body.col_from, body.row_from);
   const to = normalizeLocation(body.col_to ?? body.col_from, body.row_to ?? body.row_from);
   const c1 = colToNum(from.col), c2 = colToNum(to.col);
-  if (c2 < c1 || to.row < from.row) throw new HttpError(400, 'Bereich ist verkehrt herum angegeben.');
+  if (c2 < c1 || to.row < from.row) throw new HttpError(400, tr('Bereich ist verkehrt herum angegeben.'));
   const total = (c2 - c1 + 1) * (to.row - from.row + 1);
-  if (total > 2600) throw new HttpError(400, `Das wären ${total} Plätze – bitte einen kleineren Bereich wählen.`);
+  if (total > 2600) throw new HttpError(400, tr('Das wären {n} Plätze – bitte einen kleineren Bereich wählen.', { n: total }));
   const category = String(body.category || '').trim();
   const stmt = db.prepare('INSERT OR IGNORE INTO places (warehouse_id, col, row, category) VALUES (?, ?, ?, ?)');
   let created = 0;
@@ -1494,8 +1496,8 @@ route('POST', '/api/places/bulk', (_p, body, qs) => {
 function deletePlace(wid, col, row) {
   const loc = normalizeLocation(col, row);
   const pl = db.prepare(`${PLACE_SELECT} WHERE pl.warehouse_id = ? AND pl.col = ? AND pl.row = ?`).get(wid, loc.col, loc.row);
-  if (!pl) throw new HttpError(404, `Lagerplatz ${loc.col}${loc.row} gibt es nicht.`);
-  if (pl.items > 0) throw new HttpError(409, 'Auf dem Platz liegen noch Gegenstände.');
+  if (!pl) throw new HttpError(404, tr('Lagerplatz {code} gibt es nicht.', { code: `${loc.col}${loc.row}` }));
+  if (pl.items > 0) throw new HttpError(409, tr('Auf dem Platz liegen noch Gegenstände.'));
   db.prepare('DELETE FROM places WHERE warehouse_id = ? AND col = ? AND row = ?').run(wid, loc.col, loc.row);
   return pl;
 }
@@ -1513,7 +1515,7 @@ function resolveCode(raw) {
     const w = parsed.wh
       ? db.prepare('SELECT * FROM warehouses WHERE code = ?').get(parsed.wh)
       : db.prepare('SELECT * FROM warehouses WHERE id = 1').get();
-    if (!w) return { type: 'invalid', reason: parsed.wh ? `Lager „${parsed.wh}“ gibt es nicht.` : 'Lager nicht gefunden.' };
+    if (!w) return { type: 'invalid', reason: parsed.wh ? tr('Lager „{code}“ gibt es nicht.', { code: parsed.wh }) : tr('Lager nicht gefunden.') };
     ensurePlace(w.id, parsed.col, parsed.row);
     return { type: 'place', place: { ...getPlace(w.id, parsed.col, parsed.row), items: placeItems(w.id, parsed.col, parsed.row) } };
   }
@@ -1560,7 +1562,7 @@ route('GET', '/api/containers', () => db.prepare(`${ITEM_SELECT} WHERE i.contain
 
 // Einbuchen: neuer Gegenstand oder Zugang zu vorhandenem Gegenstand
 function checkin(person, body) {
-  const quantity = positiveInt(body.quantity ?? 1, 'Menge');
+  const quantity = positiveInt(body.quantity ?? 1, tr('Menge'));
   let itemId;
   let movementId;
   let existing = null;
@@ -1584,14 +1586,14 @@ function checkin(person, body) {
       itemId = existing.id;
     } else {
       const name = String(body.name || '').trim();
-      if (!name) throw new HttpError(400, 'Bezeichnung darf nicht leer sein.');
+      if (!name) throw new HttpError(400, tr('Bezeichnung darf nicht leer sein.'));
       const to = body.container_id
         ? placement(body, null)
         : placement(body, null, whFrom(body.warehouse_id).id, normalizeLocation(body.col, body.row));
       ensurePlace(to.wid, to.col, to.row);
       const description = String(body.description || '').trim();
       let code = String(body.code || '').trim().toUpperCase();
-      if (code && !CODE_RE.test(code)) throw new HttpError(400, 'Ungültiger Objekt-Code.');
+      if (code && !CODE_RE.test(code)) throw new HttpError(400, tr('Ungültiger Objekt-Code.'));
       if (!code) code = newCode();
       const { lastInsertRowid } = db.prepare(`INSERT INTO items (code, name, description, warehouse_id, col, row, quantity, consumable, container, parent_id, expires_on)
           VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`)
@@ -1617,10 +1619,10 @@ function checkin(person, body) {
 
 // Ausbuchen: Menge entnehmen
 function checkout(person, body) {
-  const quantity = positiveInt(body.quantity ?? 1, 'Menge');
+  const quantity = positiveInt(body.quantity ?? 1, tr('Menge'));
   const item = body.item_id ? getItem(body.item_id) : getItemByCode(body.code);
-  if (!item) throw new HttpError(404, 'Gegenstand nicht gefunden.');
-  if (item.quantity < quantity) throw new HttpError(400, `Nur ${item.quantity} Stück im Lager.`);
+  if (!item) throw new HttpError(404, tr('Gegenstand nicht gefunden.'));
+  if (item.quantity < quantity) throw new HttpError(400, tr('Nur {n} Stück im Lager.', { n: item.quantity }));
   let movementId;
   db.prepare('BEGIN').run();
   try {
@@ -1642,11 +1644,11 @@ function checkout(person, body) {
 // nur eigene Buchungen (Admins mit Sitzung: alle)
 function undoMovement(ctx, id) {
   const mv = db.prepare('SELECT m.*, p.name AS person FROM movements m JOIN persons p ON p.id = m.person_id WHERE m.id = ?').get(Number(id));
-  if (!mv) throw new HttpError(404, 'Buchung nicht gefunden (vielleicht schon rückgängig gemacht).');
+  if (!mv) throw new HttpError(404, tr('Buchung nicht gefunden (vielleicht schon rückgängig gemacht).'));
   const admin = ctx.via === 'session' && ctx.person.role === 'admin';
-  if (mv.person_id !== ctx.person.id && !admin) throw new HttpError(403, `Das ist eine Buchung von ${mv.person} – nur eigene Buchungen können rückgängig gemacht werden.`);
+  if (mv.person_id !== ctx.person.id && !admin) throw new HttpError(403, tr('Das ist eine Buchung von {person} – nur eigene Buchungen können rückgängig gemacht werden.', { person: mv.person }));
   if (db.prepare('SELECT MAX(id) AS id FROM movements WHERE item_id = ?').get(mv.item_id).id !== mv.id) {
-    throw new HttpError(409, 'Nur die letzte Buchung eines Gegenstands kann rückgängig gemacht werden.');
+    throw new HttpError(409, tr('Nur die letzte Buchung eines Gegenstands kann rückgängig gemacht werden.'));
   }
   const item = getItem(mv.item_id);
   let message;
@@ -1661,16 +1663,16 @@ function undoMovement(ctx, id) {
         if (entry.quantity > mv.shopping_qty) db.prepare('UPDATE shopping SET quantity = quantity - ? WHERE id = ?').run(mv.shopping_qty, entry.id);
         else db.prepare('DELETE FROM shopping WHERE id = ?').run(entry.id);
       }
-      message = `Ausbuchung rückgängig: ${mv.quantity}× ${item.name} wieder im Lager (jetzt ${item.quantity + mv.quantity} Stück).`;
+      message = tr('Ausbuchung rückgängig: {n}× {name} wieder im Lager (jetzt {total} Stück).', { n: mv.quantity, name: item.name, total: item.quantity + mv.quantity });
     } else if (mv.created_item) {
       // die Buchung hat den Gegenstand angelegt → Gegenstand wieder entfernen (kam er von der Einkaufsliste: Eintrag wieder öffnen)
       db.prepare('DELETE FROM items WHERE id = ?').run(item.id);
       if (mv.shopping_id) db.prepare('UPDATE shopping SET done_at = NULL WHERE id = ?').run(mv.shopping_id);
       deleted = true;
-      message = `Neuanlage rückgängig: ${item.name} wurde wieder entfernt.`;
+      message = tr('Neuanlage rückgängig: {name} wurde wieder entfernt.', { name: item.name });
     } else {
       if (item.quantity < mv.quantity) {
-        throw new HttpError(409, `Es sind nur noch ${item.quantity} Stück da – die Einbuchung von ${mv.quantity} Stück kann nicht mehr zurückgenommen werden.`);
+        throw new HttpError(409, tr('Es sind nur noch {n} Stück da – die Einbuchung von {booked} Stück kann nicht mehr zurückgenommen werden.', { n: item.quantity, booked: mv.quantity }));
       }
       db.prepare('UPDATE items SET quantity = quantity - ? WHERE id = ?').run(mv.quantity, item.id);
       if (mv.prev_col) {
@@ -1686,7 +1688,7 @@ function undoMovement(ctx, id) {
       if (mv.shopping_id && !db.prepare('SELECT 1 FROM shopping WHERE item_id = ? AND done_at IS NULL').get(item.id)) {
         db.prepare('UPDATE shopping SET done_at = NULL WHERE id = ?').run(mv.shopping_id);
       }
-      message = `Einbuchung rückgängig: ${mv.quantity}× ${item.name} zurückgenommen (jetzt ${item.quantity - mv.quantity} Stück).`;
+      message = tr('Einbuchung rückgängig: {n}× {name} zurückgenommen (jetzt {total} Stück).', { n: mv.quantity, name: item.name, total: item.quantity - mv.quantity });
     }
     db.prepare('DELETE FROM movements WHERE id = ?').run(mv.id);
     db.prepare('COMMIT').run();
@@ -1720,7 +1722,7 @@ route('POST', '/api/checkout', (_p, body, _qs, ctx) => once(ctx, body, () => che
 function updateItem(id, body) {
   const item = getItem(id);
   const name = body.name !== undefined ? String(body.name).trim() : item.name;
-  if (!name) throw new HttpError(400, 'Bezeichnung darf nicht leer sein.');
+  if (!name) throw new HttpError(400, tr('Bezeichnung darf nicht leer sein.'));
   const description = body.description !== undefined ? String(body.description).trim() : item.description;
   const loc = body.col !== undefined || body.row !== undefined
     ? normalizeLocation(body.col ?? item.col, body.row ?? item.row)
@@ -1729,7 +1731,7 @@ function updateItem(id, body) {
   const consumable = body.consumable !== undefined ? (body.consumable ? 1 : 0) : item.consumable;
   const container = body.container !== undefined ? (body.container ? 1 : 0) : item.container;
   const expires = body.expires_on !== undefined ? expiryDate(body.expires_on) : item.expires_on;
-  if (!container && item.contents) throw new HttpError(409, `In ${item.name} liegen noch ${item.contents} Gegenstände – bitte zuerst herausnehmen.`);
+  if (!container && item.contents) throw new HttpError(409, trn(item.contents, 'In {name} liegt noch {n} Gegenstand – bitte zuerst herausnehmen.', 'In {name} liegen noch {n} Gegenstände – bitte zuerst herausnehmen.', { name: item.name }));
   db.prepare('BEGIN').run();
   try {
     const to = placement(body, item, wid, loc);
@@ -1761,7 +1763,7 @@ route('GET', '/api/shopping', () => ({
 
 // Neu: {item_id} oder {name}, dazu quantity, note
 function shoppingAdd(person, body) {
-  const quantity = positiveInt(body.quantity ?? 1, 'Menge');
+  const quantity = positiveInt(body.quantity ?? 1, tr('Menge'));
   const note = String(body.note || '').trim().slice(0, 200);
   const personId = person.id;
   let id;
@@ -1770,8 +1772,8 @@ function shoppingAdd(person, body) {
     id = addToShopping({ itemId: item.id, name: item.name, quantity, note, personId });
   } else {
     const name = String(body.name || '').trim();
-    if (!name) throw new HttpError(400, 'Was soll gekauft werden?');
-    if (name.length > 100) throw new HttpError(400, 'Bezeichnung ist zu lang.');
+    if (!name) throw new HttpError(400, tr('Was soll gekauft werden?'));
+    if (name.length > 100) throw new HttpError(400, tr('Bezeichnung ist zu lang.'));
     // gleichnamigen Gegenstand automatisch verknüpfen, damit „Gekauft“ direkt einbuchen kann
     const item = db.prepare('SELECT id FROM items WHERE name = ? COLLATE NOCASE ORDER BY id LIMIT 1').get(name);
     id = addToShopping({ itemId: item?.id ?? null, name, quantity, note, personId });
@@ -1783,12 +1785,12 @@ route('POST', '/api/shopping', (_p, body, _qs, ctx) => shoppingAdd(ctx.person, b
 // Ändern: {quantity?, note?, done?}
 function shoppingUpdate(id, body) {
   const cur = getShopping(id);
-  const quantity = body.quantity !== undefined ? positiveInt(body.quantity, 'Menge') : cur.quantity;
+  const quantity = body.quantity !== undefined ? positiveInt(body.quantity, tr('Menge')) : cur.quantity;
   const note = body.note !== undefined ? String(body.note).trim().slice(0, 200) : cur.note;
   let doneAt = cur.done_at;
   if (body.done !== undefined) doneAt = body.done ? (cur.done_at || new Date().toISOString().slice(0, 19).replace('T', ' ')) : null;
   if (!doneAt && cur.done_at && cur.item_id && db.prepare('SELECT 1 FROM shopping WHERE item_id = ? AND done_at IS NULL AND id != ?').get(cur.item_id, cur.id)) {
-    throw new HttpError(409, 'Der Gegenstand steht schon auf der Liste.');
+    throw new HttpError(409, tr('Der Gegenstand steht schon auf der Liste.'));
   }
   db.prepare('UPDATE shopping SET quantity = ?, note = ?, done_at = ? WHERE id = ?').run(quantity, note, doneAt, cur.id);
   return getShopping(cur.id);
@@ -1798,8 +1800,8 @@ route('PATCH', '/api/shopping/:id', (p, body) => shoppingUpdate(p.id, body));
 // Gekauft und gleich wieder einbuchen: {quantity?}
 function shoppingRestock(person, id, body = {}) {
   const entry = getShopping(id);
-  if (!entry.item_id) throw new HttpError(400, 'Dieser Eintrag ist mit keinem Gegenstand verknüpft.');
-  const quantity = positiveInt(body.quantity ?? entry.quantity, 'Menge');
+  if (!entry.item_id) throw new HttpError(400, tr('Dieser Eintrag ist mit keinem Gegenstand verknüpft.'));
+  const quantity = positiveInt(body.quantity ?? entry.quantity, tr('Menge'));
   const item = getItem(entry.item_id);
   let movementId;
   db.prepare('BEGIN').run();
@@ -1825,9 +1827,9 @@ function shoppingStore(person, id, body = {}) {
   const target = body.col || body.container_id;
   if (entry.item_id && !target) return { ...shoppingRestock(person, id, body), created: false };
   if (!entry.item_id && !target) {
-    throw new HttpError(400, `${entry.name} ist noch kein Gegenstand im Lager – zum Einlagern bitte einen Lagerplatz oder Behälter angeben, dann wird er neu angelegt.`);
+    throw new HttpError(400, tr('{name} ist noch kein Gegenstand im Lager – zum Einlagern bitte einen Lagerplatz oder Behälter angeben, dann wird er neu angelegt.', { name: entry.name }));
   }
-  const quantity = positiveInt(body.quantity ?? entry.quantity, 'Menge');
+  const quantity = positiveInt(body.quantity ?? entry.quantity, tr('Menge'));
   const place = body.container_id ? { container_id: body.container_id } : { warehouse_id: body.warehouse_id, col: body.col, row: body.row };
   const res = checkin(person, entry.item_id
     ? { item_id: entry.item_id, quantity, ...place, expires_on: body.expires_on, source: body.source }
@@ -1856,7 +1858,7 @@ const TASK_SELECT = `SELECT t.*, a.name AS assignee, a.color AS assignee_color, 
   LEFT JOIN places pl ON pl.warehouse_id = t.warehouse_id AND pl.col = t.col AND pl.row = t.row`;
 function getTask(id) {
   const t = db.prepare(`${TASK_SELECT} WHERE t.id = ?`).get(Number(id));
-  if (!t) throw new HttpError(404, 'Aufgabe nicht gefunden.');
+  if (!t) throw new HttpError(404, tr('Aufgabe nicht gefunden.'));
   return t;
 }
 /** Eingaben prüfen; partial = nur übergebene Felder (Ändern) */
@@ -1865,24 +1867,24 @@ function taskFields(body, partial = false) {
   const has = (k) => !partial || body[k] !== undefined;
   if (has('title')) {
     f.title = String(body.title ?? '').trim();
-    if (!f.title) throw new HttpError(400, 'Bitte einen Titel angeben.');
-    if (f.title.length > 120) throw new HttpError(400, 'Titel ist zu lang (höchstens 120 Zeichen).');
+    if (!f.title) throw new HttpError(400, tr('Bitte einen Titel angeben.'));
+    if (f.title.length > 120) throw new HttpError(400, tr('Titel ist zu lang (höchstens 120 Zeichen).'));
   }
   if (has('note')) f.note = String(body.note ?? '').trim().slice(0, 1000);
   if (has('assignee_id')) {
     const a = body.assignee_id ? Number(body.assignee_id) : null;
-    if (a && !db.prepare('SELECT 1 FROM persons WHERE id = ? AND archived = 0').get(a)) throw new HttpError(400, 'Diese Person gibt es nicht.');
+    if (a && !db.prepare('SELECT 1 FROM persons WHERE id = ? AND archived = 0').get(a)) throw new HttpError(400, tr('Diese Person gibt es nicht.'));
     f.assignee_id = a;
   }
   if (has('due_on')) f.due_on = body.due_on ? expiryDate(body.due_on) : null;
   if (has('repeat_unit')) {
     const u = body.repeat_unit || null;
-    if (u && !TASK_UNITS.includes(u)) throw new HttpError(400, 'Wiederholung: täglich, wöchentlich, monatlich oder jährlich.');
+    if (u && !TASK_UNITS.includes(u)) throw new HttpError(400, tr('Wiederholung: täglich, wöchentlich, monatlich oder jährlich.'));
     f.repeat_unit = u;
   }
   if (has('repeat_every')) {
     const n = Number(body.repeat_every ?? 1);
-    if (!Number.isInteger(n) || n < 1 || n > 366) throw new HttpError(400, 'Wiederholung: alle 1 bis 366 Einheiten.');
+    if (!Number.isInteger(n) || n < 1 || n > 366) throw new HttpError(400, tr('Wiederholung: alle 1 bis 366 Einheiten.'));
     f.repeat_every = n;
   }
   if (has('repeat_from_done')) f.repeat_from_done = body.repeat_from_done ? 1 : 0;
@@ -1891,7 +1893,7 @@ function taskFields(body, partial = false) {
     if (!pl) Object.assign(f, { warehouse_id: null, col: null, row: null });
     else {
       const loc = normalizeLocation(pl.col, pl.row);
-      if (!db.prepare('SELECT 1 FROM warehouses WHERE id = ?').get(Number(pl.warehouse_id))) throw new HttpError(400, 'Dieses Lager gibt es nicht.');
+      if (!db.prepare('SELECT 1 FROM warehouses WHERE id = ?').get(Number(pl.warehouse_id))) throw new HttpError(400, tr('Dieses Lager gibt es nicht.'));
       Object.assign(f, { warehouse_id: Number(pl.warehouse_id), ...loc });
     }
   }
@@ -1929,7 +1931,7 @@ route('DELETE', '/api/tasks/:id', (p) => {
 // Erledigen: einmalige Aufgabe ist danach erledigt, wiederkehrende rückt auf den nächsten Termin
 route('POST', '/api/tasks/:id/done', (p, _body, _qs, ctx) => {
   const t = getTask(p.id);
-  if (t.done_at) throw new HttpError(409, 'Diese Aufgabe ist schon erledigt.');
+  if (t.done_at) throw new HttpError(409, tr('Diese Aufgabe ist schon erledigt.'));
   const who = ctx.person.id || null;
   const log = db.prepare('INSERT INTO task_log (task_id, person_id, due_on) VALUES (?, ?, ?)').run(t.id, who, t.due_on).lastInsertRowid;
   if (t.repeat_unit) db.prepare('UPDATE tasks SET due_on = ? WHERE id = ?').run(nextDue(t), t.id);
@@ -1940,7 +1942,7 @@ route('POST', '/api/tasks/:id/done', (p, _body, _qs, ctx) => {
 route('POST', '/api/tasks/:id/undo', (p) => {
   const t = getTask(p.id);
   const last = db.prepare('SELECT * FROM task_log WHERE task_id = ? ORDER BY id DESC LIMIT 1').get(t.id);
-  if (!last) throw new HttpError(409, 'Nichts rückgängig zu machen.');
+  if (!last) throw new HttpError(409, tr('Nichts rückgängig zu machen.'));
   db.prepare('DELETE FROM task_log WHERE id = ?').run(last.id);
   if (t.repeat_unit) db.prepare('UPDATE tasks SET due_on = ? WHERE id = ?').run(last.due_on, t.id);
   else db.prepare('UPDATE tasks SET done_at = NULL, done_by = NULL WHERE id = ?').run(t.id);
@@ -1949,7 +1951,7 @@ route('POST', '/api/tasks/:id/undo', (p) => {
 
 // Erledigte Einträge aufräumen
 route('DELETE', '/api/shopping', (_p, _b, qs) => {
-  if (qs.get('done') !== '1') throw new HttpError(400, 'Nur erledigte Einträge können gesammelt gelöscht werden (?done=1).');
+  if (qs.get('done') !== '1') throw new HttpError(400, tr('Nur erledigte Einträge können gesammelt gelöscht werden (?done=1).'));
   return { deleted: db.prepare('DELETE FROM shopping WHERE done_at IS NOT NULL').run().changes };
 });
 
@@ -1983,16 +1985,16 @@ function imageBuffer(b64, label, maxBytes) {
   const buf = Buffer.from(String(b64 || '').replace(/^data:[^,]*,/, ''), 'base64');
   const jpeg = buf[0] === 0xff && buf[1] === 0xd8 && buf[2] === 0xff;
   const webp = buf.subarray(0, 4).toString('latin1') === 'RIFF' && buf.subarray(8, 12).toString('latin1') === 'WEBP';
-  if (!jpeg && !webp) throw new HttpError(400, `${label}: nur JPEG oder WebP.`);
-  if (buf.length > maxBytes) throw new HttpError(413, `${label} ist zu groß.`);
+  if (!jpeg && !webp) throw new HttpError(400, tr('{label}: nur JPEG oder WebP.', { label }));
+  if (buf.length > maxBytes) throw new HttpError(413, tr('{label} ist zu groß.', { label }));
   return buf;
 }
 const imageType = (buf) => (buf[0] === 0xff ? 'image/jpeg' : 'image/webp');
 
 function saveItemPhoto(id, body) {
   const item = getItem(id);
-  const thumb = imageBuffer(body.thumb, 'Vorschaubild', 300 * 1024);
-  const image = imageBuffer(body.image, 'Foto', 3 * 1024 * 1024);
+  const thumb = imageBuffer(body.thumb, tr('Vorschaubild'), 300 * 1024);
+  const image = imageBuffer(body.image, tr('Foto'), 3 * 1024 * 1024);
   db.prepare(`INSERT INTO item_photos (item_id, thumb, image, updated_at) VALUES (?, ?, ?, datetime('now'))
     ON CONFLICT(item_id) DO UPDATE SET thumb = excluded.thumb, image = excluded.image, updated_at = excluded.updated_at`).run(item.id, thumb, image);
   return getItem(item.id);
@@ -2000,7 +2002,7 @@ function saveItemPhoto(id, body) {
 route('PUT', '/api/items/:id/photo', (p, body) => saveItemPhoto(p.id, body));
 route('GET', '/api/items/:id/photo', (p, _b, qs) => {
   const row = db.prepare('SELECT thumb, image FROM item_photos WHERE item_id = ?').get(Number(p.id));
-  if (!row) throw new HttpError(404, 'Kein Foto.');
+  if (!row) throw new HttpError(404, tr('Kein Foto.'));
   const data = Buffer.from(qs.get('size') === 'thumb' ? row.thumb : row.image);
   // die URL enthält ?v=<Änderungszeit> → darf lange im Browser-Cache bleiben
   return { [SEND_DATA]: data, type: imageType(data), cache: qs.get('v') ? 'private, max-age=31536000, immutable' : 'private, no-cache' };
@@ -2066,12 +2068,14 @@ route('GET', '/api/stats', (_p, _b, qs) => {
 // Code vorhanden → Gegenstand aktualisieren; Code unbekannt → mit diesem Code anlegen; ohne Code → neu anlegen.
 // dry: nur prüfen. Beim echten Import wird vorher ein Backup angelegt; Mengenänderungen werden als Buchung erfasst.
 const yes = (v) => /^(1|ja|j|yes|y|true|wahr|x)$/i.test(String(v ?? '').trim());
+// Datum (YYYY-MM-DD) für Meldungen, z. B. 31.03.2027
+const dateText = (iso) => new Date(`${iso}T00:00:00Z`).toLocaleDateString(locale(), { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
 // Excel speichert Datumszellen als Seriennummer (Tage seit 30.12.1899)
 const excelDate = (v) => (/^\d{5}(\.\d+)?$/.test(String(v ?? '').trim())
   ? new Date(Date.UTC(1899, 11, 30) + Math.floor(Number(v)) * 86400000).toISOString().slice(0, 10) : v);
 function importRows(ctx, rows, dry) {
-  if (!Array.isArray(rows) || !rows.length) throw new HttpError(400, 'Keine Zeilen zum Importieren.');
-  if (rows.length > 20000) throw new HttpError(413, 'Zu viele Zeilen (max. 20 000).');
+  if (!Array.isArray(rows) || !rows.length) throw new HttpError(400, tr('Keine Zeilen zum Importieren.'));
+  if (rows.length > 20000) throw new HttpError(413, tr('Zu viele Zeilen (max. 20 000).'));
   const whs = db.prepare('SELECT * FROM warehouses ORDER BY id').all();
   const whBy = (ref) => {
     const r = String(ref || '').trim().toLocaleLowerCase('de');
@@ -2081,52 +2085,52 @@ function importRows(ctx, rows, dry) {
     const row = i + 2; // Zeile 1 = Überschriften
     try {
       const code = String(raw.code ?? '').trim().toUpperCase().replace(/^O-/, '');
-      if (code && !CODE_RE.test(code)) throw new HttpError(400, `Ungültiger Code „${raw.code}“ (6 Zeichen, ohne 0/O/1/I).`);
+      if (code && !CODE_RE.test(code)) throw new HttpError(400, tr('Ungültiger Code „{code}“ (6 Zeichen, ohne 0/O/1/I).', { code: raw.code }));
       const existing = code ? getItemByCode(code) : null;
       const name = String(raw.name ?? '').trim();
-      if (!existing && !name) throw new HttpError(400, 'Bezeichnung fehlt.');
-      if (name.length > 200) throw new HttpError(400, 'Bezeichnung ist zu lang.');
+      if (!existing && !name) throw new HttpError(400, tr('Bezeichnung fehlt.'));
+      if (name.length > 200) throw new HttpError(400, tr('Bezeichnung ist zu lang.'));
       // Lager + Platz: "B12" + Lager-Spalte, oder "K-B12"
       let wid = existing?.warehouse_id ?? whs[0].id;
       let loc = existing ? { col: existing.col, row: existing.row } : null;
       const platz = String(raw.platz ?? '').trim().toUpperCase().replace(/^P-/, '').replace(/\s+/g, '');
       if (raw.lager !== undefined && String(raw.lager).trim()) {
         const w = whBy(raw.lager);
-        if (!w) throw new HttpError(400, `Lager „${raw.lager}“ gibt es nicht.`);
+        if (!w) throw new HttpError(400, tr('Lager „{code}“ gibt es nicht.', { code: raw.lager }));
         wid = w.id;
       }
       if (platz) {
         const m = platz.match(/^(?:([A-Z][A-Z0-9]{0,3})-)?([A-Z]{1,3})-?(\d{1,2})$/);
-        if (!m) throw new HttpError(400, `Platz „${raw.platz}“ nicht verstanden (z. B. B12 oder K-B12).`);
+        if (!m) throw new HttpError(400, tr('Platz „{code}“ nicht verstanden (z. B. B12 oder K-B12).', { code: raw.platz }));
         if (m[1]) {
           const w = whBy(m[1]);
-          if (!w) throw new HttpError(400, `Lager „${m[1]}“ gibt es nicht.`);
+          if (!w) throw new HttpError(400, tr('Lager „{code}“ gibt es nicht.', { code: m[1] }));
           wid = w.id;
         }
         loc = normalizeLocation(m[2], m[3]);
       }
-      if (!loc) throw new HttpError(400, 'Lagerplatz fehlt.');
+      if (!loc) throw new HttpError(400, tr('Lagerplatz fehlt.'));
       const hasQty = raw.menge !== undefined && String(raw.menge).trim() !== '';
       const qty = hasQty ? Number(String(raw.menge).replace(',', '.')) : null;
-      if (hasQty && (!Number.isInteger(qty) || qty < 0)) throw new HttpError(400, `Menge „${raw.menge}“ ist keine ganze Zahl ≥ 0.`);
+      if (hasQty && (!Number.isInteger(qty) || qty < 0)) throw new HttpError(400, tr('Menge „{value}“ ist keine ganze Zahl ≥ 0.', { value: raw.menge }));
       const hasCons = raw.verbrauchsmaterial !== undefined && String(raw.verbrauchsmaterial).trim() !== '';
       const desc = raw.beschreibung !== undefined ? String(raw.beschreibung).trim() : null;
       const hasExp = raw.haltbar_bis !== undefined;
       const exp = hasExp ? expiryDate(excelDate(raw.haltbar_bis)) : null;
 
       if (!existing) {
-        return { row, action: 'neu', name, code: code || '(neu)', wid, loc, qty: qty ?? 0, desc: desc ?? '', consumable: hasCons && yes(raw.verbrauchsmaterial), exp, newCode: code };
+        return { row, action: 'neu', name, code: code || tr('(neu)'), wid, loc, qty: qty ?? 0, desc: desc ?? '', consumable: hasCons && yes(raw.verbrauchsmaterial), exp, newCode: code };
       }
       const changes = [];
       const upd = { name: existing.name, description: existing.description, consumable: existing.consumable, expires_on: existing.expires_on };
-      if (hasExp && exp !== existing.expires_on) { upd.expires_on = exp; changes.push(exp ? `haltbar bis ${exp.split('-').reverse().join('.')}` : 'ohne Haltbarkeitsdatum'); }
-      if (name && name !== existing.name) { changes.push(`Name → ${name}`); upd.name = name; }
-      if (desc !== null && desc !== existing.description) { changes.push('Beschreibung'); upd.description = desc; }
-      if (hasCons && (yes(raw.verbrauchsmaterial) ? 1 : 0) !== existing.consumable) { upd.consumable = yes(raw.verbrauchsmaterial) ? 1 : 0; changes.push(upd.consumable ? 'wird Verbrauchsmaterial' : 'kein Verbrauchsmaterial mehr'); }
+      if (hasExp && exp !== existing.expires_on) { upd.expires_on = exp; changes.push(exp ? tr('haltbar bis {date}', { date: dateText(exp) }) : tr('ohne Haltbarkeitsdatum')); }
+      if (name && name !== existing.name) { changes.push(tr('Name → {name}', { name })); upd.name = name; }
+      if (desc !== null && desc !== existing.description) { changes.push(tr('Beschreibung')); upd.description = desc; }
+      if (hasCons && (yes(raw.verbrauchsmaterial) ? 1 : 0) !== existing.consumable) { upd.consumable = yes(raw.verbrauchsmaterial) ? 1 : 0; changes.push(upd.consumable ? tr('wird Verbrauchsmaterial') : tr('kein Verbrauchsmaterial mehr')); }
       const moved = wid !== existing.warehouse_id || loc.col !== existing.col || loc.row !== existing.row;
-      if (moved) changes.push(`Platz → ${whs.find((w) => w.id === wid).code}-${loc.col}${loc.row}`);
+      if (moved) changes.push(tr('Platz → {code}', { code: `${whs.find((w) => w.id === wid).code}-${loc.col}${loc.row}` }));
       const diff = hasQty ? qty - existing.quantity : 0;
-      if (diff) changes.push(`Menge ${existing.quantity} → ${qty}`);
+      if (diff) changes.push(tr('Menge {from} → {to}', { from: existing.quantity, to: qty }));
       return { row, action: changes.length ? 'geändert' : 'unverändert', name: upd.name, code, existing, upd, wid, loc, diff, changes };
     } catch (e) {
       if (!(e instanceof HttpError)) throw e;
@@ -2138,7 +2142,7 @@ function importRows(ctx, rows, dry) {
   for (const p of plan) {
     const c = p.newCode || (p.existing && p.code);
     if (!c) continue;
-    if (seen.has(c)) Object.assign(p, { action: 'fehler', message: `Code ${c} kommt mehrfach vor (auch Zeile ${seen.get(c)}).` });
+    if (seen.has(c)) Object.assign(p, { action: 'fehler', message: tr('Code {code} kommt mehrfach vor (auch Zeile {row}).', { code: c, row: seen.get(c) }) });
     else seen.set(c, p.row);
   }
   const summary = { neu: 0, 'geändert': 0, 'unverändert': 0, fehler: 0 };
@@ -2187,7 +2191,7 @@ const BACKUP_DIR = process.env.BACKUP_DIR || path.join(path.dirname(DB_PATH), 'b
 const BACKUP_KEEP = Math.max(1, Number(process.env.BACKUP_KEEP ?? 14));
 const BACKUP_INTERVAL_HOURS = Number(process.env.BACKUP_INTERVAL_HOURS ?? 24);
 const BACKUP_RE = /^lager-(\d{4})-(\d{2})-(\d{2})_(\d{2})(\d{2})(\d{2})(?:_\d+)?(?:-(manuell|vor-wiederherstellung|vor-import|hochgeladen))?\.db$/;
-const BACKUP_KINDS = { undefined: 'automatisch', manuell: 'manuell', 'vor-wiederherstellung': 'vor Wiederherstellung', 'vor-import': 'vor Import', hochgeladen: 'hochgeladen' };
+const BACKUP_KINDS = () => ({ undefined: tr('automatisch'), manuell: tr('manuell'), 'vor-wiederherstellung': tr('vor Wiederherstellung'), 'vor-import': tr('vor Import'), hochgeladen: tr('hochgeladen') });
 const SEND_FILE = Symbol('sendFile');
 
 function listBackups() {
@@ -2197,7 +2201,7 @@ function listBackups() {
     const m = name.match(BACKUP_RE);
     if (!m) return null;
     const st = fs.statSync(path.join(BACKUP_DIR, name));
-    return { name, kind: m[7] || 'auto', kind_label: BACKUP_KINDS[m[7]], size: st.size, created_at: st.mtime.toISOString() };
+    return { name, kind: m[7] || 'auto', kind_label: BACKUP_KINDS()[m[7]], size: st.size, created_at: st.mtime.toISOString() };
   }).filter(Boolean).sort((a, b) => b.name.localeCompare(a.name));
 }
 
@@ -2227,9 +2231,9 @@ function createBackup(kind = '') {
 }
 
 function backupFile(name) {
-  if (!BACKUP_RE.test(String(name))) throw new HttpError(400, 'Ungültiger Backup-Name.');
+  if (!BACKUP_RE.test(String(name))) throw new HttpError(400, tr('Ungültiger Backup-Name.'));
   const file = path.join(BACKUP_DIR, name);
-  if (!fs.existsSync(file)) throw new HttpError(404, 'Backup nicht gefunden.');
+  if (!fs.existsSync(file)) throw new HttpError(404, tr('Backup nicht gefunden.'));
   return file;
 }
 
@@ -2238,17 +2242,17 @@ function validateDbFile(file) {
   const head = Buffer.alloc(16);
   const fd = fs.openSync(file, 'r');
   try { fs.readSync(fd, head, 0, 16, 0); } finally { fs.closeSync(fd); }
-  if (head.toString('latin1') !== 'SQLite format 3\0') throw new HttpError(400, 'Das ist keine SQLite-Datenbank.');
+  if (head.toString('latin1') !== 'SQLite format 3\0') throw new HttpError(400, tr('Das ist keine SQLite-Datenbank.'));
   let check;
   try {
     check = new DatabaseSync(file, { readOnly: true });
-    if (check.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') throw new HttpError(400, 'Die Datenbank ist beschädigt.');
+    if (check.prepare('PRAGMA integrity_check').get().integrity_check !== 'ok') throw new HttpError(400, tr('Die Datenbank ist beschädigt.'));
     const tables = new Set(check.prepare("SELECT name FROM sqlite_master WHERE type = 'table'").all().map((t) => t.name));
-    for (const t of ['persons', 'items', 'movements']) if (!tables.has(t)) throw new HttpError(400, 'Das ist keine Heimlager-Datenbank.');
+    for (const t of ['persons', 'items', 'movements']) if (!tables.has(t)) throw new HttpError(400, tr('Das ist keine Heimlager-Datenbank.'));
     return { items: check.prepare('SELECT COUNT(*) AS n FROM items').get().n, persons: check.prepare('SELECT COUNT(*) AS n FROM persons').get().n };
   } catch (e) {
     if (e instanceof HttpError) throw e;
-    throw new HttpError(400, `Datei lässt sich nicht öffnen: ${e.message}`);
+    throw new HttpError(400, tr('Datei lässt sich nicht öffnen: {error}', { error: e.message }));
   } finally { check?.close(); }
 }
 
@@ -2273,7 +2277,7 @@ function restoreCopy(file, ctx) {
   try { swap(file); } catch (e) {
     console.error('Wiederherstellung fehlgeschlagen, alter Stand wird zurückgespielt:', e);
     swap(path.join(BACKUP_DIR, safety.name));
-    throw new HttpError(500, 'Wiederherstellung fehlgeschlagen – der vorherige Stand ist wieder aktiv.');
+    throw new HttpError(500, tr('Wiederherstellung fehlgeschlagen – der vorherige Stand ist wieder aktiv.'));
   }
   if (keep && db.prepare('SELECT 1 FROM persons WHERE id = ? AND name = ? AND archived = 0').get(keep.id, keep.name)) {
     db.prepare(`INSERT OR REPLACE INTO sessions (token_hash, person_id, expires_at) VALUES (?, ?, datetime('now', '+${SESSION_DAYS} days'))`).run(keep.hash, keep.id);
@@ -2302,7 +2306,7 @@ route('DELETE', '/api/backups/:name', (p) => { fs.rmSync(backupFile(p.name)); re
 route('POST', '/api/backups/:name/restore', (p, _b, _qs, ctx) => restoreFrom(backupFile(p.name), ctx), { auth: 'admin' });
 // Hochgeladene Datei (Rohdaten im Body) prüfen, als Backup ablegen und einspielen
 route('POST', '/api/backups/upload', (_p, body, qs, ctx) => {
-  if (!Buffer.isBuffer(body) || !body.length) throw new HttpError(400, 'Keine Datei empfangen.');
+  if (!Buffer.isBuffer(body) || !body.length) throw new HttpError(400, tr('Keine Datei empfangen.'));
   fs.mkdirSync(BACKUP_DIR, { recursive: true });
   const tmp = path.join(BACKUP_DIR, `upload-${randomToken(6)}.tmp`);
   fs.writeFileSync(tmp, body);
@@ -2333,7 +2337,7 @@ function readRaw(req, limit = 512 * 1024 * 1024) {
     let size = 0;
     req.on('data', (c) => {
       size += c.length;
-      if (size > limit) { reject(new HttpError(413, 'Datei ist zu groß.')); req.destroy(); } else chunks.push(c);
+      if (size > limit) { reject(new HttpError(413, tr('Datei ist zu groß.'))); req.destroy(); } else chunks.push(c);
     });
     req.on('end', () => resolve(Buffer.concat(chunks)));
     req.on('error', reject);
@@ -2357,7 +2361,7 @@ function readBody(req) {
     req.on('data', (chunk) => { raw += chunk; if (raw.length > 20e6) req.destroy(); }); // Fotos, Import
     req.on('end', () => {
       if (!raw) return resolve({});
-      try { resolve(JSON.parse(raw)); } catch { reject(new HttpError(400, 'Ungültiges JSON.')); }
+      try { resolve(JSON.parse(raw)); } catch { reject(new HttpError(400, tr('Ungültiges JSON.'))); }
     });
     req.on('error', reject);
   });
@@ -2376,7 +2380,7 @@ async function handle(req, res) {
     const row = db.prepare('SELECT id FROM terminals WHERE token_hash = ?').get(sha256(tm[1]));
     if (!row) {
       res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
-      return res.end('Dieser Einrichtungslink ist ungültig oder wurde ersetzt. Bitte in der Verwaltung einen neuen erzeugen.');
+      return res.end(tr('Dieser Einrichtungslink ist ungültig oder wurde ersetzt. Bitte in der Verwaltung einen neuen erzeugen.'));
     }
     const secure = isHttps(req) ? '; Secure' : '';
     res.writeHead(302, {
@@ -2393,8 +2397,8 @@ async function handle(req, res) {
     const auth = keyAuth(bearer(req)) || sessionAuth(req) || terminalAuth(req);
     const lat = Number(url.searchParams.get('lat'));
     const lon = Number(url.searchParams.get('lon'));
-    if (!auth) return sendJson(res, 401, { error: 'Bitte anmelden.' });
-    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return sendJson(res, 400, { error: 'Lage des Hauses fehlt.' });
+    if (!auth) return sendJson(res, 401, { error: tr('Bitte anmelden.') });
+    if (!Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) return sendJson(res, 400, { error: tr('Lage des Hauses fehlt.') });
     res.writeHead(200, { 'Content-Type': 'text/event-stream; charset=utf-8', 'Cache-Control': 'no-store', Connection: 'keep-alive', 'X-Accel-Buffering': 'no' });
     res.write('retry: 5000\n\n');
     const radius = Math.max(10, Math.min(300, Number(url.searchParams.get('radius')) || 100));
@@ -2407,7 +2411,7 @@ async function handle(req, res) {
     return;
   }
   // Oberfläche liefert die homemgmt-ng-App (server/index.ts); hier nur API, QR-Links und Healthcheck
-  if (!url.pathname.startsWith('/api/')) return sendJson(res, 404, { error: 'Nicht gefunden.' });
+  if (!url.pathname.startsWith('/api/')) return sendJson(res, 404, { error: tr('Nicht gefunden.') });
   try {
     for (const r of routes) {
       if (r.method !== req.method) continue;
@@ -2415,18 +2419,18 @@ async function handle(req, res) {
       if (!m) continue;
       const ctx = { req, cookies: [], ...(keyAuth(bearer(req)) || sessionAuth(req) || terminalAuth(req) || {}) };
       if (r.auth !== 'public') {
-        if (!ctx.person) throw new HttpError(401, 'Bitte anmelden.');
-        if (ctx.via === 'key' && ctx.scope === 'read' && req.method !== 'GET') throw new HttpError(403, 'Dieser API-Schlüssel darf nur lesen.');
-        if (r.auth === 'admin' && (ctx.via !== 'session' || ctx.person.role !== 'admin')) throw new HttpError(403, 'Nur für Admins.');
+        if (!ctx.person) throw new HttpError(401, tr('Bitte anmelden.'));
+        if (ctx.via === 'key' && ctx.scope === 'read' && req.method !== 'GET') throw new HttpError(403, tr('Dieser API-Schlüssel darf nur lesen.'));
+        if (r.auth === 'admin' && (ctx.via !== 'session' || ctx.person.role !== 'admin')) throw new HttpError(403, tr('Nur für Admins.'));
       }
       // DELETE mit Inhalt: z. B. person_id vom Wandterminal
       const body = !['POST', 'PATCH', 'PUT', 'DELETE'].includes(req.method) ? {} : r.raw ? await readRaw(req) : await readBody(req);
       // Terminal: nur freigegebene Buchungen, und nur mit der Person, die am Gerät gewählt wurde
       if (ctx.via === 'terminal' && req.method !== 'GET' && r.auth !== 'public') {
-        if (!TERMINAL_WRITES.some(([mt, re]) => mt === req.method && re.test(url.pathname))) throw new HttpError(403, 'Am Wandterminal nicht möglich.');
+        if (!TERMINAL_WRITES.some(([mt, re]) => mt === req.method && re.test(url.pathname))) throw new HttpError(403, tr('Am Wandterminal nicht möglich.'));
         const who = Number(body.person_id ?? url.searchParams.get('person_id'));
         const person = who ? db.prepare("SELECT * FROM persons WHERE id = ? AND archived = 0 AND status = 'active'").get(who) : null;
-        if (!person) throw new HttpError(400, 'Bitte zuerst antippen, wer bucht.');
+        if (!person) throw new HttpError(400, tr('Bitte zuerst antippen, wer bucht.'));
         ctx.person = person;
       }
       const result = await r.handler(m.groups || {}, body, url.searchParams, ctx);
@@ -2437,11 +2441,11 @@ async function handle(req, res) {
       }
       return sendJson(res, 200, result, ctx.cookies);
     }
-    sendJson(res, 404, { error: 'Unbekannter Endpunkt.' });
+    sendJson(res, 404, { error: tr('Unbekannter Endpunkt.') });
   } catch (e) {
     if (e instanceof HttpError) return sendJson(res, e.status, { error: e.message });
     console.error(e);
-    sendJson(res, 500, { error: 'Interner Fehler.' });
+    sendJson(res, 500, { error: tr('Interner Fehler.') });
   }
 }
 

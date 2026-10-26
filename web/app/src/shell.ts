@@ -1,16 +1,17 @@
 // App-Rahmen: eine Navigation für alle Seiten (Übersicht, Haus, Suchen, Einkauf, Mehr). Großer Bildschirm: Leiste oben
 // mit Scannen und Konto; Handy: schmale Kopfzeile und Leiste unten mit Scannen in der Mitte (mit dem Daumen erreichbar).
 
+import { tr, trn } from './i18n';
 import { ic, type IconName } from './icons';
 import { onOutbox, pending } from './lager/outbox';
 
 type Key = 'start' | 'haus' | 'suche' | 'einkauf' | 'mehr' | 'scan';
 const NAV: [Key, string, string, IconName][] = [
-  ['start', '#/lager', 'Übersicht', 'home'],
-  ['haus', '#/haus', 'Haus', 'plan'],
-  ['suche', '#/suche', 'Suchen', 'search'],
-  ['einkauf', '#/einkauf', 'Einkauf', 'cart'],
-  ['mehr', '#/mehr', 'Mehr', 'more'],
+  ['start', '#/lager', tr('Übersicht'), 'home'],
+  ['haus', '#/haus', tr('Haus'), 'plan'],
+  ['suche', '#/suche', tr('Suchen'), 'search'],
+  ['einkauf', '#/einkauf', tr('Einkauf'), 'cart'],
+  ['mehr', '#/mehr', tr('Mehr'), 'more'],
 ];
 
 /** Welcher Navigationspunkt zu einer Adresse gehört */
@@ -29,29 +30,29 @@ export function initShell() {
   top.id = 'shell';
   top.className = 'sh-top';
   top.innerHTML = `
-    <a class="sh-brand" href="#/" title="Startseite">${ic('logo')}<span>homemgmt-ng</span></a>
-    <nav class="sh-nav" aria-label="Hauptnavigation">${NAV.map(([k, h, l, i]) => `<a href="${h}" data-k="${k}">${ic(i)}<span>${l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('')}</nav>
+    <a class="sh-brand" href="#/" title="${tr('Startseite')}">${ic('logo')}<span>homemgmt-ng</span></a>
+    <nav class="sh-nav" aria-label="${tr('Hauptnavigation')}">${NAV.map(([k, h, l, i]) => `<a href="${h}" data-k="${k}">${ic(i)}<span>${l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('')}</nav>
     <span class="spacer"></span>
-    <button class="btn sh-outbox" id="outboxPill" hidden title="Ohne Verbindung vorgemerkte Buchungen – antippen zum Nachbuchen">${ic('hourglass')}<span></span></button>
-    <a class="btn sh-scan" href="#/scan" data-k="scan">${ic('scan')}Scannen</a>
-    <a class="btn icon sh-find" href="#/suche" aria-label="Suchen">${ic('search')}</a>
+    <button class="btn sh-outbox" id="outboxPill" hidden title="${tr('Ohne Verbindung vorgemerkte Buchungen – antippen zum Nachbuchen')}">${ic('hourglass')}<span></span></button>
+    <a class="btn sh-scan" href="#/scan" data-k="scan">${ic('scan')}${tr('Scannen')}</a>
+    <a class="btn icon sh-find" href="#/suche" aria-label="${tr('Suchen')}">${ic('search')}</a>
     <div id="account" class="account"></div>`;
   const tabs = document.createElement('nav');
   tabs.id = 'tabbar';
   tabs.className = 'sh-tabs';
-  tabs.setAttribute('aria-label', 'Hauptnavigation');
-  const T: [Key, string, string, IconName][] = [NAV[0], NAV[1], ['scan', '#/scan', 'Scannen', 'scan'], NAV[3], NAV[4]];
+  tabs.setAttribute('aria-label', tr('Hauptnavigation'));
+  const T: [Key, string, string, IconName][] = [NAV[0], NAV[1], ['scan', '#/scan', tr('Scannen'), 'scan'], NAV[3], NAV[4]];
   tabs.innerHTML = T.map(([k, h, l, i]) =>
     k === 'scan'
       ? `<a href="${h}" data-k="${k}" class="tab-scan"><span class="ring">${ic(i)}</span><span>${l}</span></a>`
-      : `<a href="${h}" data-k="${k}">${ic(i)}<span>${k === 'start' ? 'Start' : l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`,
+      : `<a href="${h}" data-k="${k}">${ic(i)}<span>${k === 'start' ? tr('Start') : l}</span>${k === 'einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`,
   ).join('');
   // Wandterminal: große Navigation am linken Rand
   const rail = document.createElement('nav');
   rail.id = 'rail';
   rail.className = 'sh-rail';
-  rail.setAttribute('aria-label', 'Navigation');
-  const R: [string, string, IconName][] = [['#/haus', 'Haus', 'plan'], ['#/suche', 'Suchen', 'search'], ['#/einkauf', 'Einkauf', 'cart'], ['#/aufgaben', 'Aufgaben', 'check'], ['#/haltbarkeit', 'Haltbarkeit', 'clock'], ['#/assistent?sprechen=1', 'Sprechen', 'mic']];
+  rail.setAttribute('aria-label', tr('Navigation'));
+  const R: [string, string, IconName][] = [['#/haus', tr('Haus'), 'plan'], ['#/suche', tr('Suchen'), 'search'], ['#/einkauf', tr('Einkauf'), 'cart'], ['#/aufgaben', tr('Aufgaben'), 'check'], ['#/haltbarkeit', tr('Haltbarkeit'), 'clock'], ['#/assistent?sprechen=1', tr('Sprechen'), 'mic']];
   rail.innerHTML = R.map(([h, l, i]) => `<a href="${h}" data-r="${h}">${ic(i)}<span>${l}</span>${h === '#/einkauf' ? '<span class="badge" hidden></span>' : ''}</a>`).join('');
   document.body.prepend(top);
   document.body.appendChild(tabs);
@@ -68,7 +69,7 @@ export function initShell() {
   const showPending = () => {
     const n = pending().length;
     pill.hidden = !n;
-    pill.querySelector('span')!.textContent = `${n} ${n === 1 ? 'Buchung wartet' : 'Buchungen warten'}`;
+    pill.querySelector('span')!.textContent = trn(n, '{n} Buchung wartet', '{n} Buchungen warten');
   };
   onOutbox(showPending);
   showPending();

@@ -15,17 +15,21 @@ test.after(() => srv.stop());
 
 test('Standardwerte, ändern, ungültige Werte abgelehnt, ohne Anmeldung nicht', async () => {
   const me = await anna.get('/api/auth/me');
-  assert.deepEqual(me.data.user.prefs, { start: 'overview', houseView: '2d', theme: 'auto', fontSize: 'normal' });
+  assert.deepEqual(me.data.user.prefs, { start: 'overview', houseView: '2d', theme: 'auto', fontSize: 'normal', lang: 'auto' });
 
   const r = await anna.patch('/api/auth/me/prefs', { start: 'house', theme: 'dark' });
   assert.equal(r.status, 200, JSON.stringify(r.data));
-  assert.deepEqual(r.data, { start: 'house', houseView: '2d', theme: 'dark', fontSize: 'normal' });
+  assert.deepEqual(r.data, { start: 'house', houseView: '2d', theme: 'dark', fontSize: 'normal', lang: 'auto' });
   assert.equal((await anna.get('/api/auth/me')).data.user.prefs.start, 'house');
   assert.equal((await anna.patch('/api/auth/me/prefs', { start: 'assistant' })).data.start, 'assistant', 'Startseite Assistent');
   await anna.patch('/api/auth/me/prefs', { start: 'house' });
 
   assert.equal((await anna.patch('/api/auth/me/prefs', { fontSize: 'riesig' })).status, 400);
   assert.equal((await anna.get('/api/auth/me')).data.user.prefs.fontSize, 'normal');
+  // Sprache: auto/de/en, sonst abgelehnt
+  assert.equal((await anna.patch('/api/auth/me/prefs', { lang: 'en' })).data.lang, 'en');
+  assert.equal((await anna.patch('/api/auth/me/prefs', { lang: 'fr' })).status, 400);
+  assert.equal((await anna.get('/api/auth/me')).data.user.prefs.lang, 'en');
   assert.equal((await client(srv.base).patch('/api/auth/me/prefs', { start: 'house' })).status, 401);
 });
 

@@ -1,15 +1,18 @@
 // Persönliche Einstellungen (pro Person auf dem Server, siehe PATCH /api/auth/me/prefs): Startseite, Ansicht im Haus,
-// Hell/Dunkel und Schriftgröße. Ohne Anmeldung gelten die Standardwerte; zuletzt bekannte Werte merkt sich der
+// Hell/Dunkel, Schriftgröße und Sprache. Ohne Anmeldung gelten die Standardwerte; zuletzt bekannte Werte merkt sich der
 // Browser, damit die App beim Start nicht kurz in der falschen Darstellung erscheint.
+
+import { applyLangPref, tr, type LangPref } from './i18n';
 
 export interface Prefs {
   start: 'overview' | 'house' | 'assistant';
   houseView: '2d' | '3d';
   theme: 'auto' | 'light' | 'dark';
   fontSize: 'normal' | 'large' | 'xlarge';
+  lang: LangPref;
 }
 
-export const DEFAULT_PREFS: Prefs = { start: 'overview', houseView: '2d', theme: 'auto', fontSize: 'normal' };
+export const DEFAULT_PREFS: Prefs = { start: 'overview', houseView: '2d', theme: 'auto', fontSize: 'normal', lang: 'auto' };
 const KEY = 'zh.prefs';
 
 let current: Prefs = { ...DEFAULT_PREFS, ...read() };
@@ -44,6 +47,7 @@ export function setPrefs(p: Partial<Prefs> | null | undefined) {
   }
   apply();
   listeners.forEach((l) => l(current));
+  applyLangPref(current.lang); // lädt neu, wenn sich die Sprache dadurch ändert
 }
 
 export function onPrefs(fn: (p: Prefs) => void) {
@@ -58,7 +62,7 @@ export async function savePrefs(patch: Partial<Prefs>) {
   if (!r.ok) {
     setPrefs(before);
     const d = await r.json().catch(() => ({}));
-    throw new Error(d.error ?? 'Einstellung konnte nicht gespeichert werden.');
+    throw new Error(d.error ?? tr('Einstellung konnte nicht gespeichert werden.'));
   }
   setPrefs(await r.json());
 }

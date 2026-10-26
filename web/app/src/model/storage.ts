@@ -6,6 +6,7 @@
 import { getEntry, objectOf, type ItemKind } from './catalog.ts';
 import { objectCompartments } from './objects.ts';
 import type { Item, Project } from './types.ts';
+import { tr } from './text.ts';
 
 export type CompartmentKind = 'drawer' | 'shelf' | 'door' | 'open' | 'cold' | 'freezer' | 'surface';
 
@@ -27,24 +28,24 @@ const DRAWER_RATIOS: Record<number, number[]> = { 1: [1], 2: [1, 1], 3: [1, 1.5,
 
 /** Möbelarten, deren Böden-/Schubladenzahl einstellbar ist (Eigenschaft „levels“) */
 export const LEVEL_KINDS: Partial<Record<ItemKind, { label: string; min: number; max: number; std: number }>> = {
-  rack: { label: 'Böden', min: 1, max: 12, std: 5 },
-  heavyRack: { label: 'Böden', min: 2, max: 8, std: 5 },
-  cupboard: { label: 'Böden', min: 1, max: 10, std: 5 },
-  wardrobe: { label: 'Böden', min: 1, max: 10, std: 5 },
-  sideboard: { label: 'Böden', min: 1, max: 4, std: 2 },
-  dresser: { label: 'Schubladen', min: 1, max: 8, std: 4 },
+  rack: { label: tr('Böden'), min: 1, max: 12, std: 5 },
+  heavyRack: { label: tr('Böden'), min: 2, max: 8, std: 5 },
+  cupboard: { label: tr('Böden'), min: 1, max: 10, std: 5 },
+  wardrobe: { label: tr('Böden'), min: 1, max: 10, std: 5 },
+  sideboard: { label: tr('Böden'), min: 1, max: 4, std: 2 },
+  dresser: { label: tr('Schubladen'), min: 1, max: 8, std: 4 },
 };
 
 export const levelsOf = (it: Item, kind = getEntry(it.type).kind) =>
   Math.max(LEVEL_KINDS[kind]?.min ?? 1, Math.min(LEVEL_KINDS[kind]?.max ?? 50, Math.round(it.levels ?? LEVEL_KINDS[kind]?.std ?? 1)));
 
-function drawers(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, ratios: number[], name = 'Schublade'): Omit<Compartment, 'row'>[] {
+function drawers(x0: number, x1: number, y0: number, y1: number, z0: number, z1: number, ratios: number[], name = tr('Schublade')): Omit<Compartment, 'row'>[] {
   const total = ratios.reduce((a, b) => a + b, 0);
   const n = ratios.length;
   let y = y1;
   return ratios.map((r, i) => {
     const h = ((y1 - y0) * r) / total;
-    const c = { label: n === 1 ? name : `${name} ${i + 1}${i === 0 ? ' (oben)' : i === n - 1 ? ' (unten)' : ''}`, kind: 'drawer' as const, x0, x1, y0: y - h, y1: y, z0, z1 };
+    const c = { label: numbered(name, i, n), kind: 'drawer' as const, x0, x1, y0: y - h, y1: y, z0, z1 };
     y -= h;
     return c;
   });
@@ -55,7 +56,10 @@ function shelves(x0: number, x1: number, y0: number, y1: number, z0: number, z1:
   const h = (y1 - y0) / n;
   return Array.from({ length: n }, (_, i) => ({ label: label(i, n), kind, x0, x1, y0: y1 - h * (i + 1), y1: y1 - h * i, z0, z1 }));
 }
-const boden = (prefix = 'Boden') => (i: number, n: number) => (n === 1 ? prefix : `${prefix} ${i + 1}${i === 0 ? ' (oben)' : i === n - 1 ? ' (unten)' : ''}`);
+/** „Schublade 1 (oben)“, „Schublade 2“ … „Schublade 4 (unten)“ – bei nur einem Element ohne Nummer */
+const numbered = (name: string, i: number, n: number) =>
+  n === 1 ? name : i === 0 ? tr('{name} {n} (oben)', { name, n: i + 1 }) : i === n - 1 ? tr('{name} {n} (unten)', { name, n: i + 1 }) : `${name} ${i + 1}`;
+const boden = (prefix = tr('Boden')) => (i: number, n: number) => numbered(prefix, i, n);
 
 /** Fächer eines Möbels (leer = kein Stauraum, z. B. Geschirrspüler, Hocker, Leuchte) */
 export function compartments(it: Item, settings: Project['settings']): Compartment[] {
@@ -87,16 +91,16 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
       else if (it.front === 'mixed') {
         list = [
           ...drawers(x0, x1, y1 - 15, y1, zB, zF, [1]),
-          ...shelves(x0, x1, y0, y1 - 15, zB, zF, 2, 'door', (i) => (i === 0 ? 'Einlegeboden' : 'Boden unten')),
+          ...shelves(x0, x1, y0, y1 - 15, zB, zF, 2, 'door', (i) => (i === 0 ? tr('Einlegeboden') : tr('Boden unten'))),
         ];
-      } else list = shelves(x0, x1, y0, y1, zB, zF, 2, 'door', (i) => (i === 0 ? 'Einlegeboden' : 'Boden unten'));
+      } else list = shelves(x0, x1, y0, y1, zB, zF, 2, 'door', (i) => (i === 0 ? tr('Einlegeboden') : tr('Boden unten')));
       break;
     }
     case 'sink':
-      list = [{ label: 'Unter der Spüle', kind: 'door', x0, x1, y0: P, y1: H - T - 20, z0: zB, z1: zF }];
+      list = [{ label: tr('Unter der Spüle'), kind: 'door', x0, x1, y0: P, y1: H - T - 20, z0: zB, z1: zF }];
       break;
     case 'oven':
-      list = drawers(x0, x1, P, H - T - 59.5, zB, zF, [1], 'Schublade unter dem Backofen');
+      list = drawers(x0, x1, P, H - T - 59.5, zB, zF, [1], tr('Schublade unter dem Backofen'));
       break;
     case 'island': {
       const cabD = Math.min(60, D - 5);
@@ -107,22 +111,22 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
       for (let c = 0; c < n; c++) {
         const cw = widths ? (widths[c] / sum) * W : W / n;
         const ratios = it.columnFronts?.[c] ?? DRAWER_RATIOS[Math.max(1, Math.min(4, it.drawers ?? 3))];
-        for (const d of drawers(x, x + cw, P, H - T, zF - cabD, zF, ratios)) list.push({ ...d, label: `${n > 1 ? `Spalte ${c + 1} · ` : ''}${d.label}` });
+        for (const d of drawers(x, x + cw, P, H - T, zF - cabD, zF, ratios)) list.push({ ...d, label: n > 1 ? `${tr('Spalte {n}', { n: c + 1 })} · ${d.label}` : d.label });
         x += cw;
       }
-      if (it.islandBack === 'doors') list.push({ label: 'Rückseite (Türen)', kind: 'door', x0, x1, y0: P, y1: H - T, z0: zB, z1: zF - cabD });
+      if (it.islandBack === 'doors') list.push({ label: tr('Rückseite (Türen)'), kind: 'door', x0, x1, y0: P, y1: H - T, z0: zB, z1: zF - cabD });
       break;
     }
     case 'wall':
-      list = shelves(x0, x1, 0, H, zB, zF, 2, it.front === 'open' ? 'open' : 'door', (i) => (i === 0 ? 'Boden oben' : 'Boden unten'));
+      list = shelves(x0, x1, 0, H, zB, zF, 2, it.front === 'open' ? 'open' : 'door', (i) => (i === 0 ? tr('Boden oben') : tr('Boden unten')));
       break;
     case 'tall': {
       if (it.front === 'single') list = shelves(x0, x1, P, H, zB, zF, 5, 'door', boden());
       else {
         const split = P + (H - P) * 0.6;
         list = [
-          ...shelves(x0, x1, split, H, zB, zF, 2, 'door', (i) => `Oben, Boden ${i + 1}`),
-          ...shelves(x0, x1, P, split, zB, zF, 3, 'door', (i) => `Unten, Boden ${i + 1}`),
+          ...shelves(x0, x1, split, H, zB, zF, 2, 'door', (i) => tr('Oben, Boden {n}', { n: i + 1 })),
+          ...shelves(x0, x1, P, split, zB, zF, 3, 'door', (i) => tr('Unten, Boden {n}', { n: i + 1 })),
         ];
       }
       break;
@@ -131,9 +135,9 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
       const split = P + 72;
       const top = Math.min(H, split + 122);
       list = [
-        ...(H - top > 5 ? [{ label: 'Aufsatzschrank', kind: 'door' as const, x0, x1, y0: top, y1: H, z0: zB, z1: zF }] : []),
-        ...shelves(x0, x1, split, top, zB, zF, 3, 'cold', (i) => `Kühlschrank, ${['oben', 'Mitte', 'unten'][i]}`),
-        ...shelves(x0, x1, P, split, zB, zF, 3, 'freezer', (i) => `Gefrierfach ${i + 1}`),
+        ...(H - top > 5 ? [{ label: tr('Aufsatzschrank'), kind: 'door' as const, x0, x1, y0: top, y1: H, z0: zB, z1: zF }] : []),
+        ...shelves(x0, x1, split, top, zB, zF, 3, 'cold', (i) => [tr('Kühlschrank, oben'), tr('Kühlschrank, Mitte'), tr('Kühlschrank, unten')][i]),
+        ...shelves(x0, x1, P, split, zB, zF, 3, 'freezer', (i) => tr('Gefrierfach {n}', { n: i + 1 })),
       ];
       break;
     }
@@ -142,13 +146,13 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
         const ovenY0 = P + 50.7;
         const ovenY1 = ovenY0 + 59.5;
         list = [
-          { label: 'Fach über dem Backofen', kind: 'door', x0, x1, y0: ovenY1, y1: H, z0: zB, z1: zF },
-          { label: 'Fach unter dem Backofen', kind: 'door', x0, x1, y0: P, y1: ovenY0, z0: zB, z1: zF },
+          { label: tr('Fach über dem Backofen'), kind: 'door', x0, x1, y0: ovenY1, y1: H, z0: zB, z1: zF },
+          { label: tr('Fach unter dem Backofen'), kind: 'door', x0, x1, y0: P, y1: ovenY0, z0: zB, z1: zF },
         ];
       } else {
         const micro = P + 60 + 59.5 + 38.5;
         list = [
-          ...(H - micro > 5 ? [{ label: 'Aufsatzschrank', kind: 'door' as const, x0, x1, y0: micro, y1: H, z0: zB, z1: zF }] : []),
+          ...(H - micro > 5 ? [{ label: tr('Aufsatzschrank'), kind: 'door' as const, x0, x1, y0: micro, y1: H, z0: zB, z1: zF }] : []),
           ...drawers(x0, x1, P, P + 60, zB, zF, [1, 1]),
         ];
       }
@@ -156,13 +160,13 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
     case 'fridgeFree': {
       const split = -W / 2 + W * 0.42;
       list = [
-        ...shelves(split, x1, 2, H, zB, zF, 3, 'cold', (i) => `Kühlteil, ${['oben', 'Mitte', 'unten'][i]}`),
-        ...shelves(x0, split, 2, H, zB, zF, 3, 'freezer', (i) => `Gefrierteil ${i + 1}`),
+        ...shelves(split, x1, 2, H, zB, zF, 3, 'cold', (i) => [tr('Kühlteil, oben'), tr('Kühlteil, Mitte'), tr('Kühlteil, unten')][i]),
+        ...shelves(x0, split, 2, H, zB, zF, 3, 'freezer', (i) => tr('Gefrierteil {n}', { n: i + 1 })),
       ];
       break;
     }
     case 'shelf':
-      list = [{ label: 'Ablage', kind: 'surface', x0, x1, y0: H, y1: H + 25, z0: zB, z1: zF }];
+      list = [{ label: tr('Ablage'), kind: 'surface', x0, x1, y0: H, y1: H + 25, z0: zB, z1: zF }];
       break;
     case 'rack':
     case 'heavyRack': {
@@ -186,8 +190,8 @@ export function compartments(it: Item, settings: Project['settings']): Compartme
     }
     case 'workbench':
       list = [
-        { label: 'Arbeitsfläche', kind: 'surface', x0, x1, y0: H, y1: H + 30, z0: zB, z1: zF },
-        { label: 'Ablage unten', kind: 'open', x0, x1, y0: 12, y1: Math.min(45, H - 10), z0: zB, z1: zF },
+        { label: tr('Arbeitsfläche'), kind: 'surface', x0, x1, y0: H, y1: H + 30, z0: zB, z1: zF },
+        { label: tr('Ablage unten'), kind: 'open', x0, x1, y0: 12, y1: Math.min(45, H - 10), z0: zB, z1: zF },
       ];
       break;
     default:

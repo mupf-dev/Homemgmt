@@ -5,6 +5,7 @@
 // Formatänderungen mitziehen). Wird von App und Server gleichermaßen genutzt.
 
 import type { MaterialSlot } from './types.ts';
+import { tr } from './text.ts';
 
 export const OBJECT_FORMAT = 'zuhause-objekt/1';
 /** Möbel aus der Bibliothek tragen als Typ „obj:<id>“ */
@@ -12,17 +13,17 @@ export const OBJ_PREFIX = 'obj:';
 
 export type ElementKind = 'drawer' | 'door' | 'flap' | 'open' | 'cold' | 'freezer' | 'washer' | 'dryer';
 export const ELEMENT_KINDS: Record<ElementKind, string> = {
-  drawer: 'Schublade',
-  door: 'Tür',
-  flap: 'Klappe',
-  open: 'Offenes Fach',
-  cold: 'Kühlfach',
-  freezer: 'Gefrierfach',
-  washer: 'Waschmaschine',
-  dryer: 'Trockner',
+  drawer: tr('Schublade'),
+  door: tr('Tür'),
+  flap: tr('Klappe'),
+  open: tr('Offenes Fach'),
+  cold: tr('Kühlfach'),
+  freezer: tr('Gefrierfach'),
+  washer: tr('Waschmaschine'),
+  dryer: tr('Trockner'),
 };
 /** Geräte im Korpus: Gerätefront statt Möbelfront; zwei Fächer – oben in der Bedienblende, darunter die Trommel */
-export const APPLIANCE_KINDS: Partial<Record<ElementKind, string>> = { washer: 'Waschmittelfach', dryer: 'Kondenswasserbehälter' };
+export const APPLIANCE_KINDS: Partial<Record<ElementKind, string>> = { washer: tr('Waschmittelfach'), dryer: tr('Kondenswasserbehälter') };
 /** Dunkle oder metallische Oberfläche (Farbe #rrggbb, Metallanteil 0…1): Gerätefront → Schwarzglas-Blende, Chromring */
 export function isDarkSurface(hex: string, metalness = 0) {
   if (metalness >= 0.5) return true;
@@ -108,71 +109,71 @@ const fail = (msg: string): never => {
   throw new Error(msg);
 };
 const str = (v: unknown, max: number, what: string, required = false) => {
-  const s = typeof v === 'string' ? v.trim() : v == null ? '' : fail(`${what}: Text erwartet.`);
-  if (required && !s) fail(`${what} fehlt.`);
-  if (s.length > max) fail(`${what} ist zu lang (höchstens ${max} Zeichen).`);
+  const s = typeof v === 'string' ? v.trim() : v == null ? '' : fail(tr('{what}: Text erwartet.', { what }));
+  if (required && !s) fail(tr('{what} fehlt.', { what }));
+  if (s.length > max) fail(tr('{what} ist zu lang (höchstens {max} Zeichen).', { what, max }));
   return s;
 };
 const num = (v: unknown, min: number, max: number, what: string, dflt?: number) => {
   const n = v == null && dflt !== undefined ? dflt : Number(v);
-  if (!Number.isFinite(n) || n < min || n > max) fail(`${what} muss zwischen ${min} und ${max} liegen.`);
+  if (!Number.isFinite(n) || n < min || n > max) fail(tr('{what} muss zwischen {min} und {max} liegen.', { what, min, max }));
   return Math.round(n * 10) / 10;
 };
 
 function countertopOf(c: unknown): KorpusCountertop {
-  if (typeof c !== 'object' || !c) fail('Arbeitsplatte: Angaben als Objekt { thickness, overhang, join }.');
+  if (typeof c !== 'object' || !c) fail(tr('Arbeitsplatte: Angaben als Objekt {obj}.', { obj: '{ thickness, overhang, join }' }));
   const o = c as Record<string, unknown>;
   return {
-    thickness: num(o.thickness, 1, 10, 'Arbeitsplatte: Stärke', 4),
-    overhang: num(o.overhang, 0, 10, 'Arbeitsplatte: Überstand', 2),
+    thickness: num(o.thickness, 1, 10, tr('Arbeitsplatte: Stärke'), 4),
+    overhang: num(o.overhang, 0, 10, tr('Arbeitsplatte: Überstand'), 2),
     ...(o.join === true ? { join: true } : {}),
   };
 }
 
 /** Möbelart prüfen und vereinheitlichen – wirft eine verständliche Meldung bei Fehlern */
 export function validateObjectType(raw: unknown): ObjectType {
-  if (!raw || typeof raw !== 'object') fail('Keine Möbelart (JSON-Objekt erwartet).');
+  if (!raw || typeof raw !== 'object') fail(tr('Keine Möbelart (JSON-Objekt erwartet).'));
   const o = raw as Record<string, any>;
-  if (o.format !== OBJECT_FORMAT) fail(`Unbekanntes Format „${o.format ?? ''}“ – erwartet ${OBJECT_FORMAT}.`);
-  const id = str(o.id, 60, 'Kennung', true).toLowerCase();
-  if (!ID_RE.test(id)) fail('Kennung: nur Kleinbuchstaben, Ziffern, Punkt und Bindestrich (z. B. „eigene.schuhschrank“).');
-  const version = str(o.version, 20, 'Version', true);
-  if (!VERSION_RE.test(version)) fail('Version im Format 1, 1.2 oder 1.2.3.');
+  if (o.format !== OBJECT_FORMAT) fail(tr('Unbekanntes Format „{format}“ – erwartet {expected}.', { format: o.format ?? '', expected: OBJECT_FORMAT }));
+  const id = str(o.id, 60, tr('Kennung'), true).toLowerCase();
+  if (!ID_RE.test(id)) fail(tr('Kennung: nur Kleinbuchstaben, Ziffern, Punkt und Bindestrich (z. B. „eigene.schuhschrank“).'));
+  const version = str(o.version, 20, tr('Version'), true);
+  if (!VERSION_RE.test(version)) fail(tr('Version im Format 1, 1.2 oder 1.2.3.'));
   const s = o.size ?? {};
   const size = {
-    width: num(s.width, 5, 1000, 'Breite'),
-    depth: num(s.depth, 5, 300, 'Tiefe'),
-    height: num(s.height, 2, 400, 'Höhe'),
-    elevation: num(s.elevation, 0, 300, 'Abstand vom Boden', 0),
-    ...(Array.isArray(s.widths) && s.widths.length ? { widths: s.widths.slice(0, 12).map((w: unknown) => num(w, 5, 1000, 'Breiten-Vorschlag')) } : {}),
+    width: num(s.width, 5, 1000, tr('Breite')),
+    depth: num(s.depth, 5, 300, tr('Tiefe')),
+    height: num(s.height, 2, 400, tr('Höhe')),
+    elevation: num(s.elevation, 0, 300, tr('Abstand vom Boden'), 0),
+    ...(Array.isArray(s.widths) && s.widths.length ? { widths: s.widths.slice(0, 12).map((w: unknown) => num(w, 5, 1000, tr('Breiten-Vorschlag'))) } : {}),
   };
   const materials: Partial<Record<MaterialSlot, string>> = {};
   for (const [k, v] of Object.entries(o.materials ?? {})) {
     if (SLOTS.includes(k as MaterialSlot) && typeof v === 'string' && v.length <= 80) materials[k as MaterialSlot] = v;
   }
-  const b = o.build ?? fail('Aufbau (build) fehlt.');
+  const b = o.build ?? fail(tr('Aufbau (build) fehlt.'));
   let build: KorpusBuild | ModelBuild;
   if (b.type === 'korpus') {
-    if (!Array.isArray(b.columns) || !b.columns.length) fail('Mindestens eine Spalte.');
-    if (b.columns.length > 12) fail('Höchstens 12 Spalten.');
+    if (!Array.isArray(b.columns) || !b.columns.length) fail(tr('Mindestens eine Spalte.'));
+    if (b.columns.length > 12) fail(tr('Höchstens 12 Spalten.'));
     build = {
       type: 'korpus',
-      plinth: num(b.plinth, 0, 40, 'Sockel', 0),
-      board: num(b.board, 0.5, 6, 'Plattenstärke', 1.8),
+      plinth: num(b.plinth, 0, 40, tr('Sockel'), 0),
+      board: num(b.board, 0.5, 6, tr('Plattenstärke'), 1.8),
       back: b.back !== false,
       ...(b.countertop != null && b.countertop !== false ? { countertop: countertopOf(b.countertop) } : {}),
       columns: b.columns.map((c: any, ci: number) => {
-        if (!Array.isArray(c?.elements) || !c.elements.length) fail(`Spalte ${ci + 1}: mindestens ein Element.`);
-        if (c.elements.length > 20) fail(`Spalte ${ci + 1}: höchstens 20 Elemente.`);
+        if (!Array.isArray(c?.elements) || !c.elements.length) fail(tr('Spalte {n}: mindestens ein Element.', { n: ci + 1 }));
+        if (c.elements.length > 20) fail(tr('Spalte {n}: höchstens 20 Elemente.', { n: ci + 1 }));
         return {
-          size: num(c.size, 0.05, 20, `Spalte ${ci + 1}: Breite`, 1),
+          size: num(c.size, 0.05, 20, tr('Spalte {n}: Breite', { n: ci + 1 }), 1),
           elements: c.elements.map((e: any, ei: number) => {
-            const where = `Spalte ${ci + 1}, Element ${ei + 1}`;
-            if (!(e?.kind in ELEMENT_KINDS)) fail(`${where}: unbekannte Art „${e?.kind ?? ''}“.`);
-            const el: ObjElement = { kind: e.kind, size: num(e.size, 0.05, 20, `${where}: Höhe`, 1) };
-            if (e.kind in APPLIANCE_KINDS && e.shelves != null) fail(`${where}: ${ELEMENT_KINDS[e.kind as ElementKind]} hat keine Böden.`);
-            if ((e.kind === 'door' || e.kind === 'open') && e.shelves != null) el.shelves = Math.round(num(e.shelves, 1, 12, `${where}: Böden`));
-            const label = str(e.label, 40, `${where}: Bezeichnung`);
+            const where = tr('Spalte {c}, Element {e}', { c: ci + 1, e: ei + 1 });
+            if (!(e?.kind in ELEMENT_KINDS)) fail(tr('{where}: unbekannte Art „{kind}“.', { where, kind: e?.kind ?? '' }));
+            const el: ObjElement = { kind: e.kind, size: num(e.size, 0.05, 20, tr('{where}: Höhe', { where }), 1) };
+            if (e.kind in APPLIANCE_KINDS && e.shelves != null) fail(tr('{where}: {kind} hat keine Böden.', { where, kind: ELEMENT_KINDS[e.kind as ElementKind] }));
+            if ((e.kind === 'door' || e.kind === 'open') && e.shelves != null) el.shelves = Math.round(num(e.shelves, 1, 12, tr('{where}: Böden', { where })));
+            const label = str(e.label, 40, tr('{where}: Bezeichnung', { where }));
             if (label) el.label = label;
             return el;
           }),
@@ -180,40 +181,40 @@ export function validateObjectType(raw: unknown): ObjectType {
       }),
     };
     const ct = (build as KorpusBuild).countertop;
-    if (ct && size.height - ct.thickness - (build as KorpusBuild).plinth - 2 * (build as KorpusBuild).board < 5) fail('Höhe reicht nicht für Sockel, Korpus und Arbeitsplatte.');
+    if (ct && size.height - ct.thickness - (build as KorpusBuild).plinth - 2 * (build as KorpusBuild).board < 5) fail(tr('Höhe reicht nicht für Sockel, Korpus und Arbeitsplatte.'));
   } else if (b.type === 'modell') {
     const m = b.model ?? {};
-    const url = str(m.url, 200, 'Modell-Adresse');
-    const file = str(m.file, 200, 'Modell-Datei');
-    if (url && !/^\/library\/models\/[\w./-]+\.glb$/.test(url)) fail('Modell-Adresse: nur hochgeladene Modelle (/library/models/….glb).');
-    if (file && !/^[\w./-]+\.glb$/.test(file) || file.includes('..')) fail('Modell-Datei: Pfad im Katalog (….glb).');
-    if (!url && !file) fail('3D-Modell fehlt.');
-    if (!Array.isArray(b.compartments)) fail('Fächer fehlen.');
-    if (b.compartments.length > MAX_COMPARTMENTS) fail(`Höchstens ${MAX_COMPARTMENTS} Fächer.`);
+    const url = str(m.url, 200, tr('Modell-Adresse'));
+    const file = str(m.file, 200, tr('Modell-Datei'));
+    if (url && !/^\/library\/models\/[\w./-]+\.glb$/.test(url)) fail(tr('Modell-Adresse: nur hochgeladene Modelle (/library/models/….glb).'));
+    if (file && !/^[\w./-]+\.glb$/.test(file) || file.includes('..')) fail(tr('Modell-Datei: Pfad im Katalog (….glb).'));
+    if (!url && !file) fail(tr('3D-Modell fehlt.'));
+    if (!Array.isArray(b.compartments)) fail(tr('Fächer fehlen.'));
+    if (b.compartments.length > MAX_COMPARTMENTS) fail(tr('Höchstens {max} Fächer.', { max: MAX_COMPARTMENTS }));
     build = {
       type: 'modell',
-      model: { ...(url ? { url } : {}), ...(file ? { file } : {}), ...(m.name ? { name: str(m.name, 80, 'Modellname') } : {}) },
+      model: { ...(url ? { url } : {}), ...(file ? { file } : {}), ...(m.name ? { name: str(m.name, 80, tr('Modellname')) } : {}) },
       compartments: b.compartments.map((c: any, i: number) => {
-        const box = Array.isArray(c?.box) && c.box.length === 6 ? c.box.map((v: unknown) => num(v, 0, 1, `Fach ${i + 1}: Lage`)) : fail(`Fach ${i + 1}: Lage (box) fehlt.`);
-        if (box[0] >= box[1] || box[2] >= box[3] || box[4] >= box[5]) fail(`Fach ${i + 1}: Anfang muss vor Ende liegen.`);
+        const box = Array.isArray(c?.box) && c.box.length === 6 ? c.box.map((v: unknown) => num(v, 0, 1, tr('Fach {n}: Lage', { n: i + 1 }))) : fail(tr('Fach {n}: Lage (box) fehlt.', { n: i + 1 }));
+        if (box[0] >= box[1] || box[2] >= box[3] || box[4] >= box[5]) fail(tr('Fach {n}: Anfang muss vor Ende liegen.', { n: i + 1 }));
         const kind = ['drawer', 'shelf', 'door', 'open', 'cold', 'freezer'].includes(c.kind) ? c.kind : 'shelf';
-        return { label: str(c.label, 40, `Fach ${i + 1}: Bezeichnung`, true), kind, box };
+        return { label: str(c.label, 40, tr('Fach {n}: Bezeichnung', { n: i + 1 }), true), kind, box };
       }),
     };
-  } else return fail(`Unbekannter Aufbau „${b.type ?? ''}“ (korpus oder modell).`);
+  } else return fail(tr('Unbekannter Aufbau „{type}“ (korpus oder modell).', { type: b.type ?? '' }));
   const t: ObjectType = {
     format: OBJECT_FORMAT, id, version,
-    name: str(o.name, 60, 'Name', true),
-    group: str(o.group, 40, 'Gruppe') || 'Eigene Möbel',
-    ...(o.author ? { author: str(o.author, 60, 'Autor') } : {}),
-    ...(o.license ? { license: str(o.license, 40, 'Lizenz') } : {}),
-    ...(o.description ? { description: str(o.description, 500, 'Beschreibung') } : {}),
+    name: str(o.name, 60, tr('Name'), true),
+    group: str(o.group, 40, tr('Gruppe')) || 'Eigene Möbel',
+    ...(o.author ? { author: str(o.author, 60, tr('Autor')) } : {}),
+    ...(o.license ? { license: str(o.license, 40, tr('Lizenz')) } : {}),
+    ...(o.description ? { description: str(o.description, 500, tr('Beschreibung')) } : {}),
     size,
     snapToWall: o.snapToWall !== false,
     ...(Object.keys(materials).length ? { materials } : {}),
     build,
   };
-  if (objectCompartmentCount(t) > MAX_COMPARTMENTS) fail(`Zu viele Fächer (höchstens ${MAX_COMPARTMENTS}).`);
+  if (objectCompartmentCount(t) > MAX_COMPARTMENTS) fail(tr('Zu viele Fächer (höchstens {max}).', { max: MAX_COMPARTMENTS }));
   return t;
 }
 
@@ -249,7 +250,8 @@ export function korpusLayout(b: KorpusBuild, W: number, H: number) {
   });
 }
 
-const nth = (name: string, i: number, n: number) => (n === 1 ? name : `${name} ${i + 1}${i === 0 ? ' (oben)' : i === n - 1 ? ' (unten)' : ''}`);
+const nth = (name: string, i: number, n: number) =>
+  n === 1 ? name : i === 0 ? tr('{name} {n} (oben)', { name, n: i + 1 }) : i === n - 1 ? tr('{name} {n} (unten)', { name, n: i + 1 }) : `${name} ${i + 1}`;
 
 /** Fächer einer Möbelart (Reihenfolge = Zeile im Lager: Spalte für Spalte von links, darin von oben nach unten) */
 export function objectCompartments(t: ObjectType, W: number, D: number, H: number): ObjCompartment[] {
@@ -268,7 +270,7 @@ export function objectCompartments(t: ObjectType, W: number, D: number, H: numbe
   const out: ObjCompartment[] = [];
   const multi = cols.length > 1;
   cols.forEach((col, ci) => {
-    const prefix = multi ? `${cols.length === 2 ? (ci === 0 ? 'Links' : 'Rechts') : `Spalte ${ci + 1}`} · ` : '';
+    const prefix = multi ? `${cols.length === 2 ? (ci === 0 ? tr('Links') : tr('Rechts')) : tr('Spalte {n}', { n: ci + 1 })} · ` : '';
     // gleiche Elementarten in der Spalte durchzählen (Schublade 1, 2 …)
     const counts = new Map<ElementKind, number>();
     for (const e of col.elements) counts.set(e.el.kind, (counts.get(e.el.kind) ?? 0) + 1);
@@ -289,7 +291,7 @@ export function objectCompartments(t: ObjectType, W: number, D: number, H: numbe
       const n = el.kind === 'door' || el.kind === 'open' ? el.shelves ?? 1 : 1;
       const h = (y1 - y0) / n;
       for (let k = 0; k < n; k++) {
-        out.push({ label: `${prefix}${n > 1 ? `${base} · ${nth('Boden', k, n)}` : base}`, kind, x0: col.x0, x1: col.x1, y0: y1 - h * (k + 1), y1: y1 - h * k, z0, z1 });
+        out.push({ label: `${prefix}${n > 1 ? `${base} · ${nth(tr('Boden'), k, n)}` : base}`, kind, x0: col.x0, x1: col.x1, y0: y1 - h * (k + 1), y1: y1 - h * k, z0, z1 });
       }
     }
   });
@@ -304,17 +306,17 @@ const base = (id: string, name: string, group: string, size: ObjectType['size'],
   format: OBJECT_FORMAT, id, name, group, version: '1.0', size, snapToWall: true, build, ...extra,
 });
 export const TEMPLATES: ObjectType[] = [
-  base('eigene.regal', 'Regal offen', 'Schränke & Regale', { width: 80, depth: 35, height: 180, elevation: 0, widths: [40, 60, 80, 100] },
+  base('eigene.regal', tr('Regal offen'), tr('Schränke & Regale'), { width: 80, depth: 35, height: 180, elevation: 0, widths: [40, 60, 80, 100] },
     { type: 'korpus', plinth: 0, board: 1.8, back: true, columns: [{ size: 1, elements: [{ kind: 'open', size: 1, shelves: 5 }] }] }),
-  base('eigene.vorratsschrank', 'Vorratsschrank', 'Schränke & Regale', { width: 80, depth: 40, height: 200, elevation: 0 },
+  base('eigene.vorratsschrank', tr('Vorratsschrank'), tr('Schränke & Regale'), { width: 80, depth: 40, height: 200, elevation: 0 },
     { type: 'korpus', plinth: 8, board: 1.8, back: true, columns: [{ size: 1, elements: [{ kind: 'door', size: 1, shelves: 5 }] }] }),
-  base('eigene.kommode', 'Kommode', 'Schränke & Regale', { width: 80, depth: 45, height: 90, elevation: 0 },
+  base('eigene.kommode', tr('Kommode'), tr('Schränke & Regale'), { width: 80, depth: 45, height: 90, elevation: 0 },
     { type: 'korpus', plinth: 8, board: 1.8, back: true, columns: [{ size: 1, elements: [{ kind: 'drawer', size: 1 }, { kind: 'drawer', size: 1 }, { kind: 'drawer', size: 1 }, { kind: 'drawer', size: 1 }] }] }),
-  base('eigene.unterschrank', 'Unterschrank Schubladen', 'Unterschränke', { width: 60, depth: 60, height: 90, elevation: 0, widths: [40, 60, 80] },
+  base('eigene.unterschrank', tr('Unterschrank Schubladen'), tr('Unterschränke'), { width: 60, depth: 60, height: 90, elevation: 0, widths: [40, 60, 80] },
     { type: 'korpus', plinth: 10, board: 1.8, back: true, columns: [{ size: 1, elements: [{ kind: 'drawer', size: 1 }, { kind: 'drawer', size: 1.5 }, { kind: 'drawer', size: 1.5 }] }] }),
-  base('eigene.kleiderschrank', 'Kleiderschrank', 'Schränke & Regale', { width: 100, depth: 60, height: 220, elevation: 0 },
+  base('eigene.kleiderschrank', tr('Kleiderschrank'), tr('Schränke & Regale'), { width: 100, depth: 60, height: 220, elevation: 0 },
     { type: 'korpus', plinth: 5, board: 1.8, back: true, columns: [{ size: 1, elements: [{ kind: 'door', size: 1, shelves: 5 }] }, { size: 1, elements: [{ kind: 'door', size: 1, shelves: 5 }] }] }),
-  base('eigene.oberschrank', 'Oberschrank', 'Oberschränke', { width: 60, depth: 35, height: 72, elevation: 145 },
+  base('eigene.oberschrank', tr('Oberschrank'), tr('Oberschränke'), { width: 60, depth: 35, height: 72, elevation: 145 },
     { type: 'korpus', plinth: 0, board: 1.8, back: true, columns: [{ size: 1, elements: [{ kind: 'door', size: 1, shelves: 2 }] }] }),
 ];
 

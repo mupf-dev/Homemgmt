@@ -2,8 +2,9 @@
 // Darstellung kommen aus dem Geräteprofil. Wer bucht, tippt seine Kachel an – die Wahl gilt 90 Sekunden. Ohne
 // Bedienung kehrt das Terminal zum Haus zurück und zeigt den Ruhezustand.
 
+import { locale, tr } from './i18n';
 import { ic } from './icons';
-import { setPrefs } from './prefs';
+import { prefs, setPrefs } from './prefs';
 
 export interface TerminalSettings {
   orientation: 'portrait' | 'landscape';
@@ -34,7 +35,7 @@ export function setTerminal(t: TerminalInfo | null) {
   document.body.classList.toggle('orient-portrait', t?.settings.orientation === 'portrait');
   document.body.classList.toggle('orient-landscape', t?.settings.orientation === 'landscape');
   if (!t) return;
-  setPrefs({ start: 'house', houseView: t.settings.houseView, theme: t.settings.theme, fontSize: t.settings.fontSize });
+  setPrefs({ start: 'house', houseView: t.settings.houseView, theme: t.settings.theme, fontSize: t.settings.fontSize, lang: prefs().lang });
   renderHead();
 }
 
@@ -61,9 +62,9 @@ export async function pickWho(): Promise<number | null> {
   return new Promise((resolve) => {
     const back = document.createElement('div');
     back.className = 'who-back';
-    back.innerHTML = `<div class="who-dialog" role="dialog" aria-label="Wer bucht?"><h2>Wer bucht?</h2>
+    back.innerHTML = `<div class="who-dialog" role="dialog" aria-label="${tr('Wer bucht?')}"><h2>${tr('Wer bucht?')}</h2>
       <div class="who-grid">${users.map((u) => `<button data-id="${u.id}"><span class="avatar" style="background:${esc(u.color)}">${esc(u.name.slice(0, 1).toUpperCase())}</span>${esc(u.name)}</button>`).join('')}</div>
-      <button class="btn who-cancel">Abbrechen</button></div>`;
+      <button class="btn who-cancel">${tr('Abbrechen')}</button></div>`;
     const done = (id: number | null) => {
       back.remove();
       resolve(id);
@@ -115,13 +116,13 @@ function renderHead() {
   }
   const active = who && Date.now() - who.at < WHO_MS;
   el.innerHTML = `<span class="term-place">${ic('home')}${esc(info.name)}</span>
-    ${active ? `<button class="term-who" title="Andere Person wählen"><span class="avatar" style="background:${esc(who!.color)}">${esc(who!.name.slice(0, 1).toUpperCase())}</span>${esc(who!.name)}${ic('x')}</button>` : ''}
+    ${active ? `<button class="term-who" title="${tr('Andere Person wählen')}"><span class="avatar" style="background:${esc(who!.color)}">${esc(who!.name.slice(0, 1).toUpperCase())}</span>${esc(who!.name)}${ic('x')}</button>` : ''}
     <span class="term-storm" data-level="${storm.level}" ${storm.text ? '' : 'hidden'}>${ic('warn')}<span>${esc(storm.text)}</span></span>
     <span class="term-weather">${esc(weather)}</span><b class="term-clock"></b>`;
   el.querySelector('.term-who')?.addEventListener('click', clearWho);
   const clock = () => {
     const c = el!.querySelector('.term-clock');
-    if (c) c.textContent = new Date().toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
+    if (c) c.textContent = new Date().toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
     if (who && Date.now() - who.at >= WHO_MS) clearWho();
   };
   clock();
