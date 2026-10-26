@@ -8,6 +8,7 @@ import { roomOf } from '../model/house.ts';
 import { ic } from '../icons';
 import { describe, enqueue, queueable, QueuedError, requestId } from './outbox';
 import { pickWho, terminal } from '../terminal';
+import { getLang, locale, tr, trn } from '../i18n';
 
 export interface LagerCtx {
   modal: (title: string, body: string, footer?: string) => { el: HTMLElement; close: () => void };
@@ -60,7 +61,7 @@ export async function api<T = any>(method: string, url: string, body?: unknown, 
   // Wandterminal: vor jeder Änderung fragen, wer bucht (die Wahl gilt eine Weile)
   if (terminal() && method !== 'GET' && !(body && typeof body === 'object' && 'person_id' in (body as object))) {
     const who = await pickWho();
-    if (!who) throw new Error('Abgebrochen – niemand ausgewählt.');
+    if (!who) throw new Error(tr('Abgebrochen – niemand ausgewählt.'));
     body = { ...((body as object) ?? {}), person_id: who };
   }
   const queue = queueable(method, url) && !!body && typeof body === 'object';
@@ -68,7 +69,7 @@ export async function api<T = any>(method: string, url: string, body?: unknown, 
   const offline = () => {
     const text = describe(url, body as Record<string, unknown>, label);
     enqueue(method, url, body as Record<string, unknown>, text);
-    return new QueuedError(`Keine Verbindung – „${text}“ ist vorgemerkt und wird automatisch nachgebucht.`);
+    return new QueuedError(tr('Keine Verbindung – „{text}“ ist vorgemerkt und wird automatisch nachgebucht.', { text }));
   };
   let r: Response;
   try {
@@ -80,11 +81,11 @@ export async function api<T = any>(method: string, url: string, body?: unknown, 
     });
   } catch {
     if (queue) throw offline();
-    throw new Error('Keine Verbindung zum Server. Bitte WLAN prüfen und erneut versuchen.');
+    throw new Error(tr('Keine Verbindung zum Server. Bitte WLAN prüfen und erneut versuchen.'));
   }
   if (queue && r.status >= 502 && r.status <= 504) throw offline();
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
+  if (!r.ok) throw new Error(d.error ?? tr('Fehler {status}', { status: r.status }));
   return d as T;
 }
 
@@ -93,24 +94,24 @@ export const esc = (s: unknown) => String(s ?? '').replace(/[&<>"']/g, (c) => ({
 export const fmtDate = (iso: string | null) => {
   if (!iso) return '';
   const d = new Date(iso.replace(' ', 'T') + 'Z');
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale(), { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
 };
 export const relDate = (iso: string | null) => {
   if (!iso) return '';
   const s = (Date.now() - new Date(iso.replace(' ', 'T') + 'Z').getTime()) / 1000;
-  if (s < 60) return 'gerade eben';
-  if (s < 3600) return `vor ${Math.floor(s / 60)} Min.`;
-  if (s < 86400) return `vor ${Math.floor(s / 3600)} Std.`;
-  if (s < 86400 * 30) return `vor ${Math.floor(s / 86400)} Tagen`;
+  if (s < 60) return tr('gerade eben');
+  if (s < 3600) return tr('vor {n} Min.', { n: Math.floor(s / 60) });
+  if (s < 86400) return tr('vor {n} Std.', { n: Math.floor(s / 3600) });
+  if (s < 86400 * 30) return trn(Math.floor(s / 86400), 'vor {n} Tag', 'vor {n} Tagen');
   return fmtDate(iso).split(',')[0];
 };
 
 export function expiryTag(i: { expires_in: number | null; expires_on: string | null }, long = false) {
   if (i.expires_in === null || !i.expires_on) return '';
-  const d = i.expires_on.split('-').reverse().join('.');
-  if (i.expires_in < 0) return `<span class="tag bad">abgelaufen ${long ? d : ''}</span>`;
-  if (i.expires_in <= 30) return `<span class="tag warn">${i.expires_in === 0 ? 'heute' : `in ${i.expires_in} T.`}${long ? ` (${d})` : ''}</span>`;
-  return long ? `<span class="tag">bis ${d}</span>` : '';
+  const d = isoToDe(i.expires_on);
+  if (i.expires_in < 0) return `<span class="tag bad">${long ? tr('abgelaufen {date}', { date: d }) : tr('abgelaufen')}</span>`;
+  if (i.expires_in <= 30) return `<span class="tag warn">${i.expires_in === 0 ? tr('heute') : tr('in {n} T.', { n: i.expires_in })}${long ? ` (${d})` : ''}</span>`;
+  return long ? `<span class="tag">${tr('bis {date}', { date: d })}</span>` : '';
 }
 
 /** Wo liegt etwas? – aus dem Hausplan, wenn der Platz ein Fach ist, sonst Lager + Platzname */
@@ -130,10 +131,10 @@ export function placeInfo(ctx: LagerCtx, x: { warehouse_id: number; col: string;
       if (!it) continue;
       const comp = compartments(it, ctx.house().settings)[pl.plan_slot];
       const room = roomOf(f, it)?.name ?? f.name;
-      return { address, title: `${room} · ${itemName(it)}`, sub: `${comp?.label ?? `Fach ${pl.plan_slot}`} · ${f.name}`, plan: { place: pl, floor: f, item: it, room, fach: comp?.label ?? '' } };
+      return { address, title: `${room} · ${itemName(it)}`, sub: `${comp?.label ?? tr('Fach {n}', { n: pl.plan_slot })} · ${f.name}`, plan: { place: pl, floor: f, item: it, room, fach: comp?.label ?? '' } };
     }
   }
-  return { address, title: x.place_name || `Platz ${x.col}${x.row}`, sub: x.wh_name ?? '', plan: null };
+  return { address, title: x.place_name || tr('Platz {place}', { place: `${x.col}${x.row}` }), sub: x.wh_name ?? '', plan: null };
 }
 
 export function thumb(i: { id: number; photo_at: string | null; container?: number }, cls = 'thumb') {
@@ -146,7 +147,7 @@ export function thumb(i: { id: number; photo_at: string | null; container?: numb
 export function itemRow(ctx: LagerCtx, i: ApiItem) {
   const p = placeInfo(ctx, i);
   return `<a class="l-item" href="#/item/${i.id}">${thumb(i)}<span class="l-main"><b>${esc(i.name)}</b>${expiryTag(i)}
-    <small>${esc(p.title)} · ${esc(p.plan?.fach ?? '')}${i.parent_name ? ` · in ${esc(i.parent_name)}` : ''}</small></span>
+    <small>${esc(p.title)} · ${esc(p.plan?.fach ?? '')}${i.parent_name ? ` · ${tr('in {name}', { name: esc(i.parent_name) })}` : ''}</small></span>
     <span class="l-side"><b>${i.quantity}×</b><code>${esc(p.address)}</code></span></a>`;
 }
 
@@ -181,11 +182,11 @@ export function pickPhoto(): Promise<{ image: string; thumb: string; preview: st
 /** Buchung mit „Rückgängig“ im Hinweis */
 export function bookedToast(ctx: LagerCtx, msg: string, movementId: number | undefined, after?: () => void) {
   ctx.toast(msg, movementId ? {
-    label: 'Rückgängig',
+    label: tr('Rückgängig'),
     run: async () => {
       try {
         await api('POST', `/api/movements/${movementId}/undo`);
-        ctx.toast('Buchung zurückgenommen.');
+        ctx.toast(tr('Buchung zurückgenommen.'));
         await ctx.sync.loadStorage();
         after?.();
       } catch (e) {
@@ -201,12 +202,12 @@ export type Target = { warehouse_id: number; col: string; row: number; address: 
  * Fach im Haus wählen: Etage → Raum → Möbel → Fach (mit Belegung). Alternativ eine Platzadresse eintippen
  * (z. B. H-B12 für Lager ohne Hausplan). Liefert null bei Abbruch.
  */
-export function pickPlace(ctx: LagerCtx, title = 'Wohin?', current?: { warehouse_id: number; col: string; row: number }): Promise<Target | null> {
+export function pickPlace(ctx: LagerCtx, title = tr('Wohin?'), current?: { warehouse_id: number; col: string; row: number }): Promise<Target | null> {
   return new Promise((resolve) => {
     const h = ctx.house();
     const withStorage = h.floors.filter((f) => f.items.some((it) => it.storageCol));
     let floorId = (current && placeInfo(ctx, current).plan?.floor.id) ?? withStorage[0]?.id;
-    const m = ctx.modal(title, '<div class="pp"></div>', '<button class="btn" data-close>Abbrechen</button>');
+    const m = ctx.modal(title, '<div class="pp"></div>', `<button class="btn" data-close>${tr('Abbrechen')}</button>`);
     m.el.querySelector('.modal')!.classList.add('pp-modal');
     const body = m.el.querySelector('.pp')!;
     let done = false;
@@ -229,22 +230,22 @@ export function pickPlace(ctx: LagerCtx, title = 'Wohin?', current?: { warehouse
         if (!it.storageCol) continue;
         const r = roomOf(f!, it);
         const k = r?.id ?? '-';
-        if (!rooms.has(k)) rooms.set(k, { name: r?.name ?? `${f!.name} (ohne Raum)`, items: [] });
+        if (!rooms.has(k)) rooms.set(k, { name: r?.name ?? tr('{floor} (ohne Raum)', { floor: f!.name }), items: [] });
         rooms.get(k)!.items.push(it);
       }
       body.innerHTML = `
-        ${withStorage.length ? `<div class="seg pp-floors">${withStorage.map((x) => `<button data-f="${x.id}" class="${x.id === floorId ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>` : '<p class="hint">Im Hausplan gibt es noch keine Möbel mit Fächern.</p>'}
-        ${[...rooms.values()].map((r) => `<details class="pp-room" ${rooms.size <= 4 ? 'open' : ''}><summary>${esc(r.name)} <small>${r.items.length} Möbel</small></summary>
+        ${withStorage.length ? `<div class="seg pp-floors">${withStorage.map((x) => `<button data-f="${x.id}" class="${x.id === floorId ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>` : `<p class="hint">${tr('Im Hausplan gibt es noch keine Möbel mit Fächern.')}</p>`}
+        ${[...rooms.values()].map((r) => `<details class="pp-room" ${rooms.size <= 4 ? 'open' : ''}><summary>${esc(r.name)} <small>${trn(r.items.length, '{n} Möbel', '{n} Möbel')}</small></summary>
           ${r.items.sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1)).map((it) => `<div class="pp-item"><div class="pp-head"><b>${esc(itemName(it))}</b></div><div class="pp-fach">${compartments(it, h.settings)
             .map((c) => {
               const pl = ctx.sync.fach(it.id, c.row);
               const n = pl?.items.length ?? 0;
               const cur = current && pl && pl.warehouse_id === current.warehouse_id && pl.col === current.col && pl.row === current.row;
-              return pl ? `<button class="pp-btn ${n ? 'full' : ''} ${cur ? 'cur' : ''}" data-it="${it.id}" data-row="${c.row}"><code>${esc(pl.address)}</code><span>${esc(c.label)}</span><small>${n ? `${n} drin` : 'leer'}</small></button>` : '';
+              return pl ? `<button class="pp-btn ${n ? 'full' : ''} ${cur ? 'cur' : ''}" data-it="${it.id}" data-row="${c.row}"><code>${esc(pl.address)}</code><span>${esc(c.label)}</span><small>${n ? tr('{n} drin', { n }) : tr('leer')}</small></button>` : '';
             })
             .join('')}</div></div>`).join('')}
         </details>`).join('')}
-        <form class="pp-manual"><label>Anderer Lagerplatz</label><input name="addr" placeholder="z. B. H-B12" autocapitalize="characters" /><button class="btn" type="submit">Übernehmen</button></form>`;
+        <form class="pp-manual"><label>${tr('Anderer Lagerplatz')}</label><input name="addr" placeholder="${tr('z. B. H-B12')}" autocapitalize="characters" /><button class="btn" type="submit">${tr('Übernehmen')}</button></form>`;
       body.querySelectorAll<HTMLElement>('[data-f]').forEach((b) => b.addEventListener('click', () => {
         floorId = b.dataset.f!;
         draw();
@@ -260,7 +261,7 @@ export function pickPlace(ctx: LagerCtx, title = 'Wohin?', current?: { warehouse
         if (!raw) return;
         try {
           const r = await api<any>('GET', `/api/resolve?code=${encodeURIComponent(raw.startsWith('P-') ? raw : `P-${raw}`)}`);
-          if (r.type !== 'place') throw new Error(r.reason ?? 'Unbekannte Platzadresse – Format: Lager-Kürzel, Strich, Platz (z. B. H-B12).');
+          if (r.type !== 'place') throw new Error(r.reason ?? tr('Unbekannte Platzadresse – Format: Lager-Kürzel, Strich, Platz (z. B. H-B12).'));
           const p = r.place;
           finish({ warehouse_id: p.warehouse_id, col: p.col, row: p.row, address: `${p.wh_code}-${p.col}${p.row}`, label: p.name || p.wh_name });
         } catch (ex) {
@@ -277,12 +278,14 @@ export function pickPlace(ctx: LagerCtx, title = 'Wohin?', current?: { warehouse
 // Spracheinstellung mm/dd/yyyy zeigt und auf Touch-Geräten umständlich ist.
 
 const pad = (n: number) => String(n).padStart(2, '0');
-const isoToDe = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.split('-').reverse().join('.') : iso);
+/** Trennzeichen im Datum: deutsch 31.12.2027, englisch (britisch) 31/12/2027 */
+const SEP = getLang() === 'en' ? '/' : '.';
+const isoToDe = (iso: string) => (/^\d{4}-\d{2}-\d{2}$/.test(iso) ? iso.split('-').reverse().join(SEP) : iso);
 
 /** Eingabefeld + Schnellwahl (1 Woche … 1 Jahr) */
 export function expiryField(name = 'expires_on', iso = '') {
-  return `<span class="exp-field"><input type="text" name="${name}" value="${esc(isoToDe(iso))}" placeholder="TT.MM.JJJJ" inputmode="numeric" autocomplete="off" maxlength="10" title="Haltbar bis (optional)" />
-    <span class="exp-chips">${[[7, '1 Woche'], [30, '1 Monat'], [90, '3 Monate'], [365, '1 Jahr']].map(([d, l]) => `<button type="button" data-exp="${d}">${l}</button>`).join('')}</span></span>`;
+  return `<span class="exp-field"><input type="text" name="${name}" value="${esc(isoToDe(iso))}" placeholder="${tr('TT.MM.JJJJ')}" inputmode="numeric" autocomplete="off" maxlength="10" title="${tr('Haltbar bis (optional)')}" />
+    <span class="exp-chips">${[[7, tr('1 Woche')], [30, tr('1 Monat')], [90, tr('3 Monate')], [365, tr('1 Jahr')]].map(([d, l]) => `<button type="button" data-exp="${d}">${l}</button>`).join('')}</span></span>`;
 }
 
 /** Schnellwahl-Knöpfe in einem Bereich aktivieren */
@@ -293,7 +296,7 @@ export function bindExpiry(root: ParentNode) {
       b.addEventListener('click', () => {
         const d = new Date();
         d.setDate(d.getDate() + Number(b.dataset.exp));
-        inp.value = `${pad(d.getDate())}.${pad(d.getMonth() + 1)}.${d.getFullYear()}`;
+        inp.value = `${pad(d.getDate())}${SEP}${pad(d.getMonth() + 1)}${SEP}${d.getFullYear()}`;
         inp.dispatchEvent(new Event('input', { bubbles: true }));
       }),
     );
@@ -305,11 +308,11 @@ export function parseExpiry(raw: FormDataEntryValue | null): string | null {
   const v = String(raw ?? '').trim();
   if (!v) return null;
   if (/^\d{4}-\d{2}-\d{2}$/.test(v)) return v;
-  const m = v.match(/^(\d{1,2})\.(\d{1,2})\.(\d{2}|\d{4})$/);
-  if (!m) throw new Error(`„${v}“ ist kein Datum – bitte als TT.MM.JJJJ eingeben.`);
+  const m = v.match(/^(\d{1,2})[./](\d{1,2})[./](\d{2}|\d{4})$/);
+  if (!m) throw new Error(tr('„{v}“ ist kein Datum – bitte als TT.MM.JJJJ eingeben.', { v }));
   const y = m[3].length === 2 ? 2000 + Number(m[3]) : Number(m[3]);
   const d = new Date(y, Number(m[2]) - 1, Number(m[1]));
-  if (d.getDate() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1) throw new Error(`Den ${v} gibt es nicht.`);
+  if (d.getDate() !== Number(m[1]) || d.getMonth() !== Number(m[2]) - 1) throw new Error(tr('Den {v} gibt es nicht.', { v }));
   return `${y}-${pad(Number(m[2]))}-${pad(Number(m[1]))}`;
 }
 

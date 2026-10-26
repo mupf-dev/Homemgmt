@@ -16,8 +16,9 @@ import { PREVIEW_TYPE, setPreviewObject } from '../model/catalog.ts';
 import { buildItem } from '../models';
 import { store } from '../state';
 import { LIBRARY } from '../materials';
+import { tr, trn } from '../i18n';
 
-const SOURCE: Record<string, string> = { eigene: 'Eigene', community: 'Community', datei: 'Importiert' };
+const SOURCE: Record<string, string> = { eigene: tr('Eigene'), community: tr('Community'), datei: tr('Importiert') };
 const REPO = 'https://github.com/mupf-dev/homemgmt-object-library';
 const GALLERY = 'https://mupf-dev.github.io/homemgmt-object-library/';
 const mayEdit = (ctx: LagerCtx) => !!ctx.user()?.canPlan || ctx.user()?.role === 'admin';
@@ -25,10 +26,10 @@ const mayEdit = (ctx: LagerCtx) => !!ctx.user()?.canPlan || ctx.user()?.role ===
 export const viewObjects: View = async (el, ctx, params) => {
   const tab = params.get('tab') ?? 'installiert';
   const edit = mayEdit(ctx);
-  el.innerHTML = `<a class="l-back" href="#/mehr">${ic('back')}Mehr</a><h1>Objektbibliothek</h1>
-    <p class="hint">Möbelarten für den Hausplan – Schränke, Regale, Kommoden … Jedes Fach wird ein Lagerplatz. Eigene Möbelarten entstehen im Editor; weitere gibt es im Community-Katalog.</p>
-    <div class="seg ob-tabs">${[['installiert', 'Installiert'], ['community', 'Community'], ['vorlagen', 'Vorlagen']].map(([k, l]) => `<a href="#/objekte?tab=${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
-    <div id="ob"><p class="hint">Lade …</p></div>`;
+  el.innerHTML = `<a class="l-back" href="#/mehr">${ic('back')}${tr('Mehr')}</a><h1>${tr('Objektbibliothek')}</h1>
+    <p class="hint">${tr('Möbelarten für den Hausplan – Schränke, Regale, Kommoden … Jedes Fach wird ein Lagerplatz. Eigene Möbelarten entstehen im Editor; weitere gibt es im Community-Katalog.')}</p>
+    <div class="seg ob-tabs">${[['installiert', tr('Installiert')], ['community', tr('Community')], ['vorlagen', tr('Vorlagen')]].map(([k, l]) => `<a href="#/objekte?tab=${k}" class="${k === tab ? 'on' : ''}">${l}</a>`).join('')}</div>
+    <div id="ob"><p class="hint">${tr('Lade …')}</p></div>`;
   const box = el.querySelector<HTMLElement>('#ob')!;
   const reload = () => viewObjects(el, ctx, params);
   const act = async (fn: () => Promise<unknown>, msg?: string) => {
@@ -44,8 +45,8 @@ export const viewObjects: View = async (el, ctx, params) => {
 
   if (tab === 'installiert') {
     const rows = await loadLibrary();
-    box.innerHTML = `${edit ? `<div class="l-actions"><a class="btn primary" href="#/objekte/bearbeiten?neu=1">${ic('plus')}Neue Möbelart</a><button class="btn" id="imp">${ic('upload')}Importieren (.json)</button><input type="file" id="impFile" accept=".json,application/json" hidden /></div>` : ''}
-      ${rows.length ? `<div class="ob-list">${rows.map((r) => row(r, edit)).join('')}</div>` : '<p class="hint">Noch keine Möbelarten installiert. Im Community-Katalog gibt es fertige – oder eine Vorlage kopieren.</p>'}`;
+    box.innerHTML = `${edit ? `<div class="l-actions"><a class="btn primary" href="#/objekte/bearbeiten?neu=1">${ic('plus')}${tr('Neue Möbelart')}</a><button class="btn" id="imp">${ic('upload')}${tr('Importieren (.json)')}</button><input type="file" id="impFile" accept=".json,application/json" hidden /></div>` : ''}
+      ${rows.length ? `<div class="ob-list">${rows.map((r) => row(r, edit)).join('')}</div>` : `<p class="hint">${tr('Noch keine Möbelarten installiert. Im Community-Katalog gibt es fertige – oder eine Vorlage kopieren.')}</p>`}`;
     box.querySelector('#imp')?.addEventListener('click', () => box.querySelector<HTMLInputElement>('#impFile')!.click());
     box.querySelector<HTMLInputElement>('#impFile')?.addEventListener('change', async (e) => {
       const f = (e.target as HTMLInputElement).files?.[0];
@@ -55,22 +56,22 @@ export const viewObjects: View = async (el, ctx, params) => {
         const r = await fetch('/api/objects/import', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ object }), credentials: 'same-origin' });
         const d = await r.json();
         if (r.status === 409 && d.exists) {
-          if (!confirm(`${d.error} Ersetzen?`)) return;
-          await act(() => api('POST', '/api/objects/import', { object, replace: true }), 'Möbelart ersetzt.');
+          if (!confirm(`${d.error} ${tr('Ersetzen?')}`)) return;
+          await act(() => api('POST', '/api/objects/import', { object, replace: true }), tr('Möbelart ersetzt.'));
           return;
         }
         if (!r.ok) throw new Error(d.error);
-        await act(async () => {}, `„${d.object.name}“ importiert.`);
+        await act(async () => {}, tr('„{name}“ importiert.', { name: d.object.name }));
       } catch (ex) {
-        ctx.toast(`Import fehlgeschlagen: ${(ex as Error).message}`);
+        ctx.toast(tr('Import fehlgeschlagen: {error}', { error: (ex as Error).message }));
       }
     });
     box.querySelectorAll<HTMLElement>('[data-id]').forEach((b) => {
       const r = rows.find((x) => x.object.id === b.dataset.id)!;
       b.querySelector('[data-a="export"]')?.addEventListener('click', () => downloadObject(r.object));
-      b.querySelector('[data-a="hide"]')?.addEventListener('click', () => act(() => api('PATCH', `/api/objects/${r.object.id}`, { hidden: !r.hidden }), r.hidden ? 'Wieder im Katalog.' : 'Im Katalog ausgeblendet.'));
+      b.querySelector('[data-a="hide"]')?.addEventListener('click', () => act(() => api('PATCH', `/api/objects/${r.object.id}`, { hidden: !r.hidden }), r.hidden ? tr('Wieder im Katalog.') : tr('Im Katalog ausgeblendet.')));
       b.querySelector('[data-a="del"]')?.addEventListener('click', () => {
-        if (confirm(`„${r.object.name}“ aus der Bibliothek löschen? Bereits geplante Möbel behalten ihre Kopie im Hausplan.`)) act(() => api('DELETE', `/api/objects/${r.object.id}`), 'Gelöscht.');
+        if (confirm(tr('„{name}“ aus der Bibliothek löschen? Bereits geplante Möbel behalten ihre Kopie im Hausplan.', { name: r.object.name }))) act(() => api('DELETE', `/api/objects/${r.object.id}`), tr('Gelöscht.'));
       });
     });
     return;
@@ -79,29 +80,29 @@ export const viewObjects: View = async (el, ctx, params) => {
   if (tab === 'community') {
     try {
       const c = await api<{ url: string; objects: any[] }>('GET', '/api/objects/community');
-      box.innerHTML = `<p class="hint">Möbelarten aus dem <a class="link" href="${GALLERY}" target="_blank" rel="noopener">Community-Katalog ${ic('external')}</a> – frei verwendbar. Eigene Möbelarten beisteuern: exportieren und als Pull Request im <a class="link" href="${REPO}" target="_blank" rel="noopener">Katalog-Repo ${ic('external')}</a> einreichen. Beim Planen gibt es sie auch direkt unter „Möbel“ → <b>Online-Bibliothek</b>: auswählen installiert und setzt sie.</p>
+      box.innerHTML = `<p class="hint">${tr('Möbelarten aus dem {catalog} – frei verwendbar. Eigene Möbelarten beisteuern: exportieren und als Pull Request im {repo} einreichen. Beim Planen gibt es sie auch direkt unter „Möbel“ → <b>Online-Bibliothek</b>: auswählen installiert und setzt sie.', { catalog: `<a class="link" href="${GALLERY}" target="_blank" rel="noopener">${tr('Community-Katalog')} ${ic('external')}</a>`, repo: `<a class="link" href="${REPO}" target="_blank" rel="noopener">${tr('Katalog-Repo')} ${ic('external')}</a>` })}</p>
         <div class="ob-list">${c.objects.map((o) => `<div class="ob-row" data-id="${esc(o.id)}">
           <span class="ob-icon">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : ic('box')}</span>
-          <span class="l-main"><b>${esc(o.name)}</b><small>${esc(o.group)}${o.places ? ` · ${o.places} Fächer` : ''} · Version ${esc(o.version)}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(o.description)}</small>` : ''}</span>
-          ${o.update ? `<button class="btn primary mini" data-a="install">${ic('in')}Aktualisieren auf ${esc(o.version)}</button>` : o.installed ? `<span class="tag ok">installiert</span>` : edit ? `<button class="btn mini" data-a="install">${ic('in')}Installieren</button>` : ''}
-        </div>`).join('') || '<p class="hint">Der Katalog ist leer.</p>'}</div>`;
+          <span class="l-main"><b>${esc(o.name)}</b><small>${esc(o.group)}${o.places ? ` · ${trn(o.places, '{n} Fach', '{n} Fächer')}` : ''} · ${tr('Version {v}', { v: esc(o.version) })}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(o.description)}</small>` : ''}</span>
+          ${o.update ? `<button class="btn primary mini" data-a="install">${ic('in')}${tr('Aktualisieren auf {v}', { v: esc(o.version) })}</button>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : edit ? `<button class="btn mini" data-a="install">${ic('in')}${tr('Installieren')}</button>` : ''}
+        </div>`).join('') || `<p class="hint">${tr('Der Katalog ist leer.')}</p>`}</div>`;
       box.querySelectorAll<HTMLElement>('[data-a="install"]').forEach((b) =>
         b.addEventListener('click', () => {
           b.setAttribute('disabled', '');
           const id = b.closest<HTMLElement>('[data-id]')!.dataset.id!;
-          act(() => api('POST', '/api/objects/community/install', { id }), 'Installiert – im Planen unter „Möbel“ zu finden.');
+          act(() => api('POST', '/api/objects/community/install', { id }), tr('Installiert – im Planen unter „Möbel“ zu finden.'));
         }),
       );
     } catch (e) {
-      box.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p><p class="hint">Der Community-Katalog liegt auf GitHub; ohne Internetverbindung ist er nicht erreichbar.</p>`;
+      box.innerHTML = `<p class="form-error">${esc((e as Error).message)}</p><p class="hint">${tr('Der Community-Katalog liegt auf GitHub; ohne Internetverbindung ist er nicht erreichbar.')}</p>`;
     }
     return;
   }
 
   // Vorlagen: als Ausgangspunkt für eigene Möbelarten
-  box.innerHTML = `<p class="hint">Vorlagen als Ausgangspunkt – kopieren und im Editor anpassen. Die eingebauten Küchenschränke und Regale bleiben unverändert, damit bestehende Lagerplätze stabil sind.</p>
-    <div class="ob-grid">${TEMPLATES.map((t) => `<div class="ob-card"><span class="ob-icon big">${objectIcon(t, 90, 60)}</span><b>${esc(t.name)}</b><small>${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${objectCompartments(t, t.size.width, t.size.depth, t.size.height).length} Fächer</small>
-      ${edit ? `<a class="btn mini" href="#/objekte/bearbeiten?vorlage=${encodeURIComponent(t.id)}">${ic('copy')}Als Vorlage nutzen</a>` : ''}</div>`).join('')}</div>`;
+  box.innerHTML = `<p class="hint">${tr('Vorlagen als Ausgangspunkt – kopieren und im Editor anpassen. Die eingebauten Küchenschränke und Regale bleiben unverändert, damit bestehende Lagerplätze stabil sind.')}</p>
+    <div class="ob-grid">${TEMPLATES.map((t) => `<div class="ob-card"><span class="ob-icon big">${objectIcon(t, 90, 60)}</span><b>${esc(t.name)}</b><small>${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${trn(objectCompartments(t, t.size.width, t.size.depth, t.size.height).length, '{n} Fach', '{n} Fächer')}</small>
+      ${edit ? `<a class="btn mini" href="#/objekte/bearbeiten?vorlage=${encodeURIComponent(t.id)}">${ic('copy')}${tr('Als Vorlage nutzen')}</a>` : ''}</div>`).join('')}</div>`;
 };
 
 function row(r: LibraryRow, edit: boolean) {
@@ -110,11 +111,11 @@ function row(r: LibraryRow, edit: boolean) {
   const own = r.source !== 'community';
   return `<div class="ob-row ${r.hidden ? 'muted' : ''}" data-id="${esc(t.id)}">
     <span class="ob-icon">${objectIcon(t)}</span>
-    <span class="l-main"><b>${esc(t.name)}</b><small>${esc(t.group)} · ${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${n} Fächer · Version ${esc(t.version)} · ${SOURCE[r.source] ?? r.source}${r.hidden ? ' · ausgeblendet' : ''}</small></span>
+    <span class="l-main"><b>${esc(t.name)}</b><small>${esc(t.group)} · ${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${trn(n, '{n} Fach', '{n} Fächer')} · ${tr('Version {v}', { v: esc(t.version) })} · ${SOURCE[r.source] ?? r.source}${r.hidden ? ` · ${tr('ausgeblendet')}` : ''}</small></span>
     <span class="ob-acts">
-      ${edit ? `<a class="btn mini" href="#/objekte/bearbeiten?${own ? 'id' : 'kopie'}=${encodeURIComponent(t.id)}">${ic(own ? 'pencil' : 'copy')}${own ? 'Bearbeiten' : 'Kopieren'}</a>` : ''}
-      <button class="btn mini" data-a="export" title="Als Datei speichern (zum Teilen)">${ic('share')}Exportieren</button>
-      ${edit ? `<button class="btn mini" data-a="hide">${r.hidden ? 'Einblenden' : 'Ausblenden'}</button><button class="btn mini danger" data-a="del" aria-label="Löschen">${ic('trash')}</button>` : ''}
+      ${edit ? `<a class="btn mini" href="#/objekte/bearbeiten?${own ? 'id' : 'kopie'}=${encodeURIComponent(t.id)}">${ic(own ? 'pencil' : 'copy')}${own ? tr('Bearbeiten') : tr('Kopieren')}</a>` : ''}
+      <button class="btn mini" data-a="export" title="${tr('Als Datei speichern (zum Teilen)')}">${ic('share')}${tr('Exportieren')}</button>
+      ${edit ? `<button class="btn mini" data-a="hide">${r.hidden ? tr('Einblenden') : tr('Ausblenden')}</button><button class="btn mini danger" data-a="del" aria-label="${tr('Löschen')}">${ic('trash')}</button>` : ''}
     </span></div>`;
 }
 
@@ -125,7 +126,7 @@ const KINDS = Object.entries(ELEMENT_KINDS) as [ElementKind, string][];
 const slug = (s: string) => s.toLowerCase().replace(/ä/g, 'ae').replace(/ö/g, 'oe').replace(/ü/g, 'ue').replace(/ß/g, 'ss').replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40) || 'moebel';
 
 export const viewObjectEditor: View = async (el, ctx, params) => {
-  if (!mayEdit(ctx)) return void (el.innerHTML = '<p>Möbelarten bearbeiten nur Personen mit dem Recht „Haus planen“.</p>');
+  if (!mayEdit(ctx)) return void (el.innerHTML = `<p>${tr('Möbelarten bearbeiten nur Personen mit dem Recht „Haus planen“.')}</p>`);
   await loadLibrary();
   const rows = libraryRows();
   const taken = new Set(rows.map((r) => r.object.id));
@@ -135,22 +136,22 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
   const from = params.get('kopie') ?? params.get('vorlage');
   if (id) {
     const r = rows.find((x) => x.object.id === id);
-    if (!r) return void (el.innerHTML = '<p>Möbelart nicht gefunden.</p>');
+    if (!r) return void (el.innerHTML = `<p>${tr('Möbelart nicht gefunden.')}</p>`);
     draft = structuredClone(r.object);
     isNew = false;
   } else if (from) {
     const src = rows.find((x) => x.object.id === from)?.object ?? TEMPLATES.find((t) => t.id === from);
-    if (!src) return void (el.innerHTML = '<p>Vorlage nicht gefunden.</p>');
-    draft = { ...structuredClone(src), id: copyId(src.id, taken), version: '1.0', author: ctx.user()?.name, name: `${src.name}${params.get('kopie') ? ' (Kopie)' : ''}` };
+    if (!src) return void (el.innerHTML = `<p>${tr('Vorlage nicht gefunden.')}</p>`);
+    draft = { ...structuredClone(src), id: copyId(src.id, taken), version: '1.0', author: ctx.user()?.name, name: params.get('kopie') ? tr('{name} (Kopie)', { name: src.name }) : src.name };
   } else {
-    draft = { ...structuredClone(TEMPLATES[1]), id: copyId('eigene.moebel', taken), name: 'Neue Möbelart', author: ctx.user()?.name, version: '1.0' };
+    draft = { ...structuredClone(TEMPLATES[1]), id: copyId('eigene.moebel', taken), name: tr('Neue Möbelart'), author: ctx.user()?.name, version: '1.0' };
   }
   const groups = [...new Set([...rows.map((r) => r.object.group), 'Schränke & Regale', 'Küche', 'Diele', 'Bad', 'Werkstatt', 'Eigene Möbel'])];
   const materials = LIBRARY.map((m) => [m.id, m.name] as [string, string]);
 
-  el.innerHTML = `<a class="l-back" href="#/objekte">${ic('back')}Objektbibliothek</a>
-    <div class="ob-head"><h1>${isNew ? 'Neue Möbelart' : esc(draft.name)}</h1>
-      <span class="spacer"></span><button class="btn" id="exp">${ic('share')}Exportieren</button><button class="btn primary" id="save">${ic('check')}Speichern</button></div>
+  el.innerHTML = `<a class="l-back" href="#/objekte">${ic('back')}${tr('Objektbibliothek')}</a>
+    <div class="ob-head"><h1>${isNew ? tr('Neue Möbelart') : esc(draft.name)}</h1>
+      <span class="spacer"></span><button class="btn" id="exp">${ic('share')}${tr('Exportieren')}</button><button class="btn primary" id="save">${ic('check')}${tr('Speichern')}</button></div>
     <div class="ob-editor">
       <form class="l-form ob-form" id="f" autocomplete="off"></form>
       <div class="ob-side"><div class="ob-preview" id="pv"></div><p class="form-error" id="err" hidden></p><div class="ob-faecher" id="fa"></div></div>
@@ -166,65 +167,65 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
   const draw = () => {
     const b = draft.build;
     form.innerHTML = `
-      <section class="l-card"><h2>Allgemein</h2>
-        <label>Name<input data-k="name" value="${esc(draft.name)}" maxlength="60" required /></label>
-        <div class="grid2"><label>Gruppe<input data-k="group" value="${esc(draft.group)}" list="obGroups" maxlength="40" /></label>
-        <label>Version<input data-k="version" value="${esc(draft.version)}" maxlength="20" /></label></div>
+      <section class="l-card"><h2>${tr('Allgemein')}</h2>
+        <label>${tr('Name')}<input data-k="name" value="${esc(draft.name)}" maxlength="60" required /></label>
+        <div class="grid2"><label>${tr('Gruppe')}<input data-k="group" value="${esc(draft.group)}" list="obGroups" maxlength="40" /></label>
+        <label>${tr('Version')}<input data-k="version" value="${esc(draft.version)}" maxlength="20" /></label></div>
         <datalist id="obGroups">${groups.map((g) => `<option value="${esc(g)}">`).join('')}</datalist>
-        <label>Kennung<input data-k="id" value="${esc(draft.id)}" ${isNew ? '' : 'readonly'} maxlength="60" title="eindeutig; Kleinbuchstaben, Ziffern, Punkt, Bindestrich" /></label>
-        <div class="grid2"><label>Autor<input data-k="author" value="${esc(draft.author ?? '')}" maxlength="60" /></label>
-        <label>Lizenz<select data-k="license">${opt([['CC0-1.0', 'CC0 (frei, empfohlen)'], ['CC-BY-4.0', 'CC BY 4.0 (Namensnennung)'], ['privat', 'nur privat']], draft.license ?? 'CC0-1.0')}</select></label></div>
-        <label>Beschreibung<textarea data-k="description" rows="2" maxlength="500">${esc(draft.description ?? '')}</textarea></label>
+        <label>${tr('Kennung')}<input data-k="id" value="${esc(draft.id)}" ${isNew ? '' : 'readonly'} maxlength="60" title="${tr('eindeutig; Kleinbuchstaben, Ziffern, Punkt, Bindestrich')}" /></label>
+        <div class="grid2"><label>${tr('Autor')}<input data-k="author" value="${esc(draft.author ?? '')}" maxlength="60" /></label>
+        <label>${tr('Lizenz')}<select data-k="license">${opt([['CC0-1.0', tr('CC0 (frei, empfohlen)')], ['CC-BY-4.0', tr('CC BY 4.0 (Namensnennung)')], ['privat', tr('nur privat')]], draft.license ?? 'CC0-1.0')}</select></label></div>
+        <label>${tr('Beschreibung')}<textarea data-k="description" rows="2" maxlength="500">${esc(draft.description ?? '')}</textarea></label>
       </section>
-      <section class="l-card"><h2>Maße (cm)</h2>
-        <div class="grid4"><label>Breite<input data-s="width" inputmode="decimal" value="${draft.size.width}" /></label><label>Tiefe<input data-s="depth" inputmode="decimal" value="${draft.size.depth}" /></label>
-        <label>Höhe<input data-s="height" inputmode="decimal" value="${draft.size.height}" /></label><label>vom Boden<input data-s="elevation" inputmode="decimal" value="${draft.size.elevation}" /></label></div>
-        <label>Breiten-Vorschläge<input data-s="widths" value="${(draft.size.widths ?? []).join(', ')}" placeholder="z. B. 40, 60, 80" /></label>
-        <label class="l-check"><input type="checkbox" data-k="snapToWall" ${draft.snapToWall ? 'checked' : ''} /> An Wände andocken</label>
+      <section class="l-card"><h2>${tr('Maße (cm)')}</h2>
+        <div class="grid4"><label>${tr('Breite')}<input data-s="width" inputmode="decimal" value="${draft.size.width}" /></label><label>${tr('Tiefe')}<input data-s="depth" inputmode="decimal" value="${draft.size.depth}" /></label>
+        <label>${tr('Höhe')}<input data-s="height" inputmode="decimal" value="${draft.size.height}" /></label><label>${tr('vom Boden')}<input data-s="elevation" inputmode="decimal" value="${draft.size.elevation}" /></label></div>
+        <label>${tr('Breiten-Vorschläge')}<input data-s="widths" value="${(draft.size.widths ?? []).join(', ')}" placeholder="${tr('z. B. 40, 60, 80')}" /></label>
+        <label class="l-check"><input type="checkbox" data-k="snapToWall" ${draft.snapToWall ? 'checked' : ''} /> ${tr('An Wände andocken')}</label>
       </section>
-      <section class="l-card"><h2>Aufbau</h2>
-        <div class="seg"><button type="button" data-build="korpus" class="${b.type === 'korpus' ? 'on' : ''}">Korpus (Spalten &amp; Elemente)</button><button type="button" data-build="modell" class="${b.type === 'modell' ? 'on' : ''}">3D-Modell</button></div>
+      <section class="l-card"><h2>${tr('Aufbau')}</h2>
+        <div class="seg"><button type="button" data-build="korpus" class="${b.type === 'korpus' ? 'on' : ''}">${tr('Korpus (Spalten &amp; Elemente)')}</button><button type="button" data-build="modell" class="${b.type === 'modell' ? 'on' : ''}">${tr('3D-Modell')}</button></div>
         ${b.type === 'korpus' ? korpusForm(b) : modelForm(b)}
       </section>
-      <section class="l-card"><h2>Materialien</h2>
-        <div class="grid2"><label>Fronten<select data-m="front">${opt(materials, draft.materials?.front, 'wie im Haus')}</select></label>
-        <label>Korpus<select data-m="carcass">${opt(materials, draft.materials?.carcass, 'wie im Haus')}</select></label>
-        ${hasAppliance(draft) ? `<label>Gerätefarbe<select data-m="appliance">${opt(materials, draft.materials?.appliance, 'Weiß (Standard)')}</select></label>` : ''}
-        ${b.type === 'korpus' && b.countertop ? `<label>Arbeitsplatte<select data-m="countertop">${opt(materials, draft.materials?.countertop, 'wie in der Küche')}</select></label>` : ''}</div>
+      <section class="l-card"><h2>${tr('Materialien')}</h2>
+        <div class="grid2"><label>${tr('Fronten')}<select data-m="front">${opt(materials, draft.materials?.front, tr('wie im Haus'))}</select></label>
+        <label>${tr('Korpus')}<select data-m="carcass">${opt(materials, draft.materials?.carcass, tr('wie im Haus'))}</select></label>
+        ${hasAppliance(draft) ? `<label>${tr('Gerätefarbe')}<select data-m="appliance">${opt(materials, draft.materials?.appliance, tr('Weiß (Standard)'))}</select></label>` : ''}
+        ${b.type === 'korpus' && b.countertop ? `<label>${tr('Arbeitsplatte')}<select data-m="countertop">${opt(materials, draft.materials?.countertop, tr('wie in der Küche'))}</select></label>` : ''}</div>
       </section>`;
   };
   const korpusForm = (b: KorpusBuild) => `
-    <div class="grid3"><label>Sockel (cm)<input data-b="plinth" inputmode="decimal" value="${b.plinth}" /></label><label>Plattenstärke (cm)<input data-b="board" inputmode="decimal" value="${b.board}" /></label>
-    <label class="l-check" style="align-self:end"><input type="checkbox" data-b="back" ${b.back ? 'checked' : ''} /> Rückwand</label></div>
+    <div class="grid3"><label>${tr('Sockel (cm)')}<input data-b="plinth" inputmode="decimal" value="${b.plinth}" /></label><label>${tr('Plattenstärke (cm)')}<input data-b="board" inputmode="decimal" value="${b.board}" /></label>
+    <label class="l-check" style="align-self:end"><input type="checkbox" data-b="back" ${b.back ? 'checked' : ''} /> ${tr('Rückwand')}</label></div>
     <div class="ob-ct">
-      <label class="l-check"><input type="checkbox" data-ct="on" ${b.countertop ? 'checked' : ''} /> Arbeitsplatte <small class="hint">(oben, kein Fach; die Höhe oben ist die Gesamthöhe mit Platte)</small></label>
-      ${b.countertop ? `<div class="grid3"><label>Stärke (cm)<input data-ct="thickness" inputmode="decimal" value="${b.countertop.thickness}" /></label><label>Überstand vorne (cm)<input data-ct="overhang" inputmode="decimal" value="${b.countertop.overhang}" /></label>
-        <label class="l-check" style="align-self:end" title="Die Platte geht in angrenzende Küchen-Unterschränke über (durchgehende Arbeitsplatte, Maserung läuft weiter)"><input type="checkbox" data-ct="join" ${b.countertop.join ? 'checked' : ''} /> mit Küchenzeile verbinden</label></div>` : ''}
+      <label class="l-check"><input type="checkbox" data-ct="on" ${b.countertop ? 'checked' : ''} /> ${tr('Arbeitsplatte')} <small class="hint">${tr('(oben, kein Fach; die Höhe oben ist die Gesamthöhe mit Platte)')}</small></label>
+      ${b.countertop ? `<div class="grid3"><label>${tr('Stärke (cm)')}<input data-ct="thickness" inputmode="decimal" value="${b.countertop.thickness}" /></label><label>${tr('Überstand vorne (cm)')}<input data-ct="overhang" inputmode="decimal" value="${b.countertop.overhang}" /></label>
+        <label class="l-check" style="align-self:end" title="${tr('Die Platte geht in angrenzende Küchen-Unterschränke über (durchgehende Arbeitsplatte, Maserung läuft weiter)')}"><input type="checkbox" data-ct="join" ${b.countertop.join ? 'checked' : ''} /> ${tr('mit Küchenzeile verbinden')}</label></div>` : ''}
     </div>
     <div class="ob-cols">${b.columns.map((c, ci) => `<div class="ob-col" data-ci="${ci}">
-      <div class="ob-col-h"><b>Spalte ${ci + 1}</b><label>Breite<input data-c="size" inputmode="decimal" value="${c.size}" title="relative Breite" /></label>
-        <span class="spacer"></span><button type="button" class="btn mini" data-col="left" ${ci === 0 ? 'disabled' : ''} aria-label="nach links">←</button><button type="button" class="btn mini" data-col="right" ${ci === b.columns.length - 1 ? 'disabled' : ''} aria-label="nach rechts">→</button>
-        <button type="button" class="btn mini danger" data-col="del" ${b.columns.length === 1 ? 'disabled' : ''} aria-label="Spalte entfernen">${ic('trash')}</button></div>
+      <div class="ob-col-h"><b>${tr('Spalte {n}', { n: ci + 1 })}</b><label>${tr('Breite')}<input data-c="size" inputmode="decimal" value="${c.size}" title="${tr('relative Breite')}" /></label>
+        <span class="spacer"></span><button type="button" class="btn mini" data-col="left" ${ci === 0 ? 'disabled' : ''} aria-label="${tr('nach links')}">←</button><button type="button" class="btn mini" data-col="right" ${ci === b.columns.length - 1 ? 'disabled' : ''} aria-label="${tr('nach rechts')}">→</button>
+        <button type="button" class="btn mini danger" data-col="del" ${b.columns.length === 1 ? 'disabled' : ''} aria-label="${tr('Spalte entfernen')}">${ic('trash')}</button></div>
       ${c.elements.map((e, ei) => `<div class="ob-el" data-ei="${ei}">
         <select data-e="kind">${opt(KINDS, e.kind)}</select>
-        <label title="relative Höhe">Höhe<input data-e="size" inputmode="decimal" value="${e.size}" /></label>
-        ${e.kind === 'door' || e.kind === 'open' ? `<label>Böden<input data-e="shelves" type="number" min="1" max="12" value="${e.shelves ?? 1}" /></label>` : '<span></span>'}
-        <input data-e="label" value="${esc(e.label ?? '')}" placeholder="Bezeichnung (optional)" maxlength="40" />
-        <span class="ob-el-acts"><button type="button" class="btn mini" data-el="up" ${ei === 0 ? 'disabled' : ''} aria-label="nach oben">↑</button><button type="button" class="btn mini" data-el="down" ${ei === c.elements.length - 1 ? 'disabled' : ''} aria-label="nach unten">↓</button><button type="button" class="btn mini" data-el="del" ${c.elements.length === 1 ? 'disabled' : ''} aria-label="Element entfernen">${ic('x')}</button></span>
+        <label title="${tr('relative Höhe')}">${tr('Höhe')}<input data-e="size" inputmode="decimal" value="${e.size}" /></label>
+        ${e.kind === 'door' || e.kind === 'open' ? `<label>${tr('Böden')}<input data-e="shelves" type="number" min="1" max="12" value="${e.shelves ?? 1}" /></label>` : '<span></span>'}
+        <input data-e="label" value="${esc(e.label ?? '')}" placeholder="${tr('Bezeichnung (optional)')}" maxlength="40" />
+        <span class="ob-el-acts"><button type="button" class="btn mini" data-el="up" ${ei === 0 ? 'disabled' : ''} aria-label="${tr('nach oben')}">↑</button><button type="button" class="btn mini" data-el="down" ${ei === c.elements.length - 1 ? 'disabled' : ''} aria-label="${tr('nach unten')}">↓</button><button type="button" class="btn mini" data-el="del" ${c.elements.length === 1 ? 'disabled' : ''} aria-label="${tr('Element entfernen')}">${ic('x')}</button></span>
       </div>`).join('')}
-      <button type="button" class="btn mini" data-el="add">${ic('plus')}Element</button>
+      <button type="button" class="btn mini" data-el="add">${ic('plus')}${tr('Element')}</button>
     </div>`).join('')}</div>
-    <button type="button" class="btn" data-col="add">${ic('plus')}Spalte</button>`;
+    <button type="button" class="btn" data-col="add">${ic('plus')}${tr('Spalte')}</button>`;
   const modelForm = (b: ModelBuild) => `
-    <p class="hint">3D-Modell (.glb) hochladen und die Fächer als Bereiche eintragen – in % von Breite (links → rechts), Höhe (unten → oben) und Tiefe (hinten → vorne).</p>
-    <div class="l-actions"><button type="button" class="btn" id="up">${ic('upload')}${b.model.url ? 'Anderes Modell hochladen' : 'Modell hochladen (.glb)'}</button><input type="file" id="upFile" accept=".glb,model/gltf-binary" hidden />
-      <span class="hint">${b.model.url ? esc(b.model.name ?? 'Modell geladen') : 'noch kein Modell'}</span></div>
+    <p class="hint">${tr('3D-Modell (.glb) hochladen und die Fächer als Bereiche eintragen – in % von Breite (links → rechts), Höhe (unten → oben) und Tiefe (hinten → vorne).')}</p>
+    <div class="l-actions"><button type="button" class="btn" id="up">${ic('upload')}${b.model.url ? tr('Anderes Modell hochladen') : tr('Modell hochladen (.glb)')}</button><input type="file" id="upFile" accept=".glb,model/gltf-binary" hidden />
+      <span class="hint">${b.model.url ? esc(b.model.name ?? tr('Modell geladen')) : tr('noch kein Modell')}</span></div>
     <div class="ob-mc">${b.compartments.map((c, i) => `<div class="ob-mrow" data-mi="${i}">
       <input data-mc="label" value="${esc(c.label)}" maxlength="40" />
-      <select data-mc="kind">${opt([['shelf', 'Boden'], ['drawer', 'Schublade'], ['door', 'hinter Tür'], ['open', 'offen'], ['cold', 'Kühlfach'], ['freezer', 'Gefrierfach']], c.kind)}</select>
-      ${['x von', 'x bis', 'y von', 'y bis', 'z von', 'z bis'].map((l, k) => `<label>${l}<input data-mb="${k}" inputmode="decimal" value="${Math.round(c.box[k] * 100)}" /></label>`).join('')}
-      <button type="button" class="btn mini" data-mc="del" aria-label="Fach entfernen">${ic('x')}</button></div>`).join('')}</div>
-    <button type="button" class="btn" data-mc="add">${ic('plus')}Fach</button>`;
+      <select data-mc="kind">${opt([['shelf', tr('Boden')], ['drawer', tr('Schublade')], ['door', tr('hinter Tür')], ['open', tr('offen')], ['cold', tr('Kühlfach')], ['freezer', tr('Gefrierfach')]], c.kind)}</select>
+      ${[tr('x von'), tr('x bis'), tr('y von'), tr('y bis'), tr('z von'), tr('z bis')].map((l, k) => `<label>${l}<input data-mb="${k}" inputmode="decimal" value="${Math.round(c.box[k] * 100)}" /></label>`).join('')}
+      <button type="button" class="btn mini" data-mc="del" aria-label="${tr('Fach entfernen')}">${ic('x')}</button></div>`).join('')}</div>
+    <button type="button" class="btn" data-mc="add">${ic('plus')}${tr('Fach')}</button>`;
 
   /** Eingaben in den Entwurf übernehmen, prüfen, Vorschau aktualisieren */
   const update = () => {
@@ -234,7 +235,7 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
       setPreviewObject(t);
       preview.show(t);
       const list = objectCompartments(t, t.size.width, t.size.depth, t.size.height);
-      el.querySelector('#fa')!.innerHTML = `<h3>${list.length} Fächer = Lagerplätze</h3><ol>${list.map((c) => `<li>${esc(c.label)}</li>`).join('')}</ol>`;
+      el.querySelector('#fa')!.innerHTML = `<h3>${trn(list.length, '{n} Fach = Lagerplatz', '{n} Fächer = Lagerplätze')}</h3><ol>${list.map((c) => `<li>${esc(c.label)}</li>`).join('')}</ol>`;
       return t;
     } catch (e) {
       err.textContent = (e as Error).message;
@@ -305,7 +306,7 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
     if (btn.dataset.build && btn.dataset.build !== b.type) {
       draft.build = btn.dataset.build === 'korpus'
         ? structuredClone(TEMPLATES[1].build)
-        : { type: 'modell', model: {}, compartments: [{ label: 'Fach', kind: 'shelf', box: [0.05, 0.95, 0.1, 0.9, 0.05, 0.95] }] };
+        : { type: 'modell', model: {}, compartments: [{ label: tr('Fach'), kind: 'shelf', box: [0.05, 0.95, 0.1, 0.9, 0.05, 0.95] }] };
     } else if (b.type === 'korpus' && (btn.dataset.col || btn.dataset.el)) {
       const ci = Number(btn.closest<HTMLElement>('[data-ci]')?.dataset.ci);
       const ei = Number(btn.closest<HTMLElement>('[data-ei]')?.dataset.ei);
@@ -322,7 +323,7 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
       if (btn.dataset.el === 'down') swap(els, ei, ei + 1);
     } else if (b.type === 'modell') {
       if (btn.id === 'up') return form.querySelector<HTMLInputElement>('#upFile')!.click();
-      if (btn.dataset.mc === 'add') b.compartments.push({ label: `Fach ${b.compartments.length + 1}`, kind: 'shelf', box: [0.05, 0.95, 0.1, 0.9, 0.05, 0.95] });
+      if (btn.dataset.mc === 'add') b.compartments.push({ label: tr('Fach {n}', { n: b.compartments.length + 1 }), kind: 'shelf', box: [0.05, 0.95, 0.1, 0.9, 0.05, 0.95] });
       if (btn.dataset.mc === 'del') b.compartments.splice(Number(btn.closest<HTMLElement>('[data-mi]')!.dataset.mi), 1);
     } else return;
     draw();
@@ -340,19 +341,19 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
       draft.build.model = { url: d.url, name: d.name };
       draw();
       update();
-      ctx.toast('Modell hochgeladen – jetzt die Fächer eintragen.');
+      ctx.toast(tr('Modell hochgeladen – jetzt die Fächer eintragen.'));
     } catch (ex) {
       ctx.toast((ex as Error).message);
     }
   });
   el.querySelector('#save')!.addEventListener('click', async () => {
     const t = update();
-    if (!t) return ctx.toast('Bitte zuerst die markierten Angaben korrigieren.');
-    if (isNew && taken.has(t.id)) return ctx.toast(`Die Kennung „${t.id}“ gibt es schon.`);
+    if (!t) return ctx.toast(tr('Bitte zuerst die markierten Angaben korrigieren.'));
+    if (isNew && taken.has(t.id)) return ctx.toast(tr('Die Kennung „{id}“ gibt es schon.', { id: t.id }));
     try {
       await api('PUT', `/api/objects/${encodeURIComponent(t.id)}`, { object: t });
       await loadLibrary();
-      ctx.toast(`„${t.name}“ gespeichert – im Planen unter „Möbel“ zu finden.`);
+      ctx.toast(tr('„{name}“ gespeichert – im Planen unter „Möbel“ zu finden.', { name: t.name }));
       location.hash = '#/objekte';
     } catch (ex) {
       ctx.toast((ex as Error).message);

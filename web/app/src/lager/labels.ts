@@ -7,6 +7,7 @@ import { compartments, itemName } from '../model/storage.ts';
 import { roomOf } from '../model/house.ts';
 import type { View } from './views';
 import { ic } from '../icons';
+import { tr, trn } from '../i18n';
 
 declare global {
   interface Window {
@@ -16,7 +17,7 @@ declare global {
 }
 
 export const script = (src: string, ok: () => boolean) =>
-  ok() ? Promise.resolve() : new Promise<void>((res, rej) => document.head.appendChild(Object.assign(document.createElement('script'), { src, onload: () => res(), onerror: () => rej(new Error(`${src} nicht ladbar`)) })));
+  ok() ? Promise.resolve() : new Promise<void>((res, rej) => document.head.appendChild(Object.assign(document.createElement('script'), { src, onload: () => res(), onerror: () => rej(new Error(tr('{src} nicht ladbar', { src }))) })));
 
 export function qrSvg(text: string) {
   const q = window.qrcode(0, 'M');
@@ -52,14 +53,14 @@ async function download3mf(labels: Label[], o: typeof P3D, toast: (m: string) =>
       .filter((x) => x.p.plate === pi)
       .map(({ s, p }) => {
         const { plate, code } = Q.meshes(s.model);
-        return { name: s.l.addr || s.l.code, x: p.x, y: p.y, parts: [{ name: 'Grundplatte', mesh: plate, color: o.colBase }, { name: 'QR-Code', mesh: code, color: o.colCode }] };
+        return { name: s.l.addr || s.l.code, x: p.x, y: p.y, parts: [{ name: tr('Grundplatte'), mesh: plate, color: o.colBase }, { name: tr('QR-Code'), mesh: code, color: o.colCode }] };
       });
-    const blob: Blob = await Q.threeMFMulti(objects, `homemgmt-ng QR-Schilder – Platte ${pi + 1}`);
+    const blob: Blob = await Q.threeMFMulti(objects, tr('homemgmt-ng QR-Schilder – Platte {n}', { n: pi + 1 }));
     files.push({ name: `qr-schilder-${stamp}-platte-${pi + 1}.3mf`, data: new Uint8Array(await blob.arrayBuffer()) });
   }
   if (files.length === 1) Q.download(new Blob([files[0].data as BlobPart]), files[0].name);
   else Q.download(Q.zip(files), `qr-schilder-${stamp}.zip`);
-  toast(`${labels.length} Schilder auf ${plates} Druckplatte${plates > 1 ? 'n' : ''} (${o.plateW} × ${o.plateH} mm).`);
+  toast(`${trn(labels.length, '{n} Schild', '{n} Schilder')} · ${trn(plates, '{n} Druckplatte', '{n} Druckplatten')} (${o.plateW} × ${o.plateH} mm).`);
 }
 
 function fachLabels(ctx: LagerCtx, itemIds: Set<string>): Label[] {
@@ -82,27 +83,27 @@ function fachLabels(ctx: LagerCtx, itemIds: Set<string>): Label[] {
 export const viewLabels: View = async (el, ctx, params) => {
   await script(`${import.meta.env.BASE_URL}vendor/qrcode.js`, () => !!window.qrcode);
   const h = ctx.house();
-  const furn = h.floors.flatMap((f) => f.items.filter((it) => it.storageCol).map((it) => ({ f, it, room: roomOf(f, it)?.name ?? `${f.name} (ohne Raum)` })));
+  const furn = h.floors.flatMap((f) => f.items.filter((it) => it.storageCol).map((it) => ({ f, it, room: roomOf(f, it)?.name ?? tr('{floor} (ohne Raum)', { floor: f.name }) })));
   const preset = new Set((params.get('moebel') ?? '').split(',').filter(Boolean));
   let labels: Label[] = [];
-  el.innerHTML = `<div class="no-print"><a class="l-back" href="javascript:history.back()">← Zurück</a><h1>Etiketten &amp; QR-Schilder</h1>
-    <div class="seg" id="tabs"><button data-t="fach" class="on">Fächer</button><button data-t="item">Gegenstände</button><button data-t="blank">Leere Etiketten</button></div>
+  el.innerHTML = `<div class="no-print"><a class="l-back" href="javascript:history.back()">← ${tr('Zurück')}</a><h1>${tr('Etiketten &amp; QR-Schilder')}</h1>
+    <div class="seg" id="tabs"><button data-t="fach" class="on">${tr('Fächer')}</button><button data-t="item">${tr('Gegenstände')}</button><button data-t="blank">${tr('Leere Etiketten')}</button></div>
     <div id="t-fach" class="l-card">${h.floors.filter((f) => furn.some((x) => x.f === f)).map((f) => `<details class="lab-floor" open><summary>${esc(f.name)}</summary>
       ${[...new Set(furn.filter((x) => x.f === f).map((x) => x.room))].map((room) => `<div class="lab-room"><label class="l-check"><input type="checkbox" data-room="${esc(f.id + '|' + room)}" /> <b>${esc(room)}</b></label>
         <div class="lab-items">${furn.filter((x) => x.f === f && x.room === room).map((x) => `<label class="l-check"><input type="checkbox" data-it="${x.it.id}" data-r="${esc(f.id + '|' + room)}" ${preset.has(x.it.id) ? 'checked' : ''} /> <code>${esc(x.it.storageCol!)}</code> ${esc(itemName(x.it))} <small>(${compartments(x.it, h.settings).length})</small></label>`).join('')}</div></div>`).join('')}
-    </details>`).join('') || '<p class="hint">Im Hausplan gibt es noch keine Möbel mit Fächern.</p>'}
-      <div class="l-actions"><button class="btn" id="allF">Alle</button><button class="btn primary" id="showF">Etiketten anzeigen</button></div></div>
-    <form id="t-item" class="l-card" hidden><label>Filter (leer = alle)<input name="q" value="${esc(params.get('obj') ? '' : '')}" placeholder="Name, Platz …" /></label><button class="btn primary">Etiketten anzeigen</button></form>
-    <form id="t-blank" class="l-card" hidden><label>Anzahl <input type="number" name="n" value="24" min="1" max="200" /></label><p class="hint">Vorab gedruckte Etiketten für neue Gegenstände: aufkleben, scannen, Name und Fach eingeben.</p><button class="btn primary">Etiketten erzeugen</button></form>
-    <div class="l-actions"><button class="btn primary" id="print" disabled>${ic('print')}Drucken</button><button class="btn" id="p3d" disabled>${ic('cube')}3D-Schilder (3MF)</button>
-      <label class="l-check"><input type="checkbox" id="small" /> kleine Etiketten</label><span class="hint" id="count"></span></div>
-    <details class="l-card" id="opt3d"><summary>Einstellungen 3D-Schilder</summary><div class="lab-3d">
-      <label>Breite (mm)<input type="number" name="width" value="${P3D.width}" min="20" max="120" /></label>
-      <label>Plattenstärke (mm)<input type="number" name="base" value="${P3D.base}" step="0.2" min="1" max="5" /></label>
-      <label>QR-Höhe (mm)<input type="number" name="relief" value="${P3D.relief}" step="0.2" min="0.4" max="3" /></label>
-      <label>Druckplatte (mm)<input type="number" name="plateW" value="${P3D.plateW}" min="100" max="400" /></label>
-      <label>Farbe Platte<input type="color" name="colBase" value="${P3D.colBase}" /></label><label>Farbe QR<input type="color" name="colCode" value="${P3D.colCode}" /></label>
-      <label class="l-check"><input type="checkbox" name="eyelet" /> Öse zum Aufhängen</label></div></details>
+    </details>`).join('') || `<p class="hint">${tr('Im Hausplan gibt es noch keine Möbel mit Fächern.')}</p>`}
+      <div class="l-actions"><button class="btn" id="allF">${tr('Alle')}</button><button class="btn primary" id="showF">${tr('Etiketten anzeigen')}</button></div></div>
+    <form id="t-item" class="l-card" hidden><label>${tr('Filter (leer = alle)')}<input name="q" value="${esc(params.get('obj') ? '' : '')}" placeholder="${tr('Name, Platz …')}" /></label><button class="btn primary">${tr('Etiketten anzeigen')}</button></form>
+    <form id="t-blank" class="l-card" hidden><label>${tr('Anzahl')} <input type="number" name="n" value="24" min="1" max="200" /></label><p class="hint">${tr('Vorab gedruckte Etiketten für neue Gegenstände: aufkleben, scannen, Name und Fach eingeben.')}</p><button class="btn primary">${tr('Etiketten erzeugen')}</button></form>
+    <div class="l-actions"><button class="btn primary" id="print" disabled>${ic('print')}${tr('Drucken')}</button><button class="btn" id="p3d" disabled>${ic('cube')}${tr('3D-Schilder (3MF)')}</button>
+      <label class="l-check"><input type="checkbox" id="small" /> ${tr('kleine Etiketten')}</label><span class="hint" id="count"></span></div>
+    <details class="l-card" id="opt3d"><summary>${tr('Einstellungen 3D-Schilder')}</summary><div class="lab-3d">
+      <label>${tr('Breite (mm)')}<input type="number" name="width" value="${P3D.width}" min="20" max="120" /></label>
+      <label>${tr('Plattenstärke (mm)')}<input type="number" name="base" value="${P3D.base}" step="0.2" min="1" max="5" /></label>
+      <label>${tr('QR-Höhe (mm)')}<input type="number" name="relief" value="${P3D.relief}" step="0.2" min="0.4" max="3" /></label>
+      <label>${tr('Druckplatte (mm)')}<input type="number" name="plateW" value="${P3D.plateW}" min="100" max="400" /></label>
+      <label>${tr('Farbe Platte')}<input type="color" name="colBase" value="${P3D.colBase}" /></label><label>${tr('Farbe QR')}<input type="color" name="colCode" value="${P3D.colCode}" /></label>
+      <label class="l-check"><input type="checkbox" name="eyelet" /> ${tr('Öse zum Aufhängen')}</label></div></details>
   </div>
   <div class="labels" id="sheet"></div>`;
   const sheet = el.querySelector<HTMLElement>('#sheet')!;
@@ -111,7 +112,7 @@ export const viewLabels: View = async (el, ctx, params) => {
     sheet.innerHTML = l.map(labelHtml).join('');
     el.querySelector<HTMLButtonElement>('#print')!.disabled = !l.length;
     el.querySelector<HTMLButtonElement>('#p3d')!.disabled = !l.length || l.some((x) => x.kind === 'blank' && false);
-    el.querySelector('#count')!.textContent = l.length ? `${l.length} Etiketten` : 'Keine Etiketten.';
+    el.querySelector('#count')!.textContent = l.length ? trn(l.length, '{n} Etikett', '{n} Etiketten') : tr('Keine Etiketten.');
   };
   el.querySelectorAll<HTMLElement>('#tabs [data-t]').forEach((b) =>
     b.addEventListener('click', () => {
