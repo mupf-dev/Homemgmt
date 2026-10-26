@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.8.0 – 2026-10-26
 
 **German and English**: the whole app – overview, house planner, 3D, wall terminal, guide, server messages and the
 assistant's answers – is available in German and English. The language follows the browser and can be set per person
