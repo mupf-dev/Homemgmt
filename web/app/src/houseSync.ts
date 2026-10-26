@@ -1,6 +1,7 @@
 // Das Haus auf dem Server: laden, automatisch speichern (Admins), Konflikte beim gleichzeitigen Bearbeiten erkennen und
 // den Inhalt der Fächer (Lager) bereitstellen. Ohne Anmeldung bleibt alles ein Entwurf im Browser.
 
+import { tr } from './i18n';
 import { store } from './state';
 import type { House } from './model/types.ts';
 
@@ -32,14 +33,14 @@ export interface StoragePlace {
 type Status = 'local' | 'loading' | 'saved' | 'saving' | 'pending' | 'error' | 'conflict' | 'readonly';
 
 const STATUS_TEXT: Record<Status, [string, string, boolean]> = {
-  local: ['Nur in diesem Browser', 'Nicht angemeldet – der Plan wird nur in diesem Browser gespeichert.', true],
-  loading: ['Lade …', 'Hausplan wird geladen.', false],
-  saved: ['Gespeichert ✓', 'Der Hausplan ist auf dem Server gespeichert; Fächer und Lagerplätze sind abgeglichen.', false],
-  saving: ['Speichert …', 'Hausplan wird gespeichert und mit dem Lager abgeglichen.', false],
-  pending: ['Änderungen …', 'Wird gleich gespeichert.', false],
-  error: ['Nicht gespeichert', 'Speichern fehlgeschlagen – wird bei der nächsten Änderung erneut versucht.', true],
-  conflict: ['Konflikt', 'Jemand anderes hat den Hausplan geändert.', true],
-  readonly: ['Nur ansehen', 'Den Hausplan ändern nur Personen mit dem Recht „Haus planen“. Änderungen hier werden nicht gespeichert.', true],
+  local: [tr('Nur in diesem Browser'), tr('Nicht angemeldet – der Plan wird nur in diesem Browser gespeichert.'), true],
+  loading: [tr('Lade …'), tr('Hausplan wird geladen.'), false],
+  saved: [tr('Gespeichert ✓'), tr('Der Hausplan ist auf dem Server gespeichert; Fächer und Lagerplätze sind abgeglichen.'), false],
+  saving: [tr('Speichert …'), tr('Hausplan wird gespeichert und mit dem Lager abgeglichen.'), false],
+  pending: [tr('Änderungen …'), tr('Wird gleich gespeichert.'), false],
+  error: [tr('Nicht gespeichert'), tr('Speichern fehlgeschlagen – wird bei der nächsten Änderung erneut versucht.'), true],
+  conflict: [tr('Konflikt'), tr('Jemand anderes hat den Hausplan geändert.'), true],
+  readonly: [tr('Nur ansehen'), tr('Den Hausplan ändern nur Personen mit dem Recht „Haus planen“. Änderungen hier werden nicht gespeichert.'), true],
 };
 
 interface Helpers {
@@ -140,7 +141,7 @@ export class HouseSync {
       await this.firstSave();
     } else {
       this.setStatus('readonly');
-      this.h.toast('Es gibt noch keinen Hausplan. Ein Admin legt ihn an.');
+      this.h.toast(tr('Es gibt noch keinen Hausplan. Ein Admin legt ihn an.'));
     }
     await this.loadStorage();
   }
@@ -152,11 +153,11 @@ export class HouseSync {
       const walls = f.reduce((n, x) => n + x.walls.length, 0);
       const items = f.reduce((n, x) => n + x.items.length, 0);
       const m = this.h.modal(
-        'Hausplan anlegen',
-        `<p>Auf dem Server gibt es noch keinen Hausplan. Er wird von allen geteilt und ist die Grundlage für das Lager: <b>jeder Raum wird ein Lager, jedes Fach eines Möbels ein Lagerplatz</b>.</p>
+        tr('Hausplan anlegen'),
+        `<p>${tr('Auf dem Server gibt es noch keinen Hausplan. Er wird von allen geteilt und ist die Grundlage für das Lager: <b>jeder Raum wird ein Lager, jedes Fach eines Möbels ein Lagerplatz</b>.')}</p>
          <div class="choice-grid">
-           <button class="choice" data-c="draft"><b>Diesen Entwurf übernehmen</b><span>${f.length} Etage(n), ${walls} Wände, ${items} Möbel aus diesem Browser.</span></button>
-           <button class="choice" data-c="empty"><b>Leeres Haus</b><span>Mit einer leeren Etage beginnen. Frühere Küchenplanungen lassen sich danach über das Kontomenü als Etage übernehmen.</span></button>
+           <button class="choice" data-c="draft"><b>${tr('Diesen Entwurf übernehmen')}</b><span>${tr('{floors} Etage(n), {walls} Wände, {items} Möbel aus diesem Browser.', { floors: f.length, walls, items })}</span></button>
+           <button class="choice" data-c="empty"><b>${tr('Leeres Haus')}</b><span>${tr('Mit einer leeren Etage beginnen. Frühere Küchenplanungen lassen sich danach über das Kontomenü als Etage übernehmen.')}</span></button>
          </div>`,
       );
       let done = false;
@@ -216,7 +217,7 @@ export class HouseSync {
         this.setStatus('saved');
         ok = true;
         this.loadStorage();
-      } else if (r.status === 409 && /geändert/.test(r.data?.error ?? '')) {
+      } else if (r.status === 409 && /geändert|changed/i.test(r.data?.error ?? '')) {
         this.setStatus('conflict');
         this.conflict(r.data.error!);
       } else if (r.status === 403) {
@@ -224,7 +225,7 @@ export class HouseSync {
         this.setStatus('readonly');
       } else {
         this.setStatus('error');
-        this.h.toast(r.data?.error ?? `Speichern fehlgeschlagen (${r.status}).`);
+        this.h.toast(r.data?.error ?? tr('Speichern fehlgeschlagen ({status}).', { status: r.status }));
       }
     } catch {
       this.setStatus('error');
@@ -240,9 +241,9 @@ export class HouseSync {
 
   private conflict(msg: string) {
     const m = this.h.modal(
-      'Hausplan wurde geändert',
-      `<p>${msg}</p><p class="hint">„Neu laden“ übernimmt den Stand vom Server (deine letzten Änderungen gehen verloren). „Meinen Stand speichern“ überschreibt die Änderungen der anderen Person.</p>`,
-      '<button class="btn" data-c="reload">Neu laden</button><button class="btn danger" data-c="force">Meinen Stand speichern</button>',
+      tr('Hausplan wurde geändert'),
+      `<p>${msg}</p><p class="hint">${tr('„Neu laden“ übernimmt den Stand vom Server (deine letzten Änderungen gehen verloren). „Meinen Stand speichern“ überschreibt die Änderungen der anderen Person.')}</p>`,
+      `<button class="btn" data-c="reload">${tr('Neu laden')}</button><button class="btn danger" data-c="force">${tr('Meinen Stand speichern')}</button>`,
     );
     m.el.querySelector('[data-c="reload"]')!.addEventListener('click', () => {
       m.close();
