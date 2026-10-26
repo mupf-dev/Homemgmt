@@ -1337,7 +1337,7 @@ interface LibraryHit {
 }
 
 const LIB_CHIPS: [string, string][] = [
-  [tr('Holz'), 'wood'], [tr('Boden'), 'floor'], [tr('Parkett'), 'parquet'], [tr('Fliesen'), 'tiles'], [tr('Marmor'), 'marble'], [tr('Stein'), 'stone'],
+  [tr('Holz'), 'wood'], [tr('Fußboden'), 'floor'], [tr('Parkett'), 'parquet'], [tr('Fliesen'), 'tiles'], [tr('Marmor'), 'marble'], [tr('Stein'), 'stone'],
   [tr('Granit'), 'granite'], [tr('Beton'), 'concrete'], [tr('Terrazzo'), 'terrazzo'], [tr('Putz'), 'plaster'], [tr('Ziegel'), 'brick'], [tr('Metall'), 'metal'],
   [tr('Stoff'), 'fabric'], [tr('Leder'), 'leather'],
 ];
@@ -2042,7 +2042,7 @@ function renderProps() {
       <div class="row"><label title="${tr('Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.')}">${tr('Lager-Kürzel')}</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
       ${r.manual ? `<p class="hint">${tr('Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.')}${f.walls.length ? ` <button class="btn mini" data-rk="detect">${tr('Aus Wänden erkennen')}</button>` : ''}</p>` : ''}
       <h3>${tr('Bodenbelag')}</h3>
-      <div class="mat-row" data-floormat><span class="sw" style="${swatchStyle(floorDef)}"></span><div><span>${tr('Boden')}</span><small>${esc(floorDef.name)}${r.floorMaterial ? '' : ` ${tr('(wie im ganzen Haus)')}`}</small></div></div>
+      <div class="mat-row" data-floormat><span class="sw" style="${swatchStyle(floorDef)}"></span><div><span>${tr('Fußboden')}</span><small>${esc(floorDef.name)}${r.floorMaterial ? '' : ` ${tr('(wie im ganzen Haus)')}`}</small></div></div>
       <h3>${tr('Lager {code}', { code: esc(r.code) })}</h3>
       ${furniture.length ? `<div class="room-furniture">${furniture
         .map((it) => {
