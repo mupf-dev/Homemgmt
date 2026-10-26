@@ -29,6 +29,7 @@ import { idleNow, initIdle, setTermStorm, setTermWeather, terminal } from './ter
 import { clearTerminalChat } from './lager/assistant';
 import { sunPosition } from './sun';
 import { lookFromWeather, WeatherFx } from './weatherfx';
+import { locale, tr, trn } from './i18n';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
@@ -69,41 +70,41 @@ const shell = initShell();
 const app = $('#app');
 app.innerHTML = `
 <div class="hausbar" id="hausbar">
-  <button class="btn primary plan-only" id="planDone" title="Planen beenden – zurück zum Ansehen">${ic('check')}Fertig</button>
-  <div class="floor-tabs" id="floorTabs" role="tablist" aria-label="Etagen"></div>
-  <form class="house-search view-only" id="houseSearch" role="search">${ICON.search}<input type="search" id="houseSearchInput" placeholder="Wo liegt …?" aria-label="Im Haus suchen" autocomplete="off" /><div class="search-pop" id="searchPop" hidden></div></form>
+  <button class="btn primary plan-only" id="planDone" title="${tr('Planen beenden – zurück zum Ansehen')}">${ic('check')}${tr('Fertig')}</button>
+  <div class="floor-tabs" id="floorTabs" role="tablist" aria-label="${tr('Etagen')}"></div>
+  <form class="house-search view-only" id="houseSearch" role="search">${ICON.search}<input type="search" id="houseSearchInput" placeholder="${tr('Wo liegt …?')}" aria-label="${tr('Im Haus suchen')}" autocomplete="off" /><div class="search-pop" id="searchPop" hidden></div></form>
   <div class="plan-tools plan-only">
-    <button class="btn icon" id="undo" title="Rückgängig (Strg+Z)">${ICON.undo}</button>
-    <button class="btn icon" id="redo" title="Wiederholen (Strg+Y)">${ICON.redo}</button>
+    <button class="btn icon" id="undo" title="${tr('Rückgängig (Strg+Z)')}">${ICON.undo}</button>
+    <button class="btn icon" id="redo" title="${tr('Wiederholen (Strg+Y)')}">${ICON.redo}</button>
     <span class="vsep"></span>
-    <button class="tool on" data-tool="select" title="Auswählen und verschieben">${ICON.select}<span>Auswählen</span></button>
-    <button class="tool" data-tool="wall" title="Wand zeichnen">${ICON.wall}<span>Wand</span></button>
-    <button class="tool" data-tool="door" title="Tür in eine Wand setzen">${ICON.door}<span>Tür</span></button>
-    <button class="tool" data-tool="window" title="Fenster in eine Wand setzen">${ICON.window}<span>Fenster</span></button>
-    <button class="tool" data-tool="room" title="Raum festlegen – jeder Raum wird ein Lager">${ICON.room}<span>Raum</span></button>
+    <button class="tool on" data-tool="select" title="${tr('Auswählen und verschieben')}">${ICON.select}<span>${tr('Auswählen')}</span></button>
+    <button class="tool" data-tool="wall" title="${tr('Wand zeichnen')}">${ICON.wall}<span>${tr('Wand')}</span></button>
+    <button class="tool" data-tool="door" title="${tr('Tür in eine Wand setzen')}">${ICON.door}<span>${tr('Tür')}</span></button>
+    <button class="tool" data-tool="window" title="${tr('Fenster in eine Wand setzen')}">${ICON.window}<span>${tr('Fenster')}</span></button>
+    <button class="tool" data-tool="room" title="${tr('Raum festlegen – jeder Raum wird ein Lager')}">${ICON.room}<span>${tr('Raum')}</span></button>
     <span class="vsep"></span>
-    <button class="tool" data-drawer="catalog" title="Möbel und Einrichtung hinzufügen">${ic('sofa')}<span>Möbel</span></button>
-    <button class="tool" data-drawer="materials" title="Materialien und Oberflächen">${ic('palette')}<span>Materialien</span></button>
-    <button class="tool" data-drawer="room" title="Etage, Räume, Grundriss-Vorlage">${ic('layers')}<span>Etage</span></button>
+    <button class="tool" data-drawer="catalog" title="${tr('Möbel und Einrichtung hinzufügen')}">${ic('sofa')}<span>${tr('Möbel')}</span></button>
+    <button class="tool" data-drawer="materials" title="${tr('Materialien und Oberflächen')}">${ic('palette')}<span>${tr('Materialien')}</span></button>
+    <button class="tool" data-drawer="room" title="${tr('Etage, Räume, Grundriss-Vorlage')}">${ic('layers')}<span>${tr('Etage')}</span></button>
   </div>
   <div class="spacer"></div>
   <div class="seg" id="viewMode">
-    <button data-v="2d">2D</button><button data-v="split" class="plan-only">Geteilt</button><button data-v="3d">3D</button>
+    <button data-v="2d">2D</button><button data-v="split" class="plan-only">${tr('Geteilt')}</button><button data-v="3d">3D</button>
   </div>
-  <button class="btn view-only" id="planStart" title="Wände, Möbel und Etagen bearbeiten" hidden>${ic('pencil')}Planen</button>
+  <button class="btn view-only" id="planStart" title="${tr('Wände, Möbel und Etagen bearbeiten')}" hidden>${ic('pencil')}${tr('Planen')}</button>
   <span class="acc-status plan-only" id="saveStatus"></span>
   <div class="file-menu">
-    <button class="btn icon" id="fileBtn" title="Weitere Funktionen" aria-label="Weitere Funktionen">${ic('dots')}</button>
+    <button class="btn icon" id="fileBtn" title="${tr('Weitere Funktionen')}" aria-label="${tr('Weitere Funktionen')}">${ic('dots')}</button>
     <div class="dropdown" id="fileMenu" hidden>
-      <label class="dd-name plan-only">Name des Hauses<input id="projectName" type="text" /></label>
-      <button id="showroomBtn">${ICON.sparkle}Showroom (3D im Vollbild)</button>
-      <button id="locationBtn" class="plan-only">${ic('sun')}Lage des Hauses …</button>
+      <label class="dd-name plan-only">${tr('Name des Hauses')}<input id="projectName" type="text" /></label>
+      <button id="showroomBtn">${ICON.sparkle}${tr('Showroom (3D im Vollbild)')}</button>
+      <button id="locationBtn" class="plan-only">${ic('sun')}${tr('Lage des Hauses …')}</button>
       <hr class="plan-only" />
-      <button id="newBtn" class="plan-only">${ic('file')}Neues Haus …</button>
-      <button id="openBtn" class="plan-only">${ICON.open}Aus Datei importieren (.json) …</button>
-      <button id="saveBtn" class="plan-only">${ICON.save}Haus als Datei exportieren (.json)</button>
+      <button id="newBtn" class="plan-only">${ic('file')}${tr('Neues Haus …')}</button>
+      <button id="openBtn" class="plan-only">${ICON.open}${tr('Aus Datei importieren (.json) …')}</button>
+      <button id="saveBtn" class="plan-only">${ICON.save}${tr('Haus als Datei exportieren (.json)')}</button>
       <hr />
-      <a class="dd-link" href="#/hilfe">${ic('help')}Anleitung</a>
+      <a class="dd-link" href="#/hilfe">${ic('help')}${tr('Anleitung')}</a>
     </div>
   </div>
   <input type="file" id="openFile" accept=".json,application/json" hidden />
@@ -111,70 +112,70 @@ app.innerHTML = `
 
 <aside class="left">
   <div class="tabs">
-    <button data-tab="room" class="on">Etage</button>
-    <button data-tab="catalog">Möbel</button>
-    <button data-tab="materials">Materialien</button>
-    <button class="drawer-close" id="drawerClose" title="Leiste einklappen" aria-label="Leiste einklappen">${ic('x')}</button>
+    <button data-tab="room" class="on">${tr('Etage')}</button>
+    <button data-tab="catalog">${tr('Möbel')}</button>
+    <button data-tab="materials">${tr('Materialien')}</button>
+    <button class="drawer-close" id="drawerClose" title="${tr('Leiste einklappen')}" aria-label="${tr('Leiste einklappen')}">${ic('x')}</button>
   </div>
 
   <section class="tab on" id="tab-room">
-    <h3>Etage</h3>
+    <h3>${tr('Etage')}</h3>
     <div id="floorPanel"></div>
 
-    <h3>Räume</h3>
+    <h3>${tr('Räume')}</h3>
     <div id="roomList"></div>
 
-    <h3>Wände aus Maßen</h3>
+    <h3>${tr('Wände aus Maßen')}</h3>
     <div class="grid2">
-      <label class="field"><span>Breite</span><span class="unit" data-unit="cm"><input type="number" id="roomW" value="460" min="100" /></span></label>
-      <label class="field"><span>Tiefe</span><span class="unit" data-unit="cm"><input type="number" id="roomD" value="400" min="100" /></span></label>
-      <label class="field"><span>Raumhöhe</span><span class="unit" data-unit="cm"><input type="number" id="roomH" value="260" min="200" /></span></label>
-      <label class="field"><span>Form</span><select id="roomShape"><option value="rect">Rechteck</option><option value="l">L-Form</option></select></label>
+      <label class="field"><span>${tr('Breite')}</span><span class="unit" data-unit="cm"><input type="number" id="roomW" value="460" min="100" /></span></label>
+      <label class="field"><span>${tr('Tiefe')}</span><span class="unit" data-unit="cm"><input type="number" id="roomD" value="400" min="100" /></span></label>
+      <label class="field"><span>${tr('Raumhöhe')}</span><span class="unit" data-unit="cm"><input type="number" id="roomH" value="260" min="200" /></span></label>
+      <label class="field"><span>${tr('Form')}</span><select id="roomShape"><option value="rect">${tr('Rechteck')}</option><option value="l">${tr('L-Form')}</option></select></label>
     </div>
-    <button class="btn" id="makeRoom" style="width:100%;justify-content:center">Wände erzeugen (ersetzt Wände)</button>
+    <button class="btn" id="makeRoom" style="width:100%;justify-content:center">${tr('Wände erzeugen (ersetzt Wände)')}</button>
 
-    <h3>Grundriss-Vorlage (2D-Plan)</h3>
-    <p class="hint">Lade einen Grundriss als Bild (Scan, Foto, PNG/JPG) hoch, kalibriere den Maßstab über eine bekannte Strecke und zeichne die Wände nach.</p>
-    <div class="drop" id="underlayDrop">${ICON.image}<div>Bild hierher ziehen oder klicken</div></div>
+    <h3>${tr('Grundriss-Vorlage (2D-Plan)')}</h3>
+    <p class="hint">${tr('Lade einen Grundriss als Bild (Scan, Foto, PNG/JPG) hoch, kalibriere den Maßstab über eine bekannte Strecke und zeichne die Wände nach.')}</p>
+    <div class="drop" id="underlayDrop">${ICON.image}<div>${tr('Bild hierher ziehen oder klicken')}</div></div>
     <input type="file" id="underlayFile" accept="image/*" hidden />
     <div id="underlayControls" hidden>
-      <div class="row"><label>Deckkraft</label><input type="range" id="underlayOpacity" min="0.1" max="1" step="0.05" style="width:120px" /></div>
-      <div class="row"><label>Sichtbar</label><input type="checkbox" id="underlayVisible" /></div>
+      <div class="row"><label>${tr('Deckkraft')}</label><input type="range" id="underlayOpacity" min="0.1" max="1" step="0.05" style="width:120px" /></div>
+      <div class="row"><label>${tr('Sichtbar')}</label><input type="checkbox" id="underlayVisible" /></div>
       <div class="tools" style="margin-top:6px">
-        <button class="tool" id="calibrate">${ICON.ruler}Maßstab</button>
-        <button class="tool" id="moveUnderlay">${ICON.move}Verschieben</button>
+        <button class="tool" id="calibrate">${ICON.ruler}${tr('Maßstab')}</button>
+        <button class="tool" id="moveUnderlay">${ICON.move}${tr('Verschieben')}</button>
       </div>
-      <button class="btn danger" id="removeUnderlay" style="margin-top:6px">${ICON.trash}Vorlage entfernen</button>
+      <button class="btn danger" id="removeUnderlay" style="margin-top:6px">${ICON.trash}${tr('Vorlage entfernen')}</button>
     </div>
 
-    <h3>Einstellungen</h3>
-    <div class="row"><label for="setCeiling">Decke mit Deckenleuchten</label><input type="checkbox" id="setCeiling" /></div>
-    <div class="row"><label for="setBacksplash">Nischenrückwand automatisch</label><input type="checkbox" id="setBacksplash" /></div>
-    <div class="row"><label>Höhe Nischenrückwand</label><span class="unit" data-unit="cm"><input type="number" id="setBsHeight" min="10" max="150" step="0.1" /></span></div>
-    <div class="row"><label for="setHandleless" title="Fronten ohne Griffe: Unterschränke mit Griffmulde oben, Hängeschränke von unten greifbar">Grifflos (Griffmulden)</label><input type="checkbox" id="setHandleless" /></div>
-    <div class="row"><label>Sockelhöhe</label><span class="unit" data-unit="cm"><input type="number" id="setPlinth" min="0" max="20" /></span></div>
-    <div class="row"><label>Arbeitsplattenstärke</label><span class="unit" data-unit="cm"><input type="number" id="setTop" min="1" max="12" step="0.5" /></span></div>
+    <h3>${tr('Einstellungen')}</h3>
+    <div class="row"><label for="setCeiling">${tr('Decke mit Deckenleuchten')}</label><input type="checkbox" id="setCeiling" /></div>
+    <div class="row"><label for="setBacksplash">${tr('Nischenrückwand automatisch')}</label><input type="checkbox" id="setBacksplash" /></div>
+    <div class="row"><label>${tr('Höhe Nischenrückwand')}</label><span class="unit" data-unit="cm"><input type="number" id="setBsHeight" min="10" max="150" step="0.1" /></span></div>
+    <div class="row"><label for="setHandleless" title="${tr('Fronten ohne Griffe: Unterschränke mit Griffmulde oben, Hängeschränke von unten greifbar')}">${tr('Grifflos (Griffmulden)')}</label><input type="checkbox" id="setHandleless" /></div>
+    <div class="row"><label>${tr('Sockelhöhe')}</label><span class="unit" data-unit="cm"><input type="number" id="setPlinth" min="0" max="20" /></span></div>
+    <div class="row"><label>${tr('Arbeitsplattenstärke')}</label><span class="unit" data-unit="cm"><input type="number" id="setTop" min="1" max="12" step="0.5" /></span></div>
   </section>
 
   <section class="tab" id="tab-catalog">
     <div class="btn-col" style="margin-bottom:10px">
-      <button class="btn primary" id="modelLibrary" style="justify-content:center">${ICON.globe}Online-Bibliothek: Community-Möbel &amp; 3D-Modelle</button>
-      <button class="btn" id="modelUpload" style="justify-content:center">${ICON.box}Eigenes 3D-Modell (.glb) hochladen</button>
+      <button class="btn primary" id="modelLibrary" style="justify-content:center">${ICON.globe}${tr('Online-Bibliothek: Community-Möbel &amp; 3D-Modelle')}</button>
+      <button class="btn" id="modelUpload" style="justify-content:center">${ICON.box}${tr('Eigenes 3D-Modell (.glb) hochladen')}</button>
       <input type="file" id="modelFile" accept=".glb,model/gltf-binary" hidden />
     </div>
-    <p class="hint">Element anklicken und im Grundriss platzieren. Schränke docken automatisch an Wände und Nachbarn an. <kbd>R</kbd> dreht, <kbd>Shift</kbd>+Klick platziert mehrfach, <kbd>Alt</kbd> deaktiviert das Andocken.</p>
+    <p class="hint">${tr('Element anklicken und im Grundriss platzieren. Schränke docken automatisch an Wände und Nachbarn an. <kbd>R</kbd> dreht, <kbd>Shift</kbd>+Klick platziert mehrfach, <kbd>Alt</kbd> deaktiviert das Andocken.')}</p>
     <div id="catalog"></div>
   </section>
 
   <section class="tab" id="tab-materials">
-    <p class="hint">Standardmaterial je Bereich. Einzelne Elemente können im Eigenschaftenfeld abweichende Materialien erhalten.</p>
+    <p class="hint">${tr('Standardmaterial je Bereich. Einzelne Elemente können im Eigenschaftenfeld abweichende Materialien erhalten.')}</p>
     <div id="slots"></div>
-    <h3>Eigene Oberflächen</h3>
-    <p class="hint">Mische eine eigene Lackfarbe (matt, normal oder Hochglanz) oder lade ein Foto bzw. eine Textur deiner Wunschoberfläche hoch (z. B. Musterfoto einer Arbeitsplatte, Fliese, Holzdekor).</p>
+    <h3>${tr('Eigene Oberflächen')}</h3>
+    <p class="hint">${tr('Mische eine eigene Lackfarbe (matt, normal oder Hochglanz) oder lade ein Foto bzw. eine Textur deiner Wunschoberfläche hoch (z. B. Musterfoto einer Arbeitsplatte, Fliese, Holzdekor).')}</p>
     <div class="btn-col">
-      <button class="btn primary" id="libraryMaterial" style="justify-content:center">${ICON.globe}Online-Bibliothek</button>
-      <button class="btn" id="colorMaterial" style="justify-content:center">${ICON.palette}Eigene Farbe</button>
-      <button class="btn" id="uploadMaterial" style="justify-content:center">${ICON.image}Textur hochladen</button>
+      <button class="btn primary" id="libraryMaterial" style="justify-content:center">${ICON.globe}${tr('Online-Bibliothek')}</button>
+      <button class="btn" id="colorMaterial" style="justify-content:center">${ICON.palette}${tr('Eigene Farbe')}</button>
+      <button class="btn" id="uploadMaterial" style="justify-content:center">${ICON.image}${tr('Textur hochladen')}</button>
     </div>
     <div class="mat-grid" id="customMats" style="margin-top:10px"></div>
   </section>
@@ -182,59 +183,59 @@ app.innerHTML = `
 
 <main class="v-split" id="main">
   <div class="pane" id="plan">
-    <div class="overlay tr"><div class="chip"><button class="btn" id="fitPlan" title="Ansicht einpassen">Einpassen</button></div></div>
+    <div class="overlay tr"><div class="chip"><button class="btn" id="fitPlan" title="${tr('Ansicht einpassen')}">${tr('Einpassen')}</button></div></div>
     <div class="tool-hint plan-only" id="toolHint"></div>
   </div>
   <div class="pane" id="view">
-    <div class="shared-badge"><b id="sharedTitle">Lade Küche …</b><span>Nur ansehen</span></div>
+    <div class="shared-badge"><b id="sharedTitle">${tr('Lade Küche …')}</b><span>${tr('Nur ansehen')}</span></div>
     <div class="overlay tr showroom-only">
       <div class="chip">
-        <button class="btn" id="tourBtn" title="Kamera kreist langsam durch den Raum">${ICON.rotate}Rundgang</button>
-        <button class="btn" id="fsBtn" title="Browser-Vollbild">${ICON.expand}Vollbild</button>
-        <button class="btn" id="exitShowroom" title="Showroom beenden (Esc)">${ic('x')}Beenden</button>
+        <button class="btn" id="tourBtn" title="${tr('Kamera kreist langsam durch den Raum')}">${ICON.rotate}${tr('Rundgang')}</button>
+        <button class="btn" id="fsBtn" title="${tr('Browser-Vollbild')}">${ICON.expand}${tr('Vollbild')}</button>
+        <button class="btn" id="exitShowroom" title="${tr('Showroom beenden (Esc)')}">${ic('x')}${tr('Beenden')}</button>
       </div>
     </div>
     <div class="overlay tl">
       <div class="chip">
-        <div class="seg" id="houseMode" title="Was zu sehen ist"><button data-h="floor" class="on" title="Nur die aktive Etage">Etage</button><button data-h="stack" title="Alle Etagen bis zur aktiven – Blick von oben ins Haus">Bis hier</button><button data-h="house" title="Das ganze Haus">Haus</button></div>
-        <button class="btn plan-only" id="storageBtn" title="Lager: Fächer nach Füllstand färben, anklicken zeigt den Inhalt">${ICON.box}Lager</button>
-        <select id="heatSel" hidden title="Färbung der Fächer"><option value="">Füllstand</option><option value="moves">Bewegung (90 Tage)</option><option value="stale">Lange unberührt</option></select>
+        <div class="seg" id="houseMode" title="${tr('Was zu sehen ist')}"><button data-h="floor" class="on" title="${tr('Nur die aktive Etage')}">${tr('Etage')}</button><button data-h="stack" title="${tr('Alle Etagen bis zur aktiven – Blick von oben ins Haus')}">${tr('Bis hier')}</button><button data-h="house" title="${tr('Das ganze Haus')}">${tr('Haus')}</button></div>
+        <button class="btn plan-only" id="storageBtn" title="${tr('Lager: Fächer nach Füllstand färben, anklicken zeigt den Inhalt')}">${ICON.box}${tr('Lager')}</button>
+        <select id="heatSel" hidden title="${tr('Färbung der Fächer')}"><option value="">${tr('Füllstand')}</option><option value="moves">${tr('Bewegung (90 Tage)')}</option><option value="stale">${tr('Lange unberührt')}</option></select>
       </div>
       <div class="chip">
-        <button class="btn" data-cam="perspective">Übersicht</button>
-        <button class="btn" data-cam="corner">Raumecke</button>
-        <button class="btn" data-cam="front">Frontal</button>
-        <button class="btn" data-cam="top">Draufsicht</button>
-        <button class="btn" id="walkBtn" title="Durch das Haus laufen: Maus umsehen, WASD laufen, über Treppen in andere Etagen">${ICON.walk}Begehen</button>
+        <button class="btn" data-cam="perspective">${tr('Übersicht')}</button>
+        <button class="btn" data-cam="corner">${tr('Raumecke')}</button>
+        <button class="btn" data-cam="front">${tr('Frontal')}</button>
+        <button class="btn" data-cam="top">${tr('Draufsicht')}</button>
+        <button class="btn" id="walkBtn" title="${tr('Durch das Haus laufen: Maus umsehen, WASD laufen, über Treppen in andere Etagen')}">${ICON.walk}${tr('Begehen')}</button>
       </div>
     </div>
     <div class="overlay bl">
-      <div class="chip plan-only"><span title="Tageszeit (Sonnenstand)">${ic('sun')}</span><input type="range" id="timeOfDay" min="6" max="20" step="0.25" /><span id="timeLabel"></span></div>
-      <div class="chip plan-only"><span>Belichtung</span><input type="range" id="exposure" min="0.3" max="2.5" step="0.05" value="1" /></div>
+      <div class="chip plan-only"><span title="${tr('Tageszeit (Sonnenstand)')}">${ic('sun')}</span><input type="range" id="timeOfDay" min="6" max="20" step="0.25" /><span id="timeLabel"></span></div>
+      <div class="chip plan-only"><span>${tr('Belichtung')}</span><input type="range" id="exposure" min="0.3" max="2.5" step="0.05" value="1" /></div>
       <div class="chip light-chip plan-only">
-        <button class="btn" id="lightBtn" title="Licht einstellen: Sonne, Himmel, Lampen, Weichheit">${ICON.bulb}Licht</button>
+        <button class="btn" id="lightBtn" title="${tr('Licht einstellen: Sonne, Himmel, Lampen, Weichheit')}">${ICON.bulb}${tr('Licht')}</button>
         <div class="light-pop" id="lightPop" hidden>
-          <label class="field"><span>Sonne <b data-v="sunIntensity"></b></span><input type="range" data-light="sunIntensity" min="0" max="2" step="0.05" /></label>
-          <label class="field"><span>Himmel / Tageslicht <b data-v="skyIntensity"></b></span><input type="range" data-light="skyIntensity" min="0" max="2.5" step="0.05" /></label>
-          <label class="field"><span>Lampen <b data-v="lampIntensity"></b></span><input type="range" data-light="lampIntensity" min="0" max="3" step="0.05" /></label>
-          <label class="field"><span>Weichheit Schatten &amp; Lichtkegel <b data-v="softness"></b></span><input type="range" data-light="softness" min="0" max="1" step="0.05" /></label>
-          <div class="chips"><button data-preset="sun">Sonnig</button><button data-preset="soft">Weich / bewölkt</button><button data-preset="evening">Abend</button><button data-preset="reset">Standard</button></div>
+          <label class="field"><span>${tr('Sonne')} <b data-v="sunIntensity"></b></span><input type="range" data-light="sunIntensity" min="0" max="2" step="0.05" /></label>
+          <label class="field"><span>${tr('Himmel / Tageslicht')} <b data-v="skyIntensity"></b></span><input type="range" data-light="skyIntensity" min="0" max="2.5" step="0.05" /></label>
+          <label class="field"><span>${tr('Lampen')} <b data-v="lampIntensity"></b></span><input type="range" data-light="lampIntensity" min="0" max="3" step="0.05" /></label>
+          <label class="field"><span>${tr('Weichheit Schatten &amp; Lichtkegel')} <b data-v="softness"></b></span><input type="range" data-light="softness" min="0" max="1" step="0.05" /></label>
+          <div class="chips"><button data-preset="sun">${tr('Sonnig')}</button><button data-preset="soft">${tr('Weich / bewölkt')}</button><button data-preset="evening">${tr('Abend')}</button><button data-preset="reset">${tr('Standard')}</button></div>
         </div>
       </div>
       <div class="spacer"></div>
       <div class="chip">
-        <button class="btn" id="ptBtn" title="Physikalisch korrektes Pathtracing – Bild wird fortlaufend verfeinert">${ICON.sparkle}Fotorealistisch</button>
+        <button class="btn" id="ptBtn" title="${tr('Physikalisch korrektes Pathtracing – Bild wird fortlaufend verfeinert')}">${ICON.sparkle}${tr('Fotorealistisch')}</button>
         <span id="ptSamples" hidden></span>
         <span id="gpuBadge" class="gpu-badge" hidden></span>
-        <button class="btn" id="shotBtn" title="Aktuelle Ansicht als PNG speichern">${ICON.camera}Bild</button>
+        <button class="btn" id="shotBtn" title="${tr('Aktuelle Ansicht als PNG speichern')}">${ICON.camera}${tr('Bild')}</button>
       </div>
     </div>
-    <div class="walk-hint" id="walkHint"><b id="walkWhere"></b>WASD / Pfeiltasten laufen · Maus umsehen · Shift schneller · Treppen führen in die anderen Etagen · Esc beenden</div>
+    <div class="walk-hint" id="walkHint"><b id="walkWhere"></b>${tr('WASD / Pfeiltasten laufen · Maus umsehen · Shift schneller · Treppen führen in die anderen Etagen · Esc beenden')}</div>
   </div>
 </main>
 
 <aside class="right props plan-only" id="props"></aside>
-<aside class="right view-panel view-only" id="viewPanel" aria-label="Fächer und Inhalt"></aside>
+<aside class="right view-panel view-only" id="viewPanel" aria-label="${tr('Fächer und Inhalt')}"></aside>
 `;
 
 // ---------------------------------------------------------------------------
@@ -246,13 +247,13 @@ const view = new Scene3D($('#view'));
 const sync = new HouseSync({ toast, modal, statusEl: () => document.getElementById('saveStatus'), afterLoad });
 
 const toolHints: Record<Tool, string> = {
-  select: 'Elemente, Wände, Türen und Fenster anklicken und ziehen. Breite eines Elements über die seitlichen Ziehpunkte frei ändern. Wandendpunkte verschieben. <kbd>Entf</kbd> löscht, <kbd>R</kbd> dreht. Rechte Maustaste / Leertaste + Ziehen verschiebt die Ansicht, Mausrad zoomt.',
-  wall: 'Klicken setzt Wandpunkte. Länge eintippen + <kbd>Enter</kbd> für exakte Maße. Doppelklick, Rechtsklick oder <kbd>Esc</kbd> beendet. <kbd>Alt</kbd> hebt den Winkelfang auf.',
-  door: 'Auf eine Wand klicken, um eine Tür einzusetzen.',
-  window: 'Auf eine Wand klicken, um ein Fenster einzusetzen.',
-  calibrate: 'Zwei Punkte einer bekannten Strecke auf der Vorlage anklicken.',
-  room: 'In eine von Wänden umschlossene Fläche klicken und den Raum benennen. Jeder Raum wird ein eigenes Lager; Möbel mit Fächern darin bekommen Lagerplätze (z. B. KU-B2).',
-  place: 'Klicken zum Platzieren. <kbd>R</kbd> dreht, <kbd>Esc</kbd> bricht ab.',
+  select: tr('Elemente, Wände, Türen und Fenster anklicken und ziehen. Breite eines Elements über die seitlichen Ziehpunkte frei ändern. Wandendpunkte verschieben. <kbd>Entf</kbd> löscht, <kbd>R</kbd> dreht. Rechte Maustaste / Leertaste + Ziehen verschiebt die Ansicht, Mausrad zoomt.'),
+  wall: tr('Klicken setzt Wandpunkte. Länge eintippen + <kbd>Enter</kbd> für exakte Maße. Doppelklick, Rechtsklick oder <kbd>Esc</kbd> beendet. <kbd>Alt</kbd> hebt den Winkelfang auf.'),
+  door: tr('Auf eine Wand klicken, um eine Tür einzusetzen.'),
+  window: tr('Auf eine Wand klicken, um ein Fenster einzusetzen.'),
+  calibrate: tr('Zwei Punkte einer bekannten Strecke auf der Vorlage anklicken.'),
+  room: tr('In eine von Wänden umschlossene Fläche klicken und den Raum benennen. Jeder Raum wird ein eigenes Lager; Möbel mit Fächern darin bekommen Lagerplätze (z. B. KU-B2).'),
+  place: tr('Klicken zum Platzieren. <kbd>R</kbd> dreht, <kbd>Esc</kbd> bricht ab.'),
 };
 
 plan.onToolChange = (t) => {
@@ -322,7 +323,7 @@ $('#ptBtn').addEventListener('click', async () => {
   if (on) {
     const gpu = view.gpuInfo();
     if (gpu.integrated) showGpuHint(gpu.name);
-    else toast('Fotorealistischer Modus: Das Bild wird mit jeder Probe rauschfreier. Kamera ruhig halten.');
+    else toast(tr('Fotorealistischer Modus: Das Bild wird mit jeder Probe rauschfreier. Kamera ruhig halten.'));
   }
 });
 // GPU-Anzeige: warnt, wenn nur die integrierte Grafik genutzt wird
@@ -331,35 +332,35 @@ $('#ptBtn').addEventListener('click', async () => {
   const badge = $('#gpuBadge');
   const short = gpu.name.replace(/^ANGLE \(|\)$/g, '').replace(/Direct3D.*$|vs_\d.*$/i, '').split(',').slice(-2, -1)[0]?.trim() || gpu.name;
   badge.hidden = false;
-  badge.innerHTML = gpu.integrated ? `${ic('warn')} integrierte GPU` : `GPU ${ic('check')}`;
-  badge.title = `Genutzte Grafikkarte: ${short}`;
+  badge.innerHTML = gpu.integrated ? `${ic('warn')} ${tr('integrierte GPU')}` : `GPU ${ic('check')}`;
+  badge.title = tr('Genutzte Grafikkarte: {name}', { name: short });
   badge.classList.toggle('warn', gpu.integrated);
   if (gpu.integrated) badge.addEventListener('click', () => showGpuHint(gpu.name));
 }
 
 function showGpuHint(name: string) {
   modal(
-    'Leistungsstarke Grafikkarte nutzen',
-    `<p>Der Browser rendert gerade mit <b>${esc(name)}</b>. Der fotorealistische Modus läuft auf der dedizierten Grafikkarte (z. B. NVIDIA) um ein Vielfaches schneller.</p>
-    <h3>Windows-Einstellung (empfohlen)</h3>
+    tr('Leistungsstarke Grafikkarte nutzen'),
+    `<p>${tr('Der Browser rendert gerade mit <b>{name}</b>. Der fotorealistische Modus läuft auf der dedizierten Grafikkarte (z. B. NVIDIA) um ein Vielfaches schneller.', { name: esc(name) })}</p>
+    <h3>${tr('Windows-Einstellung (empfohlen)')}</h3>
     <ol class="steps">
-      <li><b>Einstellungen → System → Bildschirm → Grafik</b> öffnen.</li>
-      <li>Den Browser in der Liste suchen (oder über <i>Durchsuchen</i> hinzufügen, z. B. <code>C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe</code> bzw. <code>msedge.exe</code>).</li>
-      <li><b>Optionen → Hohe Leistung</b> (NVIDIA) wählen und speichern.</li>
-      <li>Den Browser <b>vollständig schließen</b> (alle Fenster, ggf. Hintergrundprozesse) und neu starten.</li>
+      <li>${tr('<b>Einstellungen → System → Bildschirm → Grafik</b> öffnen.')}</li>
+      <li>${tr('Den Browser in der Liste suchen (oder über <i>Durchsuchen</i> hinzufügen, z. B. {path} bzw. {edge}).', { path: '<code>C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe</code>', edge: '<code>msedge.exe</code>' })}</li>
+      <li>${tr('<b>Optionen → Hohe Leistung</b> (NVIDIA) wählen und speichern.')}</li>
+      <li>${tr('Den Browser <b>vollständig schließen</b> (alle Fenster, ggf. Hintergrundprozesse) und neu starten.')}</li>
     </ol>
-    <h3>Alternativ: NVIDIA-Systemsteuerung</h3>
-    <p class="hint">3D-Einstellungen verwalten → Programmeinstellungen → Browser auswählen → „Hochleistungs-NVIDIA-Prozessor“.</p>
-    <h3>Prüfen</h3>
-    <p class="hint">Nach dem Neustart zeigt die Anzeige neben „Fotorealistisch“ <b>GPU ✓</b>. Details unter <code>chrome://gpu</code> bzw. <code>edge://gpu</code> (Eintrag „GL_RENDERER“).
-    Notebook dabei möglichst am Netzteil betreiben – im Akkubetrieb drosseln viele Geräte die NVIDIA-GPU.</p>`,
+    <h3>${tr('Alternativ: NVIDIA-Systemsteuerung')}</h3>
+    <p class="hint">${tr('3D-Einstellungen verwalten → Programmeinstellungen → Browser auswählen → „Hochleistungs-NVIDIA-Prozessor“.')}</p>
+    <h3>${tr('Prüfen')}</h3>
+    <p class="hint">${tr('Nach dem Neustart zeigt die Anzeige neben „Fotorealistisch“ <b>GPU ✓</b>. Details unter <code>chrome://gpu</code> bzw. <code>edge://gpu</code> (Eintrag „GL_RENDERER“).')}
+    ${tr('Notebook dabei möglichst am Netzteil betreiben – im Akkubetrieb drosseln viele Geräte die NVIDIA-GPU.')}</p>`,
   );
 }
 
 let ptSamples = 0;
 view.onSamples = (n) => {
   ptSamples = n;
-  $('#ptSamples').textContent = `${n} Proben`;
+  $('#ptSamples').textContent = trn(n, '{n} Probe', '{n} Proben');
 };
 
 $('#shotBtn').addEventListener('click', () => {
@@ -394,7 +395,7 @@ function setShowroom(on: boolean) {
   } catch {
     /* ignorieren */
   }
-  if (on) toast('Showroom: Maus ziehen zum Drehen, Mausrad zum Zoomen, Doppelklick zum Fokussieren · Esc beendet');
+  if (on) toast(tr('Showroom: Maus ziehen zum Drehen, Mausrad zum Zoomen, Doppelklick zum Fokussieren · Esc beendet'));
 }
 $('#showroomBtn').addEventListener('click', () => setShowroom(true));
 $('#exitShowroom').addEventListener('click', () => setShowroom(false));
@@ -405,7 +406,7 @@ $('#tourBtn').addEventListener('click', () => {
 });
 $('#fsBtn').addEventListener('click', () => {
   if (document.fullscreenElement) document.exitFullscreen().catch(() => {});
-  else document.documentElement.requestFullscreen().catch(() => toast('Vollbild wird von diesem Browser nicht unterstützt.'));
+  else document.documentElement.requestFullscreen().catch(() => toast(tr('Vollbild wird von diesem Browser nicht unterstützt.')));
 });
 document.addEventListener('fullscreenchange', () => $('#fsBtn').classList.toggle('on', !!document.fullscreenElement));
 window.addEventListener('keydown', (e) => {
@@ -506,16 +507,16 @@ $('#newBtn').addEventListener('click', () => openNewPlan());
 async function openNewPlan() {
   const shared = sync.online && sync.canEdit;
   const m = modal(
-    'Neues Haus',
-    `${shared ? '<p class="form-error" style="display:block">Achtung: Der Hausplan wird von allen geteilt. Ein neues Haus ersetzt ihn für alle; Lagerplätze von Möbeln, die es dann nicht mehr gibt, werden entfernt (Plätze mit Inhalt bleiben erhalten).</p>' : ''}
+    tr('Neues Haus'),
+    `${shared ? `<p class="form-error" style="display:block">${tr('Achtung: Der Hausplan wird von allen geteilt. Ein neues Haus ersetzt ihn für alle; Lagerplätze von Möbeln, die es dann nicht mehr gibt, werden entfernt (Plätze mit Inhalt bleiben erhalten).')}</p>` : ''}
     <div class="choice-grid">
-      <button class="choice" data-kind="empty"><b>Leeres Haus</b><span>Eine leere Etage – Wände aus Maßen erzeugen oder Grundriss hochladen.</span></button>
-      <button class="choice" data-kind="example"><b>Beispiel</b><span>Eine Etage mit fertiger Küche als Ausgangspunkt.</span></button>
+      <button class="choice" data-kind="empty"><b>${tr('Leeres Haus')}</b><span>${tr('Eine leere Etage – Wände aus Maßen erzeugen oder Grundriss hochladen.')}</span></button>
+      <button class="choice" data-kind="example"><b>${tr('Beispiel')}</b><span>${tr('Eine Etage mit fertiger Küche als Ausgangspunkt.')}</span></button>
     </div>`,
   );
   m.el.querySelectorAll<HTMLElement>('.choice').forEach((b) =>
     b.addEventListener('click', () => {
-      if (shared && !confirm('Den gemeinsamen Hausplan wirklich ersetzen?')) return;
+      if (shared && !confirm(tr('Den gemeinsamen Hausplan wirklich ersetzen?'))) return;
       m.close();
       store.reset(b.dataset.kind === 'empty');
       afterLoad();
@@ -547,7 +548,7 @@ function importPlan(data: Project, name: string, mode: 'new' | 'replace') {
   store.select(null);
   store.floorChanged();
   afterLoad();
-  toast(`„${name}“ übernommen. Jetzt mit „Raum“ die Räume bestimmen – daraus entstehen die Lager.`);
+  toast(tr('„{name}“ übernommen. Jetzt mit „Raum“ die Räume bestimmen – daraus entstehen die Lager.', { name }));
   setPlanning(true);
   setDrawer('room');
 }
@@ -572,19 +573,19 @@ $<HTMLInputElement>('#openFile').addEventListener('change', async (e) => {
   try {
     const raw = JSON.parse(await f.text());
     if (raw?.version === 2 && Array.isArray(raw.floors)) {
-      if (!confirm(`Das ganze Haus durch „${raw.name ?? f.name}“ ersetzen?`)) return;
+      if (!confirm(tr('Das ganze Haus durch „{name}“ ersetzen?', { name: raw.name ?? f.name }))) return;
       store.replace(raw as House, { keepUndo: true });
       afterLoad();
     } else {
-      if (!Array.isArray(raw?.walls)) throw new Error('Keine Haus- oder Planungsdatei');
-      const choice = await askChoice('Planung importieren', `<p>„${esc(raw.name ?? f.name)}“ ist eine einzelne Planung (eine Etage).</p>`, [
-        { id: 'replace', label: 'Aktuelle Etage ersetzen' },
-        { id: 'new', label: 'Als neue Etage', primary: true },
+      if (!Array.isArray(raw?.walls)) throw new Error(tr('Keine Haus- oder Planungsdatei'));
+      const choice = await askChoice(tr('Planung importieren'), `<p>${tr('„{name}“ ist eine einzelne Planung (eine Etage).', { name: esc(raw.name ?? f.name) })}</p>`, [
+        { id: 'replace', label: tr('Aktuelle Etage ersetzen') },
+        { id: 'new', label: tr('Als neue Etage'), primary: true },
       ]);
       if (choice) importPlan(raw as Project, raw.name || f.name.replace(/\..*$/, ''), choice as 'new' | 'replace');
     }
   } catch (err) {
-    toast('Datei konnte nicht geladen werden: ' + (err as Error).message);
+    toast(tr('Datei konnte nicht geladen werden: {msg}', { msg: (err as Error).message }));
   }
   (e.target as HTMLInputElement).value = '';
 });
@@ -595,7 +596,7 @@ $('#makeRoom').addEventListener('click', () => {
   const D = +$<HTMLInputElement>('#roomD').value;
   const H = +$<HTMLInputElement>('#roomH').value;
   const shape = $<HTMLSelectElement>('#roomShape').value;
-  if (store.project.walls.length && !confirm('Vorhandene Wände, Türen und Fenster werden ersetzt. Fortfahren?')) return;
+  if (store.project.walls.length && !confirm(tr('Vorhandene Wände, Türen und Fenster werden ersetzt. Fortfahren?'))) return;
   const pts =
     shape === 'l'
       ? [{ x: 0, y: 0 }, { x: W, y: 0 }, { x: W, y: D * 0.55 }, { x: W * 0.55, y: D * 0.55 }, { x: W * 0.55, y: D }, { x: 0, y: D }]
@@ -632,7 +633,7 @@ underlayFile.addEventListener('change', () => {
 
 async function loadUnderlay(f: File) {
   if (!f.type.startsWith('image/')) {
-    toast('Bitte ein Bild (PNG, JPG, WebP) hochladen. PDFs vorher als Bild exportieren.');
+    toast(tr('Bitte ein Bild (PNG, JPG, WebP) hochladen. PDFs vorher als Bild exportieren.'));
     return;
   }
   const url = await readImageFile(f, 3000);
@@ -643,7 +644,7 @@ async function loadUnderlay(f: File) {
     store.project.underlay = { image: url, scale, x: 0, y: 0, opacity: 0.6, visible: true };
     store.commit();
     plan.fit();
-    toast('Vorlage geladen. Jetzt den Maßstab kalibrieren: zwei Punkte einer bekannten Strecke anklicken.');
+    toast(tr('Vorlage geladen. Jetzt den Maßstab kalibrieren: zwei Punkte einer bekannten Strecke anklicken.'));
     plan.setTool('calibrate');
   };
   img.src = url;
@@ -651,7 +652,7 @@ async function loadUnderlay(f: File) {
 
 $('#calibrate').addEventListener('click', () => plan.setTool('calibrate'));
 plan.onCalibrated = (d) => {
-  const real = prompt(`Gemessene Strecke: ${Math.round(d)} cm im aktuellen Maßstab.\nWie lang ist die Strecke in Wirklichkeit (cm)?`, String(Math.round(d)));
+  const real = prompt(tr('Gemessene Strecke: {d} cm im aktuellen Maßstab.\nWie lang ist die Strecke in Wirklichkeit (cm)?', { d: Math.round(d) }), String(Math.round(d)));
   const v = parseFloat((real ?? '').replace(',', '.'));
   const u = store.project.underlay;
   if (!u || !(v > 0)) return;
@@ -661,7 +662,7 @@ plan.onCalibrated = (d) => {
   u.y *= f;
   store.commit();
   plan.fit();
-  toast('Maßstab gesetzt. Jetzt mit „Wand zeichnen“ die Wände nachzeichnen.');
+  toast(tr('Maßstab gesetzt. Jetzt mit „Wand zeichnen“ die Wände nachzeichnen.'));
 };
 $('#moveUnderlay').addEventListener('click', () => {
   plan.moveUnderlay = !plan.moveUnderlay;
@@ -769,10 +770,10 @@ function renderCatalog() {
   $('#catalog').innerHTML = groups
     .map(
       (g) => `<div class="cat-group"><h3>${esc(g)}</h3><div class="catalog">${all.filter((c) => c.group === g)
-        .map((c) => `<button class="cat-item${c.object ? ' cat-obj' : ''}" data-type="${esc(c.id)}" title="${c.object ? esc(`${c.object.name} · Objektbibliothek, Version ${c.object.version}`) : ''}">${catalogIcon(c)}<span>${esc(c.name)}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
+        .map((c) => `<button class="cat-item${c.object ? ' cat-obj' : ''}" data-type="${esc(c.id)}" title="${c.object ? esc(tr('{name} · Objektbibliothek, Version {version}', { name: c.object.name, version: c.object.version })) : ''}">${catalogIcon(c)}<span>${esc(c.name)}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
         .join('')}</div></div>`,
     )
-    .join('') + `<p class="cat-lib"><a class="link" href="#/objekte">${ic('box')}Objektbibliothek – weitere Möbelarten</a></p>`;
+    .join('') + `<p class="cat-lib"><a class="link" href="#/objekte">${ic('box')}${tr('Objektbibliothek – weitere Möbelarten')}</a></p>`;
   document.querySelectorAll<HTMLElement>('.cat-item').forEach((b) =>
     b.addEventListener('click', () => {
       document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', x === b));
@@ -787,42 +788,42 @@ document.addEventListener('zh-objects', () => renderCatalog());
 // ---------------------------------------------------------------------------
 // Möbel & Deko: 3D-Modelle aus der Online-Bibliothek (Poly Haven CC0, FurniMesh) oder eigene .glb
 
-const MODEL_CATS: [string, string][] = [['', 'Alle'], ['sitzen', 'Sitzmöbel'], ['tische', 'Tische'], ['betten', 'Betten'], ['schraenke', 'Schränke & Regale'], ['leuchten', 'Leuchten'], ['pflanzen', 'Pflanzen'], ['deko', 'Deko'], ['kueche', 'Küche & Geschirr'], ['elektronik', 'Elektronik'], ['buero', 'Büro'], ['aufbewahrung', 'Kisten & Körbe'], ['werkzeug', 'Werkzeug'], ['garten', 'Garten & Natur'], ['sonstiges', 'Sonstiges']];
+const MODEL_CATS: [string, string][] = [['', tr('Alle')], ['sitzen', tr('Sitzmöbel')], ['tische', tr('Tische')], ['betten', tr('Betten')], ['schraenke', tr('Schränke & Regale')], ['leuchten', tr('Leuchten')], ['pflanzen', tr('Pflanzen')], ['deko', tr('Deko')], ['kueche', tr('Küche & Geschirr')], ['elektronik', tr('Elektronik')], ['buero', tr('Büro')], ['aufbewahrung', tr('Kisten & Körbe')], ['werkzeug', tr('Werkzeug')], ['garten', tr('Garten & Natur')], ['sonstiges', tr('Sonstiges')]];
 let modelAll = false;
 /** FurniMesh: realistische (KI-erzeugte) Möbel, nur Einrichtungs-Kategorien */
-const FM_CATS: [string, string][] = [['', 'Alle'], ['sofas', 'Sofas'], ['sitzen', 'Sitzmöbel'], ['tische', 'Tische'], ['betten', 'Betten'], ['schraenke', 'Schränke & Regale'], ['leuchten', 'Leuchten'], ['bad', 'Bad']];
+const FM_CATS: [string, string][] = [['', tr('Alle')], ['sofas', tr('Sofas')], ['sitzen', tr('Sitzmöbel')], ['tische', tr('Tische')], ['betten', tr('Betten')], ['schraenke', tr('Schränke & Regale')], ['leuchten', tr('Leuchten')], ['bad', tr('Bad')]];
 let modelSource: 'community' | 'polyhaven' | 'furnimesh' = 'community';
 const SOURCE_HINT = {
-  community: 'Möbelarten aus dem Community-Katalog – Schränke, Regale, Geräte mit Fächern: jedes Fach wird ein Lagerplatz. Beim Auswählen wird die Möbelart installiert (verwalten unter Mehr → Objektbibliothek).',
-  polyhaven: 'Freie 3D-Modelle von Poly Haven (CC0) mit echten Maßen und Materialien. Beim Auswählen wird das Modell einmal auf den Server geladen.',
-  furnimesh: 'Realistische, KI-erzeugte Möbel von FurniMesh – frei herunterladbar, aber ohne ausdrückliche Lizenz. Beim Auswählen wird das Modell geladen und verkleinert (dauert etwa 10 s); die Größe ist ein typischer Wert der Kategorie und lässt sich anpassen.',
+  community: tr('Möbelarten aus dem Community-Katalog – Schränke, Regale, Geräte mit Fächern: jedes Fach wird ein Lagerplatz. Beim Auswählen wird die Möbelart installiert (verwalten unter Mehr → Objektbibliothek).'),
+  polyhaven: tr('Freie 3D-Modelle von Poly Haven (CC0) mit echten Maßen und Materialien. Beim Auswählen wird das Modell einmal auf den Server geladen.'),
+  furnimesh: tr('Realistische, KI-erzeugte Möbel von FurniMesh – frei herunterladbar, aber ohne ausdrückliche Lizenz. Beim Auswählen wird das Modell geladen und verkleinert (dauert etwa 10 s); die Größe ist ein typischer Wert der Kategorie und lässt sich anpassen.'),
 };
 let modelState = { q: '', cat: '' };
 
 /** Modell platzieren: Originalmaße messen, dann im Grundriss setzen */
 async function placeModel(model: NonNullable<Item['model']>) {
-  toast(`${model.name} wird geladen …`);
+  toast(tr('{name} wird geladen …', { name: model.name }));
   try {
     const s = await modelSize(model.url);
     const size: [number, number, number] = [s.w, s.d, s.h];
     if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
     plan.setTool('place', 'model', { model: { ...model, size }, width: s.w, depth: s.d, height: s.h });
-    toast(`${model.name}: zum Platzieren in den Grundriss klicken (R dreht).`);
+    toast(tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: model.name }));
   } catch (e) {
     toast((e as Error).message);
   }
 }
 
 function openModelLibrary() {
-  if (!account.user) return toast('Für die Online-Bibliothek bitte anmelden.');
-  const m = modal('Möbel & Deko – Online-Bibliothek', `
-    <form class="lib-search" id="mlForm"><input type="search" id="mlQ" placeholder="Suchen …" value="${esc(modelState.q)}" /><button class="btn primary">Suchen</button></form>
-    <div class="seg" id="mlSource" style="margin:6px 0"><button type="button" data-src="community" title="Möbelarten mit Fächern (Lagerplätze)">Community-Möbel</button><button type="button" data-src="polyhaven">Poly Haven</button><button type="button" data-src="furnimesh">FurniMesh</button></div>
-    <label class="row switch" id="mlAllRow" style="margin:4px 0"><input type="checkbox" id="mlAll" ${modelAll ? 'checked' : ''} /><span><b>Ohne Filter</b><small>Bei „Alle“ auch Garten, Natur, Werkzeug, Industrie und Requisiten zeigen</small></span></label>
+  if (!account.user) return toast(tr('Für die Online-Bibliothek bitte anmelden.'));
+  const m = modal(tr('Möbel & Deko – Online-Bibliothek'), `
+    <form class="lib-search" id="mlForm"><input type="search" id="mlQ" placeholder="${tr('Suchen …')}" value="${esc(modelState.q)}" /><button class="btn primary">${tr('Suchen')}</button></form>
+    <div class="seg" id="mlSource" style="margin:6px 0"><button type="button" data-src="community" title="${tr('Möbelarten mit Fächern (Lagerplätze)')}">${tr('Community-Möbel')}</button><button type="button" data-src="polyhaven">Poly Haven</button><button type="button" data-src="furnimesh">FurniMesh</button></div>
+    <label class="row switch" id="mlAllRow" style="margin:4px 0"><input type="checkbox" id="mlAll" ${modelAll ? 'checked' : ''} /><span><b>${tr('Ohne Filter')}</b><small>${tr('Bei „Alle“ auch Garten, Natur, Werkzeug, Industrie und Requisiten zeigen')}</small></span></label>
     <p class="hint" id="mlCount"></p>
     <div class="chips" id="mlCats"></div>
-    <div class="ml-grid" id="mlRes"><p class="hint">Lade …</p></div>
-    <div style="text-align:center;margin-top:8px"><button class="btn" id="mlMore" hidden>Mehr anzeigen</button></div>
+    <div class="ml-grid" id="mlRes"><p class="hint">${tr('Lade …')}</p></div>
+    <div style="text-align:center;margin-top:8px"><button class="btn" id="mlMore" hidden>${tr('Mehr anzeigen')}</button></div>
     <p class="hint" id="mlHint"></p>`);
   m.el.querySelector('.modal')!.classList.add('wide');
   const res = $('#mlRes', m.el);
@@ -835,18 +836,18 @@ function openModelLibrary() {
     const my = seq;
     community ??= await fetch('/api/objects/community', { credentials: 'same-origin' }).then(async (x) => {
       const d = await x.json();
-      if (!x.ok) throw new Error(d.error ?? 'Community-Katalog nicht erreichbar.');
+      if (!x.ok) throw new Error(d.error ?? tr('Community-Katalog nicht erreichbar.'));
       return d;
     });
     if (my !== seq) return;
     const q = modelState.q.toLowerCase();
     const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.group} ${o.description}`.toLowerCase().includes(q)));
     const page = hits.slice(offset, offset + 48);
-    $('#mlCount', m.el).textContent = `${hits.length} Möbelarten`;
+    $('#mlCount', m.el).textContent = trn(hits.length, '{n} Möbelart', '{n} Möbelarten');
     const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(o.name)}</b>
       <small>${o.size ? `${o.size[0]} × ${o.size[1]} × ${o.size[2]} cm` : esc(o.group)}</small>
-      <span class="ml-tags">${o.places ? `<span class="tag">${o.places} Fächer</span>` : ''}${o.update ? `<span class="tag warn">neue Version ${esc(o.version)}</span>` : o.installed ? '<span class="tag ok">installiert</span>' : ''}</span></button>`).join('');
-    res.innerHTML = append ? res.innerHTML + html : html || '<p class="hint">Nichts gefunden.</p>';
+      <span class="ml-tags">${o.places ? `<span class="tag">${trn(o.places, '{n} Fach', '{n} Fächer')}</span>` : ''}${o.update ? `<span class="tag warn">${tr('neue Version {version}', { version: esc(o.version) })}</span>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : ''}</span></button>`).join('');
+    res.innerHTML = append ? res.innerHTML + html : html || `<p class="hint">${tr('Nichts gefunden.')}</p>`;
     offset += page.length;
     more.hidden = offset >= hits.length;
     res.querySelectorAll<HTMLElement>('.ml-card:not([data-bound])').forEach((b) => {
@@ -862,7 +863,7 @@ function openModelLibrary() {
           if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
           document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.type === OBJ_PREFIX + o.id));
           plan.setTool('place', OBJ_PREFIX + o.id);
-          toast(`${o.name}: zum Platzieren in den Grundriss klicken (R dreht).${o.installed ? '' : ' Jetzt auch im Katalog unter „Möbel“.'}`);
+          toast(o.installed ? tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: o.name }) : tr('{name}: zum Platzieren in den Grundriss klicken (R dreht). Jetzt auch im Katalog unter „Möbel“.', { name: o.name }));
         } catch (e) {
           b.classList.remove('busy');
           toast((e as Error).message);
@@ -885,9 +886,9 @@ function openModelLibrary() {
       const r = await fetch(`/api/library/models?q=${encodeURIComponent(modelState.q)}&cat=${modelState.cat}&all=${modelAll ? 1 : 0}&source=${modelSource}&limit=48&offset=${offset}`, { credentials: 'same-origin' }).then((x) => x.json());
       if (my !== seq) return;
       if (r.error) throw new Error(r.error);
-      $('#mlCount', m.el).textContent = r.note ?? (r.more ? `${r.hits.length + offset} Modelle geladen, weitere verfügbar` : `${r.total} Modelle`);
+      $('#mlCount', m.el).textContent = r.note ?? (r.more ? trn(r.hits.length + offset, '{n} Modell geladen, weitere verfügbar', '{n} Modelle geladen, weitere verfügbar') : trn(r.total, '{n} Modell', '{n} Modelle'));
       const html = r.hits.map((h: any) => `<button class="ml-card" data-id="${esc(h.id)}"><img src="${esc(h.thumb)}" alt="" loading="lazy" /><b>${esc(h.name)}</b><small>${h.size ? `${h.size[0]} × ${h.size[1]} × ${h.size[2]} cm` : ''}</small></button>`).join('');
-      res.innerHTML = append ? res.innerHTML + html : html || '<p class="hint">Nichts gefunden – englische Begriffe probieren.</p>';
+      res.innerHTML = append ? res.innerHTML + html : html || `<p class="hint">${tr('Nichts gefunden – englische Begriffe probieren.')}</p>`;
       offset += r.hits.length;
       more.hidden = offset >= r.total;
       res.querySelectorAll<HTMLElement>('.ml-card:not([data-bound])').forEach((b) => {
@@ -917,7 +918,7 @@ function openModelLibrary() {
   // Quelle: eigene Kategorien, „Ohne Filter“ nur bei Poly Haven
   const renderSource = () => {
     const groups = [...new Set((community?.objects ?? []).map((o) => String(o.group)))].sort((a, b) => a.localeCompare(b, 'de'));
-    const cats: [string, string][] = modelSource === 'community' ? [['', 'Alle'], ...groups.map((g): [string, string] => [g, g])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
+    const cats: [string, string][] = modelSource === 'community' ? [['', tr('Alle')], ...groups.map((g): [string, string] => [g, g])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
     // Community-Gruppen sind erst nach dem Laden bekannt
     if ((modelSource !== 'community' || community) && !cats.some(([k]) => k === modelState.cat)) modelState.cat = '';
     m.el.querySelectorAll<HTMLElement>('#mlSource [data-src]').forEach((x) => x.classList.toggle('on', x.dataset.src === modelSource));
@@ -949,7 +950,7 @@ function openModelLibrary() {
 }
 $('#modelLibrary').addEventListener('click', openModelLibrary);
 $('#modelUpload').addEventListener('click', () => {
-  if (!account.user) return toast('Zum Hochladen bitte anmelden.');
+  if (!account.user) return toast(tr('Zum Hochladen bitte anmelden.'));
   $('#modelFile').click();
 });
 $<HTMLInputElement>('#modelFile').addEventListener('change', async (e) => {
@@ -974,16 +975,16 @@ const SLOT_ORDER: MaterialSlot[] = ['front', 'carcass', 'countertop', 'handle', 
 function slotLabel(p: Project, slot: MaterialSlot, override?: string, frontOverride?: string) {
   const m = slotMaterialDef(p, slot, override, frontOverride);
   const id = override ?? p.slots[slot];
-  return { m, name: id === MATCH_FRONT ? `Wie Fronten (${m.name})` : m.name };
+  return { m, name: id === MATCH_FRONT ? tr('Wie Fronten ({name})', { name: m.name }) : m.name };
 }
 
 function renderMaterialsTab() {
   const p = store.project;
   $('#slots').innerHTML = SLOT_ORDER.map((slot) => {
     const { m, name } = slotLabel(p, slot);
-    const hint = slot === 'channel' && !p.settings.handleless ? ' · nur bei grifflos' : slot === 'handle' && p.settings.handleless ? ' · grifflos aktiv' : '';
+    const hint = slot === 'channel' && !p.settings.handleless ? ` · ${tr('nur bei grifflos')}` : slot === 'handle' && p.settings.handleless ? ` · ${tr('grifflos aktiv')}` : '';
     const uvOn = p.uv?.[slot] && Object.keys(p.uv[slot]!).length;
-    return `<div class="slot" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><b>${SLOT_LABELS[slot]}</b><small>${esc(name)}${hint}</small></div><span class="slot-btns"><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-slot-adj="${slot}" title="Farbe anpassen: Farbton, Sättigung, Helligkeit, Tönung, Glanz">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvOn ? 'on' : ''}" data-slot-uv="${slot}" title="Textur ausrichten: Drehung in Grad, Größe, Verschiebung, Strecken">${ICON.rotate}</button>` : ''}</span></div>`;
+    return `<div class="slot" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><b>${SLOT_LABELS[slot]}</b><small>${esc(name)}${hint}</small></div><span class="slot-btns"><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-slot-adj="${slot}" title="${tr('Farbe anpassen: Farbton, Sättigung, Helligkeit, Tönung, Glanz')}">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvOn ? 'on' : ''}" data-slot-uv="${slot}" title="${tr('Textur ausrichten: Drehung in Grad, Größe, Verschiebung, Strecken')}">${ICON.rotate}</button>` : ''}</span></div>`;
   }).join('');
   document.querySelectorAll<HTMLElement>('[data-slot-adj]').forEach((b) =>
     b.addEventListener('click', (ev) => {
@@ -1000,7 +1001,7 @@ function renderMaterialsTab() {
   document.querySelectorAll<HTMLElement>('.slot').forEach((el) =>
     el.addEventListener('click', () => {
       const slot = el.dataset.slot as MaterialSlot;
-      openMaterialPicker(`${SLOT_LABELS[slot]} – Material wählen`, p.slots[slot], false, async (id) => {
+      openMaterialPicker(tr('{slot} – Material wählen', { slot: SLOT_LABELS[slot] }), p.slots[slot], false, async (id) => {
         if (!id) return;
         const proj = store.project;
         proj.slots[slot] = id;
@@ -1008,11 +1009,11 @@ function renderMaterialsTab() {
         const deviating = proj.items.filter((i) => i.materials?.[slot]);
         if (deviating.length) {
           const choice = await askChoice(
-            `${SLOT_LABELS[slot]} ändern`,
-            `<p>${deviating.length} Element${deviating.length > 1 ? 'e haben' : ' hat'} ein eigenes Material für „${SLOT_LABELS[slot]}“.</p><p class="hint">Sollen diese ebenfalls auf „${esc(slotLabel(proj, slot).name)}“ umgestellt werden?</p>`,
+            tr('{slot} ändern', { slot: SLOT_LABELS[slot] }),
+            `<p>${trn(deviating.length, '{n} Element hat ein eigenes Material für „{slot}“.', '{n} Elemente haben ein eigenes Material für „{slot}“.', { slot: SLOT_LABELS[slot] })}</p><p class="hint">${tr('Sollen diese ebenfalls auf „{name}“ umgestellt werden?', { name: esc(slotLabel(proj, slot).name) })}</p>`,
             [
-              { id: 'keep', label: 'Abweichungen behalten' },
-              { id: 'all', label: `Alle ${SLOT_LABELS[slot]} umstellen`, primary: true },
+              { id: 'keep', label: tr('Abweichungen behalten') },
+              { id: 'all', label: tr('Alle {slot} umstellen', { slot: SLOT_LABELS[slot] }), primary: true },
             ],
           );
           if (choice === 'all') deviating.forEach((i) => delete i.materials![slot]);
@@ -1022,7 +1023,7 @@ function renderMaterialsTab() {
     }),
   );
   $('#customMats').innerHTML = p.customMaterials
-    .map((m) => `<div class="mat-card" data-id="${m.id}"><span class="sw" style="${swatchStyle(m)}"></span><span>${esc(m.name)}</span><button class="del" title="Löschen">✕</button></div>`)
+    .map((m) => `<div class="mat-card" data-id="${m.id}"><span class="sw" style="${swatchStyle(m)}"></span><span>${esc(m.name)}</span><button class="del" title="${tr('Löschen')}">✕</button></div>`)
     .join('');
   document.querySelectorAll<HTMLElement>('#customMats .mat-card').forEach((el) => {
     el.addEventListener('click', () => {
@@ -1038,7 +1039,7 @@ function renderMaterialsTab() {
 
 function deleteCustomMaterial(id: string) {
   const p = store.project;
-  if (!confirm('Eigenes Material löschen? Verwendungen werden auf Standard zurückgesetzt.')) return;
+  if (!confirm(tr('Eigenes Material löschen? Verwendungen werden auf Standard zurückgesetzt.'))) return;
   p.customMaterials = p.customMaterials.filter((m) => m.id !== id);
   for (const s of SLOT_ORDER) if (p.slots[s] === id) p.slots[s] = LIBRARY[0].id;
   for (const it of p.items) if (it.materials) for (const k of Object.keys(it.materials) as MaterialSlot[]) if (it.materials[k] === id) delete it.materials[k];
@@ -1053,7 +1054,7 @@ $('#libraryMaterial').addEventListener('click', () => openLibraryDialog());
 function modal(title: string, body: string, footer = '') {
   const back = document.createElement('div');
   back.className = 'modal-back';
-  back.innerHTML = `<div class="modal" role="dialog" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="btn icon" data-close aria-label="Schließen">${ic('x')}</button></header><div class="body">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div>`;
+  back.innerHTML = `<div class="modal" role="dialog" aria-label="${esc(title)}"><header><h2>${esc(title)}</h2><button class="btn icon" data-close aria-label="${tr('Schließen')}">${ic('x')}</button></header><div class="body">${body}</div>${footer ? `<footer>${footer}</footer>` : ''}</div>`;
   document.body.appendChild(back);
   const close = () => back.remove();
   back.addEventListener('click', (e) => {
@@ -1092,11 +1093,11 @@ function openMaterialPicker(title: string, current: string | undefined, allowDef
   );
   const all = allMaterials(p);
   const body =
-    `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card upload color-card" data-library>${ICON.globe}<span>Online-Bibliothek…</span></button><button class="mat-card upload color-card" data-color>${ICON.palette}<span>Eigene Farbe mischen…</span></button></div>` +
+    `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card upload color-card" data-library>${ICON.globe}<span>${tr('Online-Bibliothek…')}</span></button><button class="mat-card upload color-card" data-color>${ICON.palette}<span>${tr('Eigene Farbe mischen…')}</span></button></div>` +
     (slotHint === 'channel'
-      ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${current === MATCH_FRONT ? 'on' : ''}" data-id="${MATCH_FRONT}"><span class="sw" style="${swatchStyle(slotMaterialDef(p, 'front'))}"></span><span>Wie Fronten</span></button></div>`
+      ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${current === MATCH_FRONT ? 'on' : ''}" data-id="${MATCH_FRONT}"><span class="sw" style="${swatchStyle(slotMaterialDef(p, 'front'))}"></span><span>${tr('Wie Fronten')}</span></button></div>`
       : '') +
-    (allowDefault ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${!current ? 'on' : ''}" data-id=""><span class="sw" style="background:repeating-linear-gradient(45deg,var(--panel-2) 0 6px,var(--line) 6px 12px)"></span><span>Standard (Projekt)</span></button></div>` : '') +
+    (allowDefault ? `<div class="mat-grid" style="margin-bottom:8px"><button class="mat-card ${!current ? 'on' : ''}" data-id=""><span class="sw" style="background:repeating-linear-gradient(45deg,var(--panel-2) 0 6px,var(--line) 6px 12px)"></span><span>${tr('Standard (Projekt)')}</span></button></div>` : '') +
     cats
       .map((c) => {
         const mats = all.filter((m) => m.category === c);
@@ -1106,7 +1107,7 @@ function openMaterialPicker(title: string, current: string | undefined, allowDef
           .join('')}</div>`;
       })
       .join('') +
-    `<h3>Eigene Textur</h3><div class="mat-grid"><button class="mat-card upload" data-upload>${ICON.image}<span>Textur hochladen…</span></button></div>`;
+    `<h3>${tr('Eigene Textur')}</h3><div class="mat-grid"><button class="mat-card upload" data-upload>${ICON.image}<span>${tr('Textur hochladen…')}</span></button></div>`;
   const m = modal(title, body);
   m.el.querySelectorAll<HTMLElement>('.mat-card[data-id]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1144,7 +1145,7 @@ function askChoice(title: string, body: string, options: { id: string; label: st
     const m = modal(
       title,
       body,
-      `<button class="btn" data-choice="">Abbrechen</button>${options.map((o) => `<button class="btn ${o.primary ? 'primary' : ''}" data-choice="${o.id}">${esc(o.label)}</button>`).join('')}`,
+      `<button class="btn" data-choice="">${tr('Abbrechen')}</button>${options.map((o) => `<button class="btn ${o.primary ? 'primary' : ''}" data-choice="${o.id}">${esc(o.label)}</button>`).join('')}`,
     );
     m.el.querySelector('.modal')!.classList.add('narrow');
     m.el.querySelectorAll<HTMLElement>('[data-choice]').forEach((b) =>
@@ -1186,8 +1187,8 @@ function itemUVTarget(it: Item, slot: MaterialSlot): UVTarget {
     base: p.uv?.[slot],
     scope:
       run && run.ids.length > 1
-        ? `Gilt für die gesamte Arbeitsplatte dieser Zeile (${run.ids.length} Schränke, ${Math.round((run.u1 - run.u0) * 100)} × ${Math.round((run.v1 - run.v0) * 100)} cm).`
-        : `Gilt nur für ${esc(getEntry(it.type).name)}.`,
+        ? tr('Gilt für die gesamte Arbeitsplatte dieser Zeile ({n} Schränke, {w} × {d} cm).', { n: run.ids.length, w: Math.round((run.u1 - run.u0) * 100), d: Math.round((run.v1 - run.v0) * 100) })
+        : tr('Gilt nur für {name}.', { name: esc(getEntry(it.type).name) }),
     get: () => store.item(it.id)?.uv?.[slot],
     set: (v) => {
       for (const id of ids) {
@@ -1203,10 +1204,17 @@ function itemUVTarget(it: Item, slot: MaterialSlot): UVTarget {
 
 function projectUVTarget(slot: MaterialSlot): UVTarget {
   const p = store.project;
-  const area = slot === 'floor' ? 'den ganzen Boden' : slot === 'wall' ? 'alle Wände' : slot === 'ceiling' ? 'die Decke' : `alle Elemente (${SLOT_LABELS[slot]})`;
+  const scope =
+    slot === 'floor'
+      ? tr('Gilt für den ganzen Boden.')
+      : slot === 'wall'
+        ? tr('Gilt für alle Wände.')
+        : slot === 'ceiling'
+          ? tr('Gilt für die Decke.')
+          : tr('Gilt für alle Elemente ({slot}) – einzelne Elemente können abweichen.', { slot: SLOT_LABELS[slot] });
   return {
     def: slotMaterialDef(p, slot),
-    scope: `Gilt für ${area}${['floor', 'wall', 'ceiling'].includes(slot) ? '' : ' – einzelne Elemente können abweichen'}.`,
+    scope,
     get: () => store.project.uv?.[slot],
     set: (v) => {
       const proj = store.project;
@@ -1226,11 +1234,11 @@ function openUVDialog(target: UVTarget) {
   const baseRot = def.rotation ?? (def.rotate ? 90 : 0);
   const body = `
     <p class="hint">${esc(def.name)} · ${target.scope}</p>
-    <div class="field"><span>Darstellung</span>
-      <div class="seg mode-seg"><button type="button" data-m="stretch">Einmal auf ganze Fläche strecken</button><button type="button" data-m="tile">Wiederholen (Kacheln)</button></div>
+    <div class="field"><span>${tr('Darstellung')}</span>
+      <div class="seg mode-seg"><button type="button" data-m="stretch">${tr('Einmal auf ganze Fläche strecken')}</button><button type="button" data-m="tile">${tr('Wiederholen (Kacheln)')}</button></div>
     </div>
-    <label class="field"><span>Größe <b id="uvScaleV"></b></span><input type="range" id="uvScale" min="-2" max="2" step="0.01" /></label>
-    <div class="field"><span>Drehung${baseRot ? ` <small>(zusätzlich zur Materialdrehung ${baseRot}°)</small>` : ''}</span>
+    <label class="field"><span>${tr('Größe')} <b id="uvScaleV"></b></span><input type="range" id="uvScale" min="-2" max="2" step="0.01" /></label>
+    <div class="field"><span>${tr('Drehung')}${baseRot ? ` <small>${tr('(zusätzlich zur Materialdrehung {deg}°)', { deg: baseRot })}</small>` : ''}</span>
       <div class="rot-row">
         <input type="range" id="uvRot" min="-180" max="180" step="1" />
         <span class="unit" data-unit="°"><input type="number" id="uvRotN" min="-360" max="360" step="0.5" /></span>
@@ -1238,11 +1246,11 @@ function openUVDialog(target: UVTarget) {
       <div class="chips">${[-90, -45, 0, 45, 90, 180].map((r) => `<button type="button" data-r="${r}">${r}°</button>`).join('')}</div>
     </div>
     <div class="grid2">
-      <label class="field"><span>Verschieben ↔ <b id="uvXV"></b></span><input type="range" id="uvX" min="-50" max="50" step="0.5" /></label>
-      <label class="field"><span>Verschieben ↕ <b id="uvYV"></b></span><input type="range" id="uvY" min="-50" max="50" step="0.5" /></label>
+      <label class="field"><span>${tr('Verschieben')} ↔ <b id="uvXV"></b></span><input type="range" id="uvX" min="-50" max="50" step="0.5" /></label>
+      <label class="field"><span>${tr('Verschieben')} ↕ <b id="uvYV"></b></span><input type="range" id="uvY" min="-50" max="50" step="0.5" /></label>
     </div>
-    <p class="hint">Änderungen sind sofort sichtbar – die Ansicht bleibt bedienbar. „Wiederholen“ nutzt die reale Bildgröße des Materials; „Strecken“ passt das Bild genau einmal auf die Fläche ein.</p>`;
-  const m = modal('Textur ausrichten', body, `<button class="btn" data-reset>Zurücksetzen</button><span class="spacer"></span><button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>Fertig</button>`);
+    <p class="hint">${tr('Änderungen sind sofort sichtbar – die Ansicht bleibt bedienbar. „Wiederholen“ nutzt die reale Bildgröße des Materials; „Strecken“ passt das Bild genau einmal auf die Fläche ein.')}</p>`;
+  const m = modal(tr('Textur ausrichten'), body, `<button class="btn" data-reset>${tr('Zurücksetzen')}</button><span class="spacer"></span><button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Fertig')}</button>`);
   m.el.querySelector('.modal')!.classList.add('narrow');
   // Dialog blockiert die Ansicht nicht: 3D/2D bleiben bedienbar (Kamera drehen, rendern …)
   m.el.classList.add('see-through');
@@ -3727,8 +3735,8 @@ function startRest() {
   document.body.classList.add('resting');
   const clock = () => {
     const d = new Date();
-    rest.querySelector('.rest-clock')!.textContent = d.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit' });
-    rest.querySelector('.rest-date')!.textContent = d.toLocaleDateString('de-DE', { weekday: 'long', day: 'numeric', month: 'long' });
+    rest.querySelector('.rest-clock')!.textContent = d.toLocaleTimeString(locale(), { hour: '2-digit', minute: '2-digit' });
+    rest.querySelector('.rest-date')!.textContent = d.toLocaleDateString(locale(), { weekday: 'long', day: 'numeric', month: 'long' });
   };
   clock();
   restClock = window.setInterval(clock, 15000);
@@ -3784,7 +3792,7 @@ function showLightning(r: { strikes: { km: number; bearing: number; age_s: numbe
     weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - near / 30)));
   }
   const ago = (sec: number) => (sec < 10 ? 'gerade eben' : sec < 90 ? `vor ${sec} s` : `vor ${Math.round(sec / 60)} Min.`);
-  const km = (x: number) => x.toLocaleString('de-DE');
+  const km = (x: number) => x.toLocaleString(locale());
   const n = r.nearest;
   const title = r.level >= 3 ? 'Gewitter direkt über uns' : r.level === 2 ? 'Gewitter in der Nähe' : r.level === 1 ? 'Gewitter in der Region' : '';
   // „Letzter Blitz“ = der neueste (den man gerade sieht), getrennt vom nächstgelegenen der letzten 15 Min.
