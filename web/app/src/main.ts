@@ -3247,7 +3247,7 @@ function renderViewPanelContent() {
   const sel = store.selection;
   const S = store.house.settings;
   document.body.classList.toggle('sheet-open', !!viewFach || sel?.kind === 'item' || sel?.kind === 'room');
-  const close = `<button class="vp-x" data-x aria-label="Schließen">${ic('x')}</button>`;
+  const close = `<button class="vp-x" data-x aria-label="${tr('Schließen')}">${ic('x')}</button>`;
   const bind = () => {
     el.querySelector('[data-x]')?.addEventListener('click', () => {
       viewFach = null;
@@ -3267,8 +3267,8 @@ function renderViewPanelContent() {
       renderViewPanel();
     });
     if (!sync.online) {
-      el.querySelector('.vp-title')!.textContent = compartments(found.item, S)[viewFach.row]?.label ?? 'Fach';
-      el.querySelector('.vp-body')!.innerHTML = '<p class="hint">Zum Ansehen des Inhalts, Ein- und Ausbuchen bitte anmelden.</p>';
+      el.querySelector('.vp-title')!.textContent = compartments(found.item, S)[viewFach.row]?.label ?? tr('Fach');
+      el.querySelector('.vp-body')!.innerHTML = `<p class="hint">${tr('Zum Ansehen des Inhalts, Ein- und Ausbuchen bitte anmelden.')}</p>`;
       return;
     }
     fachView(el.querySelector('.vp-title')!, el.querySelector('.vp-body')!, viewFach.itemId, viewFach.row);
@@ -3282,14 +3282,14 @@ function renderViewPanelContent() {
       const code = it.storageCol ? `${storageCode(f, it)}-${it.storageCol}` : '';
       el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(room?.name ?? f.name)}</button>${close}</div>
         <h2 class="vp-title">${code ? `<code>${esc(code)}</code>` : ''}${esc(itemName(it))}</h2>
-        <p class="vp-sub">${esc(room?.name ?? f.name)} · ${esc(f.name)}${comps.length ? ` · ${comps.length} Fächer` : ''}</p>
+        <p class="vp-sub">${esc(room?.name ?? f.name)} · ${esc(f.name)}${comps.length ? ` · ${trn(comps.length, '{n} Fach', '{n} Fächer')}` : ''}</p>
         ${comps.length
           ? `<div class="vp-list">${comps.map((c, r) => {
               const pl = sync.fach(it.id, r);
               const items = pl?.items ?? [];
-              return `<button class="vp-row" data-r="${r}"><code>${esc(pl?.address ?? `${code}${r}`)}</code><span class="grow"><b>${esc(c.label)}</b><small>${items.length ? esc(items.slice(0, 3).map((i) => i.name).join(', ')) + (items.length > 3 ? ` und ${items.length - 3} weitere` : '') : 'leer'}</small></span><i class="lv lv${items.length ? (items.length < 3 ? 1 : 2) : 0}"></i></button>`;
+              return `<button class="vp-row" data-r="${r}"><code>${esc(pl?.address ?? `${code}${r}`)}</code><span class="grow"><b>${esc(c.label)}</b><small>${items.length ? (items.length > 3 ? tr('{list} und {n} weitere', { list: esc(items.slice(0, 3).map((i) => i.name).join(', ')), n: items.length - 3 }) : esc(items.map((i) => i.name).join(', '))) : tr('leer')}</small></span><i class="lv lv${items.length ? (items.length < 3 ? 1 : 2) : 0}"></i></button>`;
             }).join('')}</div>`
-          : '<p class="hint">Dieses Möbel hat keine Fächer.</p>'}`;
+          : `<p class="hint">${tr('Dieses Möbel hat keine Fächer.')}</p>`}`;
       bind();
       el.querySelector('[data-up]')!.addEventListener('click', () => store.select(room ? { kind: 'room', id: room.id } : null));
       el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) => b.addEventListener('click', () => showFach(it.id, Number(b.dataset.r))));
@@ -3305,10 +3305,10 @@ function renderViewPanelContent() {
       const list = roomItems(r.id);
       el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(f.name)}</button>${close}</div>
         <h2 class="vp-title"><code>${esc(r.code)}</code>${esc(r.name)}</h2>
-        <p class="vp-sub">${list.length ? `${list.length} Möbel mit Fächern` : 'Keine Möbel mit Fächern'}</p>
+        <p class="vp-sub">${list.length ? trn(list.length, '{n} Möbelstück mit Fächern', '{n} Möbel mit Fächern') : tr('Keine Möbel mit Fächern')}</p>
         <div class="vp-list">${list.map((it) => {
           const fl = itemFill(it);
-          return `<button class="vp-row" data-it="${it.id}"><code>${esc(r.code)}-${esc(it.storageCol ?? '')}</code><span class="grow"><b>${esc(itemName(it))}</b><small>${fl.count} Gegenstände · ${fl.used} von ${fl.all} Fächern belegt</small></span>${bar(fl.used, fl.all)}</button>`;
+          return `<button class="vp-row" data-it="${it.id}"><code>${esc(r.code)}-${esc(it.storageCol ?? '')}</code><span class="grow"><b>${esc(itemName(it))}</b><small>${trn(fl.count, '{n} Gegenstand', '{n} Gegenstände')} · ${tr('{used} von {all} Fächern belegt', { used: fl.used, all: fl.all })}</small></span>${bar(fl.used, fl.all)}</button>`;
         }).join('')}</div>`;
       bind();
       el.querySelector('[data-up]')!.addEventListener('click', () => store.select(null));
@@ -3331,9 +3331,9 @@ function renderViewPanelContent() {
       }
       return { fl, all, used, count };
     });
-    el.innerHTML = `<h2 class="vp-title">${esc(store.house.name || 'Haus')}</h2><p class="vp-sub">Etage antippen, um ihre Räume zu sehen.</p>
-      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(fl.name)}</b><small>${fl.rooms.length} Räume${all ? ` · ${count} Gegenstände` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
-      <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
+    el.innerHTML = `<h2 class="vp-title">${esc(store.house.name || tr('Haus'))}</h2><p class="vp-sub">${tr('Etage antippen, um ihre Räume zu sehen.')}</p>
+      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(fl.name)}</b><small>${trn(fl.rooms.length, '{n} Raum', '{n} Räume')}${all ? ` · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
+      <p class="vp-legend"><span><i class="lv lv0"></i>${tr('leer')}</span><span><i class="lv lv1"></i>${tr('teils')}</span><span><i class="lv lv2"></i>${tr('voll')}</span></p>`;
     el.querySelectorAll<HTMLElement>('[data-floor]').forEach((b) =>
       b.addEventListener('click', () => {
         viewHouse = false;
@@ -3362,9 +3362,9 @@ function renderViewPanelContent() {
     }
     return { r, i, list, all, used, count };
   });
-  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}Haus</button></div><h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">Möbel antippen, um Fächer und Inhalt zu sehen.</p>
-    ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${list.length} Möbel · ${count} Gegenstände` : 'keine Fächer'}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : '<p class="hint">Auf dieser Etage sind noch keine Räume festgelegt.</p>'}
-    <p class="vp-legend"><span><i class="lv lv0"></i>leer</span><span><i class="lv lv1"></i>teils</span><span><i class="lv lv2"></i>voll</span></p>`;
+  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}${tr('Haus')}</button></div><h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">${tr('Möbel antippen, um Fächer und Inhalt zu sehen.')}</p>
+    ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${trn(list.length, '{n} Möbelstück', '{n} Möbel')} · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : tr('keine Fächer')}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : `<p class="hint">${tr('Auf dieser Etage sind noch keine Räume festgelegt.')}</p>`}
+    <p class="vp-legend"><span><i class="lv lv0"></i>${tr('leer')}</span><span><i class="lv lv1"></i>${tr('teils')}</span><span><i class="lv lv2"></i>${tr('voll')}</span></p>`;
   el.querySelectorAll<HTMLElement>('[data-room]').forEach((b) => b.addEventListener('click', () => store.select({ kind: 'room', id: b.dataset.room! })));
   el.querySelector('[data-house]')?.addEventListener('click', showHouse);
 }
@@ -3393,9 +3393,9 @@ onPrefs((p) => {
 // Nachgebuchte Buchungen (nach schlechtem WLAN): Ergebnis melden, Fehler einzeln zeigen
 document.addEventListener('zh-outbox-flushed', (e) => {
   const { sent, failed } = (e as CustomEvent<{ sent: number; failed: number }>).detail;
-  if (sent) toast(`${sent} vorgemerkte Buchung${sent === 1 ? '' : 'en'} nachgebucht.`);
+  if (sent) toast(trn(sent, '{n} vorgemerkte Buchung nachgebucht.', '{n} vorgemerkte Buchungen nachgebucht.'));
   if (failed) {
-    const m = modal('Nicht nachgebucht', `<p>Diese Buchungen hat der Server abgelehnt – bitte von Hand prüfen:</p><ul>${failures().map((f) => `<li><b>${esc(f.label)}</b>: ${esc(f.error)}</li>`).join('')}</ul>`, '<button class="btn primary" data-ok>Verstanden</button>');
+    const m = modal(tr('Nicht nachgebucht'), `<p>${tr('Diese Buchungen hat der Server abgelehnt – bitte von Hand prüfen:')}</p><ul>${failures().map((f) => `<li><b>${esc(f.label)}</b>: ${esc(f.error)}</li>`).join('')}</ul>`, `<button class="btn primary" data-ok>${tr('Verstanden')}</button>`);
     m.el.querySelector('[data-ok]')!.addEventListener('click', () => {
       clearFailures();
       m.close();
@@ -3424,17 +3424,17 @@ updatePlanButton();
 
 function openLocation() {
   const cur = store.house.settings.location;
-  const m = modal('Lage des Hauses', `<form class="l-form loc-form">
-    <p class="hint">Mit der Lage stehen Sonne und Himmel im 3D so, wie es draußen gerade ist; das Wetter kommt vom Ort des Hauses.</p>
-    <label>Adresse, Ort oder Postleitzahl suchen<span class="loc-search"><input id="locQ" placeholder="z. B. Königstraße 1, Stuttgart" autocomplete="off" /><button type="button" class="btn" id="locGo">${ic('search')}Suchen</button></span></label>
+  const m = modal(tr('Lage des Hauses'), `<form class="l-form loc-form">
+    <p class="hint">${tr('Mit der Lage stehen Sonne und Himmel im 3D so, wie es draußen gerade ist; das Wetter kommt vom Ort des Hauses.')}</p>
+    <label>${tr('Adresse, Ort oder Postleitzahl suchen')}<span class="loc-search"><input id="locQ" placeholder="${tr('z. B. Königstraße 1, Stuttgart')}" autocomplete="off" /><button type="button" class="btn" id="locGo">${ic('search')}${tr('Suchen')}</button></span></label>
     <div class="loc-hits" id="locHits"></div>
-    <div class="grid2"><label>Breitengrad<input id="locLat" type="number" step="0.00001" min="-90" max="90" value="${cur?.lat ?? ''}" /></label>
-    <label>Längengrad<input id="locLon" type="number" step="0.00001" min="-180" max="180" value="${cur?.lon ?? ''}" /></label></div>
-    <label>Nordrichtung im Grundriss: <b id="locNV">${cur?.north ?? 0}°</b><span class="loc-north"><input id="locN" type="range" min="0" max="359" step="1" value="${cur?.north ?? 0}" />
+    <div class="grid2"><label>${tr('Breitengrad')}<input id="locLat" type="number" step="0.00001" min="-90" max="90" value="${cur?.lat ?? ''}" /></label>
+    <label>${tr('Längengrad')}<input id="locLon" type="number" step="0.00001" min="-180" max="180" value="${cur?.lon ?? ''}" /></label></div>
+    <label>${tr('Nordrichtung im Grundriss:')} <b id="locNV">${cur?.north ?? 0}°</b><span class="loc-north"><input id="locN" type="range" min="0" max="359" step="1" value="${cur?.north ?? 0}" />
       <svg class="loc-compass" viewBox="-50 -50 100 100"><circle r="46" /><g id="locArrow"><path d="M0 -40 L9 0 L0 -6 L-9 0Z" /><text y="-28" text-anchor="middle">N</text></g></svg></span></label>
-    <p class="hint">Der Pfeil zeigt, wohin im Grundriss Norden liegt (0° = oben). Tipp: Ausrichtung aus einer Karte übernehmen – die Straßenseite des Hauses im Plan mit der Karte vergleichen.</p>
+    <p class="hint">${tr('Der Pfeil zeigt, wohin im Grundriss Norden liegt (0° = oben). Tipp: Ausrichtung aus einer Karte übernehmen – die Straßenseite des Hauses im Plan mit der Karte vergleichen.')}</p>
     <p class="form-error" hidden></p>
-  </form>`, `${cur ? '<button class="btn danger" data-del>Lage entfernen</button><span class="spacer"></span>' : ''}<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Übernehmen</button>`);
+  </form>`, `${cur ? `<button class="btn danger" data-del>${tr('Lage entfernen')}</button><span class="spacer"></span>` : ''}<button class="btn" data-close>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Übernehmen')}</button>`);
   const $m = <T extends HTMLElement>(s: string) => m.el.querySelector<T>(s)!;
   let label = cur?.label ?? '';
   const north = () => {
@@ -3447,17 +3447,17 @@ function openLocation() {
   const search = async () => {
     const q = $m<HTMLInputElement>('#locQ').value.trim();
     const hits = $m('#locHits');
-    hits.innerHTML = '<p class="hint">Suche …</p>';
+    hits.innerHTML = `<p class="hint">${tr('Suche …')}</p>`;
     try {
       const list = await api<{ name: string; label: string; lat: number; lon: number }[]>('GET', `/api/geocode?q=${encodeURIComponent(q)}`);
-      hits.innerHTML = list.length ? list.map((h, i) => `<button type="button" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.label)}</small></button>`).join('') : '<p class="hint">Nichts gefunden.</p>';
+      hits.innerHTML = list.length ? list.map((h, i) => `<button type="button" data-i="${i}"><b>${esc(h.name)}</b><small>${esc(h.label)}</small></button>`).join('') : `<p class="hint">${tr('Nichts gefunden.')}</p>`;
       hits.querySelectorAll<HTMLElement>('[data-i]').forEach((b) =>
         b.addEventListener('click', () => {
           const h = list[Number(b.dataset.i)];
           $m<HTMLInputElement>('#locLat').value = h.lat.toFixed(5);
           $m<HTMLInputElement>('#locLon').value = h.lon.toFixed(5);
           label = h.name;
-          hits.innerHTML = `<p class="hint">Übernommen: ${esc(h.label)}</p>`;
+          hits.innerHTML = `<p class="hint">${tr('Übernommen: {place}', { place: esc(h.label) })}</p>`;
         }),
       );
     } catch (e) {
@@ -3476,7 +3476,7 @@ function openLocation() {
     const lon = Number($m<HTMLInputElement>('#locLon').value);
     const err = $m('.form-error');
     if (!$m<HTMLInputElement>('#locLat').value || !Number.isFinite(lat) || !Number.isFinite(lon) || Math.abs(lat) > 90 || Math.abs(lon) > 180) {
-      err.textContent = 'Bitte einen Ort suchen oder Breiten- und Längengrad eingeben.';
+      err.textContent = tr('Bitte einen Ort suchen oder Breiten- und Längengrad eingeben.');
       err.hidden = false;
       return;
     }
