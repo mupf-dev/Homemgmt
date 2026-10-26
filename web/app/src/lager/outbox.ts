@@ -16,6 +16,8 @@ export interface OutboxFailure {
   at: number;
 }
 
+import { tr } from '../i18n';
+
 const KEY = 'zh.outbox';
 const FAIL_KEY = 'zh.outbox.failed';
 const listeners = new Set<() => void>();
@@ -66,8 +68,9 @@ export function enqueue(method: string, url: string, body: Record<string, unknow
 
 /** Text für Meldungen: „2× Mehl einbuchen“ */
 export function describe(url: string, body: Record<string, unknown>, label?: string) {
-  const what = label || (body.name ? String(body.name) : 'Gegenstand');
-  return `${body.quantity ?? 1}× ${what} ${url.endsWith('checkout') ? 'ausbuchen' : 'einbuchen'}`;
+  const what = label || (body.name ? String(body.name) : tr('Gegenstand'));
+  const n = body.quantity ?? 1;
+  return url.endsWith('checkout') ? tr('{n}× {what} ausbuchen', { n, what }) : tr('{n}× {what} einbuchen', { n, what });
 }
 
 let flushing = false;
@@ -92,7 +95,7 @@ export async function flush(): Promise<{ sent: number; failed: number }> {
       else {
         failed++;
         const d = await r.json().catch(() => ({}));
-        write(FAIL_KEY, [...failures(), { label: e.label, error: d.error ?? `Fehler ${r.status}`, at: Date.now() }].slice(-30));
+        write(FAIL_KEY, [...failures(), { label: e.label, error: d.error ?? tr('Fehler {status}', { status: r.status }), at: Date.now() }].slice(-30));
       }
       notify();
     }
