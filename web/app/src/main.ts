@@ -1335,9 +1335,9 @@ interface LibraryHit {
 }
 
 const LIB_CHIPS: [string, string][] = [
-  ['Holz', 'wood'], ['Boden', 'floor'], ['Parkett', 'parquet'], ['Fliesen', 'tiles'], ['Marmor', 'marble'], ['Stein', 'stone'],
-  ['Granit', 'granite'], ['Beton', 'concrete'], ['Terrazzo', 'terrazzo'], ['Putz', 'plaster'], ['Ziegel', 'brick'], ['Metall', 'metal'],
-  ['Stoff', 'fabric'], ['Leder', 'leather'],
+  [tr('Holz'), 'wood'], [tr('Boden'), 'floor'], [tr('Parkett'), 'parquet'], [tr('Fliesen'), 'tiles'], [tr('Marmor'), 'marble'], [tr('Stein'), 'stone'],
+  [tr('Granit'), 'granite'], [tr('Beton'), 'concrete'], [tr('Terrazzo'), 'terrazzo'], [tr('Putz'), 'plaster'], [tr('Ziegel'), 'brick'], [tr('Metall'), 'metal'],
+  [tr('Stoff'), 'fabric'], [tr('Leder'), 'leather'],
 ];
 const SLOT_QUERY: Partial<Record<MaterialSlot, string>> = { floor: 'floor', countertop: 'marble', backsplash: 'tiles', wall: 'plaster', front: 'wood' };
 let libState = { source: 'polyhaven' as LibraryHit['source'], q: '', res: '2k' };
@@ -1345,13 +1345,13 @@ let libState = { source: 'polyhaven' as LibraryHit['source'], q: '', res: '2k' }
 async function libApi<T>(path: string, body?: unknown): Promise<T> {
   const r = await fetch('/api' + path, body ? { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) } : undefined);
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
+  if (!r.ok) throw new Error(d.error ?? tr('Fehler {status}', { status: r.status }));
   return d as T;
 }
 
 function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialSlot) {
   if (!account.user) {
-    toast('Für die Online-Bibliothek bitte anmelden – importierte Texturen werden auf dem Server gespeichert.');
+    toast(tr('Für die Online-Bibliothek bitte anmelden – importierte Texturen werden auf dem Server gespeichert.'));
     account.openLogin();
     return;
   }
@@ -1359,14 +1359,14 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
   const body = `
     <div class="lib-bar">
       <div class="seg lib-src"><button data-src="polyhaven">Poly Haven</button><button data-src="ambientcg">ambientCG</button></div>
-      <form class="lib-search"><input type="text" id="libQ" placeholder="Suchen (englisch, z. B. oak, marble, tiles)" /><button class="btn primary" type="submit">Suchen</button></form>
-      <select id="libRes" title="Auflösung der Texturen"><option value="1k">1K (schnell)</option><option value="2k">2K (detailreich)</option></select>
+      <form class="lib-search"><input type="text" id="libQ" placeholder="${tr('Suchen (englisch, z. B. oak, marble, tiles)')}" /><button class="btn primary" type="submit">${tr('Suchen')}</button></form>
+      <select id="libRes" title="${tr('Auflösung der Texturen')}"><option value="1k">${tr('1K (schnell)')}</option><option value="2k">${tr('2K (detailreich)')}</option></select>
     </div>
     <div class="chips lib-chips">${LIB_CHIPS.map(([l, q]) => `<button data-q="${q}">${l}</button>`).join('')}</div>
     <div id="libResults" class="lib-grid"></div>
-    <div class="lib-more"><button class="btn" id="libMore" hidden>Weitere laden</button></div>
-    <p class="hint">Alle Materialien sind CC0 (gemeinfrei). Beim Import werden Farbe, Relief (Normal Map) und Rauheit einmalig auf den Server geladen; die reale Größe wird übernommen.</p>`;
-  const m = modal('Online-Bibliothek', body);
+    <div class="lib-more"><button class="btn" id="libMore" hidden>${tr('Weitere laden')}</button></div>
+    <p class="hint">${tr('Alle Materialien sind CC0 (gemeinfrei). Beim Import werden Farbe, Relief (Normal Map) und Rauheit einmalig auf den Server geladen; die reale Größe wird übernommen.')}</p>`;
+  const m = modal(tr('Online-Bibliothek'), body);
   m.el.querySelector('.modal')!.classList.add('wide');
   const el = m.el;
   const qIn = $<HTMLInputElement>('#libQ', el);
@@ -1389,7 +1389,7 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
     const my = ++seq;
     if (!append) {
       offset = 0;
-      results.innerHTML = '<p class="hint">Suche …</p>';
+      results.innerHTML = `<p class="hint">${tr('Suche …')}</p>`;
     }
     more.hidden = true;
     try {
@@ -1397,7 +1397,7 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
       if (my !== seq) return;
       total = r.total;
       if (!append) results.innerHTML = '';
-      if (!r.hits.length && !append) results.innerHTML = '<p class="hint">Keine Treffer. Tipp: englische Begriffe verwenden (wood, oak, marble, tiles, concrete …).</p>';
+      if (!r.hits.length && !append) results.innerHTML = `<p class="hint">${tr('Keine Treffer. Tipp: englische Begriffe verwenden (wood, oak, marble, tiles, concrete …).')}</p>`;
       results.insertAdjacentHTML('beforeend', r.hits.map(card).join(''));
       offset += r.hits.length;
       more.hidden = offset >= total;
@@ -1462,12 +1462,12 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
       }
       m.close();
       renderMaterialsTab();
-      toast(`„${def.name}“ importiert (${def.source}, ${def.tileSize} cm).`);
+      toast(tr('„{name}“ importiert ({source}, {size} cm).', { name: def.name, source: def.source, size: def.tileSize }));
       if (onPicked) onPicked(def.id);
       else {
         const slot = await askChoice(
-          `„${def.name}“ verwenden für …`,
-          '<p class="hint">Das Material ist unter „Eigene Oberflächen“ gespeichert. Wo soll es verwendet werden?</p>',
+          tr('„{name}“ verwenden für …', { name: def.name }),
+          `<p class="hint">${tr('Das Material ist unter „Eigene Oberflächen“ gespeichert. Wo soll es verwendet werden?')}</p>`,
           SLOT_ORDER.map((sl) => ({ id: sl, label: SLOT_LABELS[sl] })),
         );
         if (slot) {
@@ -1476,7 +1476,7 @@ function openLibraryDialog(onPicked?: (id: string) => void, slotHint?: MaterialS
         }
       }
     } catch (err) {
-      toast('Import fehlgeschlagen: ' + (err as Error).message);
+      toast(tr('Import fehlgeschlagen: {msg}', { msg: (err as Error).message }));
     } finally {
       c.classList.remove('busy');
     }
@@ -1503,7 +1503,7 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
   let def: MaterialDef;
   if (isCustom) def = base;
   else {
-    def = { ...JSON.parse(JSON.stringify(base)), id: 'adj-' + uid(), name: `${base.name} (angepasst)`, category: 'eigene' };
+    def = { ...JSON.parse(JSON.stringify(base)), id: 'adj-' + uid(), name: tr('{name} (angepasst)', { name: base.name }), category: 'eigene' };
     p.customMaterials.push(def);
     if (item) item.materials = { ...(item.materials ?? {}), [slot]: def.id };
     else p.slots[slot] = def.id;
@@ -1512,23 +1512,31 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
   }
   const a: ColorAdjust = { ...(def.adjust ?? {}) };
   const textured = isTextured(def);
+  const scopeVars = { base: esc(base.name), name: item ? esc(getEntry(item.type).name) : '', slot: SLOT_LABELS[slot] };
+  const scopeText = item
+    ? isCustom
+      ? tr('{base} · nur {name}.', scopeVars)
+      : tr('{base} · nur {name} – es wird eine angepasste Kopie angelegt, das Original bleibt erhalten.', scopeVars)
+    : isCustom
+      ? tr('{base} · Bereich „{slot}“ im ganzen Projekt.', scopeVars)
+      : tr('{base} · Bereich „{slot}“ im ganzen Projekt – es wird eine angepasste Kopie angelegt, das Original bleibt erhalten.', scopeVars);
   const body = `
-    <p class="hint">${esc(base.name)} · ${item ? `nur ${esc(getEntry(item.type).name)}` : `Bereich „${SLOT_LABELS[slot]}“ im ganzen Projekt`}${isCustom ? '' : ' – es wird eine angepasste Kopie angelegt, das Original bleibt erhalten'}.</p>
+    <p class="hint">${scopeText}</p>
     <div class="adj-layout">
       <canvas class="adj-preview" width="200" height="200"></canvas>
       <div>
-        <label class="field"><span>Farbton <b data-v="hue"></b></span><input type="range" data-a="hue" min="-180" max="180" step="1" class="hue-range" /></label>
-        <label class="field"><span>Sättigung <b data-v="saturation"></b></span><input type="range" data-a="saturation" min="-100" max="100" step="1" /></label>
-        <label class="field"><span>Helligkeit <b data-v="brightness"></b></span><input type="range" data-a="brightness" min="-100" max="100" step="1" /></label>
-        <label class="field"><span>Kontrast <b data-v="contrast"></b></span><input type="range" data-a="contrast" min="-100" max="100" step="1" /></label>
-        <div class="field"><span>Einfärben (Farbe wählen) <b data-v="tintAmount"></b></span>
+        <label class="field"><span>${tr('Farbton')} <b data-v="hue"></b></span><input type="range" data-a="hue" min="-180" max="180" step="1" class="hue-range" /></label>
+        <label class="field"><span>${tr('Sättigung')} <b data-v="saturation"></b></span><input type="range" data-a="saturation" min="-100" max="100" step="1" /></label>
+        <label class="field"><span>${tr('Helligkeit')} <b data-v="brightness"></b></span><input type="range" data-a="brightness" min="-100" max="100" step="1" /></label>
+        <label class="field"><span>${tr('Kontrast')} <b data-v="contrast"></b></span><input type="range" data-a="contrast" min="-100" max="100" step="1" /></label>
+        <div class="field"><span>${tr('Einfärben (Farbe wählen)')} <b data-v="tintAmount"></b></span>
           <div class="rot-row"><input type="color" id="adjTint" style="width:44px;flex:none" /><input type="range" data-a="tintAmount" min="0" max="100" step="1" /></div>
         </div>
-        <label class="field"><span>Oberfläche: matt ↔ glänzend <b id="adjGlossV"></b></span><input type="range" id="adjGloss" min="0" max="1" step="0.01" /></label>
+        <label class="field"><span>${tr('Oberfläche: matt ↔ glänzend')} <b id="adjGlossV"></b></span><input type="range" id="adjGloss" min="0" max="1" step="0.01" /></label>
       </div>
     </div>
-    <p class="hint">Die Vorschau links reagiert sofort, die 3D-Ansicht beim Loslassen des Reglers.</p>`;
-  const m = modal('Material anpassen', body, `<button class="btn" data-reset>Zurücksetzen</button><span class="spacer"></span><button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>Übernehmen</button>`);
+    <p class="hint">${tr('Die Vorschau links reagiert sofort, die 3D-Ansicht beim Loslassen des Reglers.')}</p>`;
+  const m = modal(tr('Material anpassen'), body, `<button class="btn" data-reset>${tr('Zurücksetzen')}</button><span class="spacer"></span><button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Übernehmen')}</button>`);
   m.el.classList.add('see-through');
   const el = m.el;
   const canvas = el.querySelector<HTMLCanvasElement>('.adj-preview')!;
@@ -1586,7 +1594,7 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
     });
     tintIn.value = a.tint ?? '#c8a46e';
     gloss.value = String(1 - def.roughness);
-    $('#adjGlossV', el).textContent = def.roughness >= 0.55 ? 'matt' : def.roughness >= 0.2 ? 'seidenmatt' : 'glänzend';
+    $('#adjGlossV', el).textContent = def.roughness >= 0.55 ? tr('matt') : def.roughness >= 0.2 ? tr('seidenmatt') : tr('glänzend');
     draw();
   };
   const apply3D = () => {
@@ -1650,9 +1658,9 @@ function openAdjustDialog(slot: MaterialSlot, item?: Item) {
 // Eigene Farbe (Farbrad)
 
 const FINISHES = {
-  matt: { label: 'Matt', roughness: 0.7, clearcoat: 0 },
-  normal: { label: 'Normal (seidenmatt)', roughness: 0.4, clearcoat: 0 },
-  gloss: { label: 'Hochglanz', roughness: 0.08, clearcoat: 1 },
+  matt: { label: tr('Matt'), roughness: 0.7, clearcoat: 0 },
+  normal: { label: tr('Normal (seidenmatt)'), roughness: 0.4, clearcoat: 0 },
+  gloss: { label: tr('Hochglanz'), roughness: 0.08, clearcoat: 1 },
 } as const;
 type Finish = keyof typeof FINISHES;
 
@@ -1698,20 +1706,20 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
       <span class="wheel-dot"></span>
     </div>
     <div class="color-side">
-      <label class="field"><span>Helligkeit</span><input type="range" id="cBright" min="0" max="1" step="0.005" /></label>
+      <label class="field"><span>${tr('Helligkeit')}</span><input type="range" id="cBright" min="0" max="1" step="0.005" /></label>
       <div class="grid2">
-        <label class="field"><span>Hex-Code</span><input type="text" id="cHex" maxlength="7" spellcheck="false" /></label>
-        <label class="field"><span>Farbwähler</span><input type="color" id="cNative" /></label>
+        <label class="field"><span>${tr('Hex-Code')}</span><input type="text" id="cHex" maxlength="7" spellcheck="false" /></label>
+        <label class="field"><span>${tr('Farbwähler')}</span><input type="color" id="cNative" /></label>
       </div>
-      <div class="field"><span>Oberfläche</span>
+      <div class="field"><span>${tr('Oberfläche')}</span>
         <div class="seg finish-seg">${(Object.keys(FINISHES) as Finish[]).map((k) => `<button data-finish="${k}">${FINISHES[k].label}</button>`).join('')}</div>
       </div>
-      <label class="field"><span>Name (optional, z. B. RAL 9001 Cremeweiß)</span><input type="text" id="cName" maxlength="80" value="${esc(existing?.name ?? '')}" /></label>
+      <label class="field"><span>${tr('Name (optional, z. B. RAL 9001 Cremeweiß)')}</span><input type="text" id="cName" maxlength="80" value="${esc(existing?.name ?? '')}" /></label>
       <div class="color-preview"><span class="cp-swatch"></span><div><b id="cpTitle"></b><small id="cpSub"></small></div></div>
-      ${existing ? '' : `<label class="field"><span>Direkt verwenden für</span><select id="cSlot"><option value="">– nur speichern –</option>${SLOT_ORDER.map((s) => `<option value="${s}" ${s === 'front' && !onCreated ? 'selected' : ''}>${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
+      ${existing ? '' : `<label class="field"><span>${tr('Direkt verwenden für')}</span><select id="cSlot"><option value="">${tr('– nur speichern –')}</option>${SLOT_ORDER.map((s) => `<option value="${s}" ${s === 'front' && !onCreated ? 'selected' : ''}>${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
     </div>
   </div>`;
-  const m = modal(existing ? 'Eigene Farbe bearbeiten' : 'Eigene Farbe mischen', body, `<button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>${existing ? 'Übernehmen' : 'Speichern'}</button>`);
+  const m = modal(existing ? tr('Eigene Farbe bearbeiten') : tr('Eigene Farbe mischen'), body, `<button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${existing ? tr('Übernehmen') : tr('Speichern')}</button>`);
   const el = m.el;
   const canvas = el.querySelector<HTMLCanvasElement>('.wheel')!;
   const dot = el.querySelector<HTMLElement>('.wheel-dot')!;
@@ -1753,7 +1761,7 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
     const f = FINISHES[finish];
     const gloss = finish === 'gloss' ? 'linear-gradient(160deg, rgba(255,255,255,.55) 0%, rgba(255,255,255,0) 38%), ' : finish === 'normal' ? 'linear-gradient(160deg, rgba(255,255,255,.18) 0%, rgba(255,255,255,0) 45%), ' : '';
     el.querySelector<HTMLElement>('.cp-swatch')!.style.background = `${gloss}${def.color}`;
-    $('#cpTitle', el).textContent = $<HTMLInputElement>('#cName', el).value.trim() || `Eigene Farbe ${def.color.toUpperCase()}`;
+    $('#cpTitle', el).textContent = $<HTMLInputElement>('#cName', el).value.trim() || tr('Eigene Farbe {hex}', { hex: def.color.toUpperCase() });
     $('#cpSub', el).textContent = `${f.label} · ${def.color.toUpperCase()}`;
     el.querySelectorAll<HTMLElement>('[data-finish]').forEach((b) => b.classList.toggle('on', b.dataset.finish === finish));
   };
@@ -1810,7 +1818,7 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
     def.roughness = f.roughness;
     def.clearcoat = f.clearcoat;
     def.metalness = 0;
-    def.name = $<HTMLInputElement>('#cName', el).value.trim() || `Eigene Farbe ${def.color.toUpperCase()} ${f.label.split(' ')[0].toLowerCase()}`;
+    def.name = $<HTMLInputElement>('#cName', el).value.trim() || tr('Eigene Farbe {hex} {finish}', { hex: def.color.toUpperCase(), finish: f.label.split(' ')[0].toLowerCase() });
     delete def.image;
     delete def.procedural;
     const p = store.project;
@@ -1823,48 +1831,48 @@ function openColorDialog(existing?: MaterialDef, onCreated?: (id: string) => voi
     m.close();
     renderMaterialsTab();
     onCreated?.(def.id);
-    toast(`„${def.name}“ gespeichert.`);
+    toast(tr('„{name}“ gespeichert.', { name: def.name }));
   });
 }
 
 function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => void) {
   const def: MaterialDef = existing
     ? { ...existing }
-    : { id: 'custom-' + uid(), name: 'Meine Oberfläche', category: 'eigene', color: '#ffffff', roughness: 0.5, metalness: 0, clearcoat: 0, tileSize: 60, bump: 1 };
+    : { id: 'custom-' + uid(), name: tr('Meine Oberfläche'), category: 'eigene', color: '#ffffff', roughness: 0.5, metalness: 0, clearcoat: 0, tileSize: 60, bump: 1 };
   const fileRow = (key: string, label: string) =>
-    `<div class="field"><span>${label}</span><div class="file-row"><button class="btn" data-pick="${key}">Datei wählen</button><span class="name" data-name="${key}">–</span><button class="btn icon" data-clear="${key}" title="Entfernen">✕</button></div></div>`;
+    `<div class="field"><span>${label}</span><div class="file-row"><button class="btn" data-pick="${key}">${tr('Datei wählen')}</button><span class="name" data-name="${key}">–</span><button class="btn icon" data-clear="${key}" title="${tr('Entfernen')}">✕</button></div></div>`;
   const body = `
   <div class="upload-layout">
     <div>
-      <div class="upload-preview" id="upPreview">Foto / Textur hierher ziehen<br>oder „Datei wählen“</div>
-      <p class="hint">Tipp: Frontal fotografierte, gleichmäßig ausgeleuchtete Muster wirken am besten. Gib unten die reale Kantenlänge des Bildausschnitts an, damit Maserung und Fugen maßstabsgetreu erscheinen.</p>
+      <div class="upload-preview" id="upPreview">${tr('Foto / Textur hierher ziehen<br>oder „Datei wählen“')}</div>
+      <p class="hint">${tr('Tipp: Frontal fotografierte, gleichmäßig ausgeleuchtete Muster wirken am besten. Gib unten die reale Kantenlänge des Bildausschnitts an, damit Maserung und Fugen maßstabsgetreu erscheinen.')}</p>
     </div>
     <div>
-      <label class="field"><span>Name</span><input type="text" id="upName" value="${esc(def.name)}" /></label>
-      ${fileRow('image', 'Farbtextur (Albedo) *')}
-      ${fileRow('normalImage', 'Normal Map (optional, Relief)')}
-      ${fileRow('roughnessImage', 'Roughness Map (optional)')}
-      <div class="field"><span>Darstellung auf den Flächen</span>
+      <label class="field"><span>${tr('Name')}</span><input type="text" id="upName" value="${esc(def.name)}" /></label>
+      ${fileRow('image', tr('Farbtextur (Albedo) *'))}
+      ${fileRow('normalImage', tr('Normal Map (optional, Relief)'))}
+      ${fileRow('roughnessImage', tr('Roughness Map (optional)'))}
+      <div class="field"><span>${tr('Darstellung auf den Flächen')}</span>
         <div class="seg mode-seg">
-          <button type="button" data-mapping="stretch">Einmal auf ganze Fläche strecken</button>
-          <button type="button" data-mapping="tile">Wiederholen (Kacheln)</button>
+          <button type="button" data-mapping="stretch">${tr('Einmal auf ganze Fläche strecken')}</button>
+          <button type="button" data-mapping="tile">${tr('Wiederholen (Kacheln)')}</button>
         </div>
         <small class="hint" id="upMapHint"></small>
       </div>
       <div class="grid2" id="upSizeRow">
-        <label class="field"><span>Bildbreite real</span><span class="unit" data-unit="cm"><input type="number" id="upTile" min="1" max="2000" step="0.5" value="${def.tileSize}" /></span></label>
-        <label class="field"><span>Bildhöhe real <small id="upAspect"></small></span><span class="unit" data-unit="cm"><input type="number" id="upTileH" min="1" max="2000" step="0.5" /></span></label>
+        <label class="field"><span>${tr('Bildbreite real')}</span><span class="unit" data-unit="cm"><input type="number" id="upTile" min="1" max="2000" step="0.5" value="${def.tileSize}" /></span></label>
+        <label class="field"><span>${tr('Bildhöhe real')} <small id="upAspect"></small></span><span class="unit" data-unit="cm"><input type="number" id="upTileH" min="1" max="2000" step="0.5" /></span></label>
       </div>
-      <label class="field"><span>Drehung (Grad, Standard für alle Flächen)</span><span class="unit" data-unit="°"><input type="number" id="upRotate" min="-360" max="360" step="1" value="${def.rotation ?? (def.rotate ? 90 : 0)}" /></span></label>
-      <label class="field"><span>Rauheit (matt ↔ glänzend): <b id="upRoughV">${def.roughness}</b></span><input type="range" id="upRough" min="0" max="1" step="0.01" value="${def.roughness}" /></label>
-      <label class="field"><span>Metallisch: <b id="upMetalV">${def.metalness}</b></span><input type="range" id="upMetal" min="0" max="1" step="0.01" value="${def.metalness}" /></label>
-      <label class="field"><span>Klarlack (Hochglanz-Schicht): <b id="upCoatV">${def.clearcoat ?? 0}</b></span><input type="range" id="upCoat" min="0" max="1" step="0.01" value="${def.clearcoat ?? 0}" /></label>
-      <label class="field"><span>Reliefstärke: <b id="upBumpV">${def.bump ?? 1}</b></span><input type="range" id="upBump" min="0" max="3" step="0.05" value="${def.bump ?? 1}" /></label>
-      ${existing ? '' : `<label class="field"><span>Direkt verwenden für</span><select id="upSlot"><option value="">– nur speichern –</option>${SLOT_ORDER.map((s) => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
+      <label class="field"><span>${tr('Drehung (Grad, Standard für alle Flächen)')}</span><span class="unit" data-unit="°"><input type="number" id="upRotate" min="-360" max="360" step="1" value="${def.rotation ?? (def.rotate ? 90 : 0)}" /></span></label>
+      <label class="field"><span>${tr('Rauheit (matt ↔ glänzend):')} <b id="upRoughV">${def.roughness}</b></span><input type="range" id="upRough" min="0" max="1" step="0.01" value="${def.roughness}" /></label>
+      <label class="field"><span>${tr('Metallisch:')} <b id="upMetalV">${def.metalness}</b></span><input type="range" id="upMetal" min="0" max="1" step="0.01" value="${def.metalness}" /></label>
+      <label class="field"><span>${tr('Klarlack (Hochglanz-Schicht):')} <b id="upCoatV">${def.clearcoat ?? 0}</b></span><input type="range" id="upCoat" min="0" max="1" step="0.01" value="${def.clearcoat ?? 0}" /></label>
+      <label class="field"><span>${tr('Reliefstärke:')} <b id="upBumpV">${def.bump ?? 1}</b></span><input type="range" id="upBump" min="0" max="3" step="0.05" value="${def.bump ?? 1}" /></label>
+      ${existing ? '' : `<label class="field"><span>${tr('Direkt verwenden für')}</span><select id="upSlot"><option value="">${tr('– nur speichern –')}</option>${SLOT_ORDER.map((s) => `<option value="${s}">${SLOT_LABELS[s]}</option>`).join('')}</select></label>`}
     </div>
   </div>
   <input type="file" accept="image/*" id="upFile" hidden />`;
-  const m = modal(existing ? 'Eigene Oberfläche bearbeiten' : 'Eigene Oberfläche hochladen', body, `<button class="btn" data-cancel>Abbrechen</button><button class="btn primary" data-ok>${existing ? 'Übernehmen' : 'Speichern'}</button>`);
+  const m = modal(existing ? tr('Eigene Oberfläche bearbeiten') : tr('Eigene Oberfläche hochladen'), body, `<button class="btn" data-cancel>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${existing ? tr('Übernehmen') : tr('Speichern')}</button>`);
   const el = m.el;
   const fileInput = $<HTMLInputElement>('#upFile', el);
   let pickKey: 'image' | 'normalImage' | 'roughnessImage' = 'image';
@@ -1882,8 +1890,8 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
     $('#upSizeRow', el).style.opacity = mapping === 'tile' ? '1' : '0.5';
     $('#upMapHint', el).textContent =
       mapping === 'stretch'
-        ? 'Das Bild wird ohne Wiederholung auf die ganze Fläche gezogen – bei der Arbeitsplatte über die gesamte zusammenhängende Platte. Ideal für ein Foto der kompletten Platte.'
-        : 'Das Bild wird in der angegebenen realen Größe wiederholt – ideal für Muster, Fliesen und Dekore.';
+        ? tr('Das Bild wird ohne Wiederholung auf die ganze Fläche gezogen – bei der Arbeitsplatte über die gesamte zusammenhängende Platte. Ideal für ein Foto der kompletten Platte.')
+        : tr('Das Bild wird in der angegebenen realen Größe wiederholt – ideal für Muster, Fliesen und Dekore.');
   };
   el.querySelectorAll<HTMLElement>('[data-mapping]').forEach((b) =>
     b.addEventListener('click', () => {
@@ -1902,13 +1910,13 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
       pv.textContent = '';
     }
     const a = aspect();
-    $('#upAspect', el).textContent = def.image ? `(Verhältnis ${a >= 1 ? `${Math.round(a * 100) / 100} : 1` : `1 : ${Math.round((1 / a) * 100) / 100}`})` : '';
+    $('#upAspect', el).textContent = def.image ? tr('(Verhältnis {ratio})', { ratio: a >= 1 ? `${Math.round(a * 100) / 100} : 1` : `1 : ${Math.round((1 / a) * 100) / 100}` }) : '';
     syncH();
-    for (const k of ['image', 'normalImage', 'roughnessImage'] as const) $(`[data-name="${k}"]`, el).textContent = def[k] ? 'geladen ✓' : '–';
+    for (const k of ['image', 'normalImage', 'roughnessImage'] as const) $(`[data-name="${k}"]`, el).textContent = def[k] ? tr('geladen ✓') : '–';
   };
   refresh();
   const load = async (f: File, key: typeof pickKey) => {
-    if (!f.type.startsWith('image/')) return toast('Bitte eine Bilddatei wählen.');
+    if (!f.type.startsWith('image/')) return toast(tr('Bitte eine Bilddatei wählen.'));
     def[key] = await readImageFile(f, 4096, key !== 'image');
     if (key === 'image') {
       // Seitenverhältnis des Bildes ermitteln
@@ -1922,7 +1930,7 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
         img.src = def.image!;
       });
     }
-    if (key === 'image' && def.name === 'Meine Oberfläche') {
+    if (key === 'image' && def.name === tr('Meine Oberfläche')) {
       def.name = f.name.replace(/\.[^.]+$/, '');
       $<HTMLInputElement>('#upName', el).value = def.name;
     }
@@ -1962,8 +1970,8 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
   }
   el.querySelector('[data-cancel]')!.addEventListener('click', m.close);
   el.querySelector('[data-ok]')!.addEventListener('click', () => {
-    if (!def.image) return toast('Bitte zuerst eine Farbtextur hochladen.');
-    def.name = $<HTMLInputElement>('#upName', el).value || 'Eigene Oberfläche';
+    if (!def.image) return toast(tr('Bitte zuerst eine Farbtextur hochladen.'));
+    def.name = $<HTMLInputElement>('#upName', el).value || tr('Eigene Oberfläche');
     def.tileSize = Math.max(1, +$<HTMLInputElement>('#upTile', el).value || 60);
     def.mapping = mapping;
     if (!def.aspect) def.aspect = aspect();
@@ -1983,7 +1991,7 @@ function openUploadDialog(existing?: MaterialDef, onCreated?: (id: string) => vo
     m.close();
     renderMaterialsTab();
     onCreated?.(def.id);
-    toast(`„${def.name}“ gespeichert.`);
+    toast(tr('„{name}“ gespeichert.', { name: def.name }));
   });
 }
 
