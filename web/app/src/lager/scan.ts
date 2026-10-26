@@ -128,7 +128,7 @@ function beep(ok = true) {
 
 export const viewScan: View = async (el, ctx, params) => {
   const flow: { place: any | null; box: ApiItem | null; pending: ApiItem | null; pendingAt: number; log: { item: ApiItem; type: 'in' | 'out'; qty: number; queued?: boolean }[] } = { place: null, box: params.get('box') ? await api<ApiItem>('GET', `/api/items/${params.get('box')}`).catch(() => null) : null, pending: null, pendingAt: 0, log: [] };
-  el.innerHTML = `<a class="l-back" href="#/lager">← ${tr('Lager')}</a><h1>${tr('Scannen')}</h1>
+  el.innerHTML = `<a class="l-back" href="#/lager">← ${tr('Übersicht')}</a><h1>${tr('Scannen')}</h1>
     <div class="l-scan">
       <div><div class="l-video"><video id="video" muted playsinline></video><div class="frame"></div></div>
         <div class="hint" id="cam">${tr('Kamera wird gestartet …')}</div>
