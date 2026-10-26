@@ -7,6 +7,7 @@ import { compartments, colName } from './storage.ts';
 import { pointInPolygon, polygonCentroid, roomPolygon, wallFaces } from './rooms.ts';
 import { libraryObject, setHouseObjects } from './catalog.ts';
 import { OBJ_PREFIX, validateObjectType, type ObjectType } from './objects.ts';
+import { tr } from './text.ts';
 
 export const uid = () => Math.random().toString(36).slice(2, 10);
 
@@ -25,7 +26,9 @@ export const DEFAULT_SLOTS: Record<HouseSlot, string> = {
 
 export const DEFAULT_SETTINGS: Project['settings'] = { ceiling: false, backsplash: true, plinth: 10, countertopThickness: 4, timeOfDay: 14 };
 
-export const FLOOR_KINDS: Record<FloorKind, string> = { basement: 'Keller', floor: 'Etage', attic: 'Dachgeschoss', outdoor: 'Außenbereich' };
+// Anzeigenamen der Etagen-Arten (nur Anzeige). Vorgaben, die als Daten gespeichert werden („Erdgeschoss“, „Raum“,
+// „… (ohne Raum)“ als Lagername), bleiben deutsch – sie entstehen auch auf dem Server.
+export const FLOOR_KINDS: Record<FloorKind, string> = { basement: tr('Keller'), floor: tr('Etage'), attic: tr('Dachgeschoss'), outdoor: tr('Außenbereich') };
 
 export function makeFloor(over: Partial<Floor> = {}): Floor {
   return { id: uid(), name: 'Erdgeschoss', kind: 'floor', elevation: 0, height: 260, walls: [], openings: [], items: [], rooms: [], ...over };
