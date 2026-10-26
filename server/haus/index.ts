@@ -10,6 +10,8 @@ import { migrateHouse, normalizeHouse, storageUnits } from '../../web/app/src/mo
 import { itemName } from '../../web/app/src/model/storage.ts';
 import type { House } from '../../web/app/src/model/types.ts';
 import type { Core } from '../kueche/index.ts';
+import { createRequire } from 'node:module';
+const { tr } = createRequire(import.meta.url)('../i18n.cjs'); // Sprache der Servermeldungen je Anfrage
 
 type Row = Record<string, any>;
 
@@ -109,7 +111,7 @@ export function syncStorage(db: DatabaseSync, house: House, HttpError: Core['Htt
     // Ziel ist ein von Hand angelegter Platz (oder ein abgehängter Plan-Platz): leer → übernehmen, mit Inhalt → Konflikt
     if (itemsAt(w.wid, w.col, w.row)) {
       const code = (db.prepare('SELECT code FROM warehouses WHERE id = ?').get(w.wid) as Row).code;
-      throw new HttpError(409, `Platz ${code}-${w.col}${w.row} ist schon belegt (nicht aus dem Hausplan). Bitte die Gegenstände dort zuerst umlagern.`);
+      throw new HttpError(409, tr('Platz {code} ist schon belegt (nicht aus dem Hausplan). Bitte die Gegenstände dort zuerst umlagern.', { code: `${code}-${w.col}${w.row}` }));
     }
     db.prepare('DELETE FROM places WHERE warehouse_id = ? AND col = ? AND row = ?').run(w.wid, w.col, w.row);
   };
@@ -154,15 +156,17 @@ export function saveHouse(db: DatabaseSync, raw: unknown, personId: number | nul
   try {
     house = migrateHouse(raw);
   } catch {
-    throw new HttpError(400, 'Ungültiger Hausplan.');
+    throw new HttpError(400, tr('Ungültiger Hausplan.'));
   }
-  if (!house.floors.length || house.floors.length > 30) throw new HttpError(400, 'Ein Haus braucht 1 bis 30 Etagen.');
+  if (!house.floors.length || house.floors.length > 30) throw new HttpError(400, tr('Ein Haus braucht 1 bis 30 Etagen.'));
   db.exec('BEGIN IMMEDIATE');
   try {
     const row = db.prepare('SELECT h.*, p.name AS updated_by_name FROM house h LEFT JOIN persons p ON p.id = h.updated_by WHERE h.id = 1').get() as Row | undefined;
     const version = row?.version ?? 0;
     if (baseVersion !== undefined && baseVersion !== version) {
-      throw new HttpError(409, `Der Hausplan wurde inzwischen von ${row?.updated_by_name ?? 'jemand anderem'} geändert. Bitte neu laden.`);
+      throw new HttpError(409, row?.updated_by_name
+        ? tr('Der Hausplan wurde inzwischen von {name} geändert. Bitte neu laden.', { name: row.updated_by_name })
+        : tr('Der Hausplan wurde inzwischen von jemand anderem geändert. Bitte neu laden.'));
     }
     // Kürzel anderer Lager sind reserviert (Hauptlager H, Garage G …)
     const reserved = new Set((db.prepare('SELECT code FROM warehouses WHERE plan_key IS NULL').all() as Row[]).map((w) => w.code));
@@ -206,13 +210,13 @@ export function createHouse(core: Core) {
   });
   router.use(OWN, express.json({ limit: '80mb' }));
   const requireUser = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.auth) return res.status(401).json({ error: 'Bitte anmelden.' });
+    if (!req.auth) return res.status(401).json({ error: tr('Bitte anmelden.') });
     next();
   };
   // Planen: Admins immer, sonst nur mit dem Recht „Haus planen“ (persons.can_plan)
   const canPlan = (req: Request) => req.auth?.via === 'session' && (req.auth.person.role === 'admin' || !!req.auth.person.can_plan);
   const requirePlanner = (req: Request, res: Response, next: NextFunction) => {
-    if (!canPlan(req)) return res.status(403).json({ error: 'Den Hausplan dürfen nur Personen mit dem Recht „Haus planen“ ändern.' });
+    if (!canPlan(req)) return res.status(403).json({ error: tr('Den Hausplan dürfen nur Personen mit dem Recht „Haus planen“ ändern.') });
     next();
   };
 
@@ -235,7 +239,7 @@ export function createHouse(core: Core) {
   // Speichern {house, base_version}: base_version = zuletzt geladener Stand (sonst 409, damit nichts überschrieben wird)
   router.put('/api/house', requireUser, requirePlanner, (req, res) => {
     const body = req.body ?? {};
-    if (!body.house || typeof body.house !== 'object') return res.status(400).json({ error: 'Kein Hausplan übergeben.' });
+    if (!body.house || typeof body.house !== 'object') return res.status(400).json({ error: tr('Kein Hausplan übergeben.') });
     try {
       const base = body.base_version !== undefined ? Number(body.base_version) : undefined;
       res.json(saveHouse(db(), body.house, req.auth!.person.id, core.HttpError, base));

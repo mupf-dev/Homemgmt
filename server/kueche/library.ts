@@ -7,6 +7,8 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { importFurniMesh, searchFurniMesh } from './furnimesh.ts';
+import { createRequire } from 'node:module';
+const { tr } = createRequire(import.meta.url)('../i18n.cjs'); // Sprache der Servermeldungen je Anfrage
 
 export type Source = 'polyhaven' | 'ambientcg';
 export type Resolution = '1k' | '2k';
@@ -40,17 +42,17 @@ const UA = { 'user-agent': 'Kuechenplaner/1.0 (+https://kuechenplaner.example.or
 
 async function getJson(url: string) {
   const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`Bibliothek antwortet mit ${r.status}`);
+  if (!r.ok) throw new Error(tr('Bibliothek antwortet mit {status}', { status: r.status }));
   return r.json();
 }
 
 async function getBuffer(url: string, maxBytes = 120 * 1024 * 1024) {
   const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(120000) });
-  if (!r.ok) throw new Error(`Download fehlgeschlagen (${r.status})`);
+  if (!r.ok) throw new Error(tr('Download fehlgeschlagen ({status})', { status: r.status }));
   const len = Number(r.headers.get('content-length') ?? 0);
-  if (len > maxBytes) throw new Error('Datei zu groß');
+  if (len > maxBytes) throw new Error(tr('Datei zu groß'));
   const buf = Buffer.from(await r.arrayBuffer());
-  if (buf.length > maxBytes) throw new Error('Datei zu groß');
+  if (buf.length > maxBytes) throw new Error(tr('Datei zu groß'));
   return buf;
 }
 
@@ -98,7 +100,7 @@ async function importPolyHaven(id: string, res: Resolution, dir: string) {
   const [files, info] = await Promise.all([getJson(`https://api.polyhaven.com/files/${id}`), getJson(`https://api.polyhaven.com/info/${id}`)]);
   const pick = (key: string) => files?.[key]?.[res]?.jpg?.url ?? files?.[key]?.[res]?.png?.url;
   const diff = pick('Diffuse') ?? pick('diffuse') ?? pick('Color');
-  if (!diff) throw new Error('Keine Farbtextur in dieser Auflösung verfügbar');
+  if (!diff) throw new Error(tr('Keine Farbtextur in dieser Auflösung verfügbar'));
   const nor = pick('nor_gl');
   const rough = pick('Rough') ?? pick('rough');
   writeFileSync(join(dir, 'diff.jpg'), await getBuffer(diff));
@@ -145,11 +147,11 @@ function unzip(buf: Buffer, wanted: (name: string) => boolean) {
       break;
     }
   }
-  if (eocd < 0) throw new Error('Ungültiges ZIP-Archiv');
+  if (eocd < 0) throw new Error(tr('Ungültiges ZIP-Archiv'));
   const count = buf.readUInt16LE(eocd + 10);
   let p = buf.readUInt32LE(eocd + 16);
   for (let n = 0; n < count; n++) {
-    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error('Ungültiges ZIP-Verzeichnis');
+    if (buf.readUInt32LE(p) !== 0x02014b50) throw new Error(tr('Ungültiges ZIP-Verzeichnis'));
     const method = buf.readUInt16LE(p + 10);
     const compSize = buf.readUInt32LE(p + 20);
     const nameLen = buf.readUInt16LE(p + 28);
@@ -172,12 +174,12 @@ function unzip(buf: Buffer, wanted: (name: string) => boolean) {
 async function importAmbientCG(id: string, res: Resolution, dir: string) {
   const meta = await getJson(`https://ambientcg.com/api/v2/full_json?id=${encodeURIComponent(id)}&include=imageData,dimensionsData,tagData`);
   const a = meta.foundAssets?.[0];
-  if (!a) throw new Error('Material nicht gefunden');
+  if (!a) throw new Error(tr('Material nicht gefunden'));
   const zip = await getBuffer(`https://ambientcg.com/get?file=${encodeURIComponent(id)}_${res.toUpperCase()}-JPG.zip`);
   const files = unzip(zip, (n) => /_(Color|NormalGL|Roughness|Metalness)\.(jpg|png)$/i.test(n));
   const find = (suffix: string) => [...files.entries()].find(([n]) => new RegExp(`_${suffix}\\.(jpg|png)$`, 'i').test(n))?.[1];
   const color = find('Color');
-  if (!color) throw new Error('Keine Farbtextur im Archiv');
+  if (!color) throw new Error(tr('Keine Farbtextur im Archiv'));
   writeFileSync(join(dir, 'diff.jpg'), color);
   const nor = find('NormalGL');
   const rough = find('Roughness');
@@ -301,9 +303,9 @@ export function createLibrary(dataDir: string) {
   }
 
   async function importTexture(source: Source, id: string, res: Resolution): Promise<ImportedTexture> {
-    if (source !== 'polyhaven' && source !== 'ambientcg') throw new Error('Unbekannte Bibliothek');
-    if (!ID_RE.test(id)) throw new Error('Ungültige Material-ID');
-    if (res !== '1k' && res !== '2k') throw new Error('Ungültige Auflösung');
+    if (source !== 'polyhaven' && source !== 'ambientcg') throw new Error(tr('Unbekannte Bibliothek'));
+    if (!ID_RE.test(id)) throw new Error(tr('Ungültige Material-ID'));
+    if (res !== '1k' && res !== '2k') throw new Error(tr('Ungültige Auflösung'));
     const dir = join(root, source, id, res);
     const metaFile = join(dir, 'meta.json');
     if (existsSync(metaFile)) return toResult(source, id, res, JSON.parse(readFileSync(metaFile, 'utf8')));
@@ -325,13 +327,13 @@ export function createLibrary(dataDir: string) {
   const modelDir = join(root, 'models');
   const modelJobs = new Map<string, Promise<ImportedModel>>();
   const safeRel = (rel: string) => {
-    if (!/^[A-Za-z0-9_./-]+$/.test(rel) || rel.split('/').some((p) => p === '..' || p === '')) throw new Error(`Ungültiger Dateipfad im Modell: ${rel}`);
+    if (!/^[A-Za-z0-9_./-]+$/.test(rel) || rel.split('/').some((p) => p === '..' || p === '')) throw new Error(tr('Ungültiger Dateipfad im Modell: {path}', { path: rel }));
     return rel;
   };
 
   async function importModel(id: string, res: Resolution = '1k'): Promise<ImportedModel> {
-    if (!ID_RE.test(id)) throw new Error('Ungültige Modell-ID');
-    if (res !== '1k' && res !== '2k') throw new Error('Ungültige Auflösung');
+    if (!ID_RE.test(id)) throw new Error(tr('Ungültige Modell-ID'));
+    if (res !== '1k' && res !== '2k') throw new Error(tr('Ungültige Auflösung'));
     const dir = join(modelDir, 'polyhaven', id, res);
     const metaFile = join(dir, 'meta.json');
     if (existsSync(metaFile)) return JSON.parse(readFileSync(metaFile, 'utf8'));
@@ -341,7 +343,7 @@ export function createLibrary(dataDir: string) {
       job = (async () => {
         const [files, info] = await Promise.all([getJson(`https://api.polyhaven.com/files/${id}`), getJson(`https://api.polyhaven.com/info/${id}`)]);
         const g = files?.gltf?.[res]?.gltf;
-        if (!g?.url) throw new Error('Kein glTF in dieser Auflösung verfügbar');
+        if (!g?.url) throw new Error(tr('Kein glTF in dieser Auflösung verfügbar'));
         mkdirSync(dir, { recursive: true });
         const main = safeRel(g.url.split('/').pop());
         writeFileSync(join(dir, main), await getBuffer(g.url));
@@ -377,8 +379,8 @@ export function createLibrary(dataDir: string) {
 
   /** Eigenes Modell (.glb, binäres glTF) – Name der Datei bleibt der Anzeigename */
   function uploadModel(buf: Buffer, name: string): ImportedModel {
-    if (buf.length < 20 || buf.toString('latin1', 0, 4) !== 'glTF') throw new Error('Bitte ein Modell im Format .glb (binäres glTF) hochladen.');
-    if (buf.length > 50 * 1024 * 1024) throw new Error('Das Modell ist größer als 50 MB.');
+    if (buf.length < 20 || buf.toString('latin1', 0, 4) !== 'glTF') throw new Error(tr('Bitte ein Modell im Format .glb (binäres glTF) hochladen.'));
+    if (buf.length > 50 * 1024 * 1024) throw new Error(tr('Das Modell ist größer als 50 MB.'));
     const hash = createHash('sha256').update(buf).digest('hex').slice(0, 24);
     const dir = join(modelDir, 'eigene');
     mkdirSync(dir, { recursive: true });

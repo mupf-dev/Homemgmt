@@ -19,6 +19,7 @@ const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const lager = require('./lager/server.cjs');
 const i18n = require('./i18n.cjs'); // Sprache der Servermeldungen je Anfrage (Cookie zh_lang / Accept-Language)
+const { tr } = i18n;
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HTTPS_PORT = Number(process.env.HTTPS_PORT ?? 3443);
@@ -93,7 +94,7 @@ if (DEV) {
     },
   }));
 } else {
-  app.get(['/', '/index.html'], (_req, res) => res.status(503).type('text').send('Die App ist nicht gebaut: npm run build (oder npm run dev). '));
+  app.get(['/', '/index.html'], (_req, res) => res.status(503).type('text').send(tr('Die App ist nicht gebaut: npm run build (oder npm run dev). ')));
 }
 
 // Alles Übrige: Lager-Modul (REST-API, QR-Links, /healthz)

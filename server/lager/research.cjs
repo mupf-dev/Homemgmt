@@ -6,6 +6,7 @@
 // Läuft als Auftrag im Hintergrund, Ergebnisse werden in price_checks gespeichert und 24 Stunden wiederverwendet.
 
 const { fetchPage } = require('./webpage.cjs');
+const { tr } = require('../i18n.cjs');
 
 const FRESH_HOURS = 24;
 const CONCURRENCY = 3;
@@ -51,10 +52,10 @@ function createResearch(core, provider, opts = {}) {
   }
   function availability() {
     const c = provider.config();
-    if (!c.key || !c.model) return { available: false, reason: 'Der Assistent ist noch nicht eingerichtet (Administration → Assistent).' };
-    if (provider.getSetting('ai_research') === '0') return { available: false, disabled: true, reason: 'Die Preisrecherche ist in Administration → Assistent ausgeschaltet.' };
+    if (!c.key || !c.model) return { available: false, reason: tr('Der Assistent ist noch nicht eingerichtet (Administration → Assistent).') };
+    if (provider.getSetting('ai_research') === '0') return { available: false, disabled: true, reason: tr('Die Preisrecherche ist in Administration → Assistent ausgeschaltet.') };
     if (!searchMode(c)) {
-      return { available: false, reason: 'Die Preisrecherche braucht eine Websuche – OpenRouter als Schnittstelle oder das Such-Tool eines Gateways (z. B. LiteLLM) eintragen.' };
+      return { available: false, reason: tr('Die Preisrecherche braucht eine Websuche – OpenRouter als Schnittstelle oder das Such-Tool eines Gateways (z. B. LiteLLM) eintragen.') };
     }
     return { available: true, reason: '' };
   }
@@ -293,12 +294,12 @@ function createResearch(core, provider, opts = {}) {
           .map((a) => ({ url: a.url_citation.url, title: text(a.url_citation.title, 200) }));
       }
       const raw = parseJson(message.content);
-      if (!raw) throw new HttpError(502, 'Das Modell hat kein auswertbares Ergebnis geliefert.');
+      if (!raw) throw new HttpError(502, tr('Das Modell hat kein auswertbares Ergebnis geliefert.'));
       const result = { ...validate(raw, cited, pages), ort: location() || null, modell: c.model, ...(steps ? { recherche: steps } : {}) };
       db().prepare("UPDATE price_checks SET status = 'done', result = ?, error = NULL, finished_at = datetime('now') WHERE id = ?").run(JSON.stringify(result), id);
     } catch (e) {
       db().prepare("UPDATE price_checks SET status = 'error', error = ?, finished_at = datetime('now') WHERE id = ?")
-        .run(e instanceof HttpError ? e.message : 'Interner Fehler.', id);
+        .run(e instanceof HttpError ? e.message : tr('Interner Fehler.'), id);
       if (!(e instanceof HttpError)) throw e;
     }
   }
