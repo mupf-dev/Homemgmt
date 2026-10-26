@@ -6,6 +6,8 @@
 
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
+import { createRequire } from 'node:module';
+const { tr } = createRequire(import.meta.url)('../i18n.cjs'); // Sprache der Servermeldungen je Anfrage
 
 const BASE = 'https://furnimesh.com';
 const UA = { 'user-agent': 'Mozilla/5.0 (compatible; homemgmt-ng-Hausplaner/0.5; Bibliothek)' };
@@ -74,7 +76,7 @@ async function page(url: string) {
   const c = pageCache.get(url);
   if (c && Date.now() - c.at < 6 * 3600_000) return c.hits;
   const r = await fetch(url, { headers: UA, signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`FurniMesh antwortet mit ${r.status}`);
+  if (!r.ok) throw new Error(tr('FurniMesh antwortet mit {status}', { status: r.status }));
   const hits = parseCards(await r.text());
   pageCache.set(url, { at: Date.now(), hits });
   if (pageCache.size > 300) pageCache.delete(pageCache.keys().next().value!);
@@ -84,7 +86,7 @@ async function page(url: string) {
 /** Suche (englische Begriffe) oder Kategorie; blättert Seite für Seite, bis genug Treffer da sind */
 export async function searchFurniMesh(q: string, cat: string, limit: number, offset: number) {
   const area = FM_CATEGORIES[cat];
-  if (cat && !area) return { total: 0, hits: [] as FmHit[], more: false, note: 'Diese Kategorie gibt es bei FurniMesh nicht.' };
+  if (cat && !area) return { total: 0, hits: [] as FmHit[], more: false, note: tr('Diese Kategorie gibt es bei FurniMesh nicht.') };
   const url = (n: number) => {
     const p = n > 1 ? `page=${n}` : '';
     if (q) return `${BASE}/library/search/?q=${encodeURIComponent(q)}${p ? '&' + p : ''}`;
@@ -110,17 +112,17 @@ export async function searchFurniMesh(q: string, cat: string, limit: number, off
 
 /** GLB laden, verkleinern, auf typische Breite skalieren und ablegen */
 export async function importFurniMesh(modelDir: string, id: string, getBuffer: (url: string) => Promise<Buffer>) {
-  if (!FM_ID_RE.test(id)) throw new Error('Ungültige Modell-ID');
+  if (!FM_ID_RE.test(id)) throw new Error(tr('Ungültige Modell-ID'));
   const [cat, sub, slug] = id.split('/');
   const dir = join(modelDir, 'furnimesh', slug);
   const metaFile = join(dir, 'meta.json');
   if (existsSync(metaFile)) return JSON.parse(readFileSync(metaFile, 'utf8'));
   const pageUrl = `${BASE}/library/${id}/`;
   const r = await fetch(pageUrl, { headers: UA, signal: AbortSignal.timeout(20000) });
-  if (!r.ok) throw new Error(`FurniMesh antwortet mit ${r.status}`);
+  if (!r.ok) throw new Error(tr('FurniMesh antwortet mit {status}', { status: r.status }));
   const html = await r.text();
   const glb = /https:\/\/storage\.googleapis\.com\/furnimesh-3d\/gbl-files\/[A-Za-z0-9_-]+\.glb/.exec(html)?.[0];
-  if (!glb) throw new Error('Für dieses Modell gibt es keine GLB-Datei.');
+  if (!glb) throw new Error(tr('Für dieses Modell gibt es keine GLB-Datei.'));
   const title = decode(/<meta\s+property="og:title"\s+content="([^"]*)"/.exec(html)?.[1] ?? '').replace(/\s*(3D Model)?\s*(—|\|).*$/i, '').replace(/\s*3D Model$/i, '').trim();
   const name = `${SUB_DE[sub] ?? sub.replace(/-/g, ' ')} · ${title || slug.replace(/-[a-z0-9]{6}$/, '').replace(/-/g, ' ')}`.slice(0, 80);
   const image = /<meta\s+property="og:image"\s+content="(https:\/\/storage\.googleapis\.com\/furnimesh-3d\/[^"]+)"/.exec(html)?.[1];

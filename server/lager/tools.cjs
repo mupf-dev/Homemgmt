@@ -3,6 +3,8 @@
 // Jedes Werkzeug: name, title, description, inputSchema (JSON Schema), write (bucht/ändert), admin (nur Admins), run(args, person, ctx).
 // ctx: { source: 'mcp' | 'assistent', images: [...] } – Herkunft der Buchungen und Bilder aus dem Chat.
 
+const { tr, trn, locale } = require('../i18n.cjs');
+
 const INSTRUCTIONS = `Heimlager ist ein Lagersystem für zuhause.
 - Es gibt ein oder mehrere Lager (z. B. Keller, Garage), jedes mit Kürzel (z. B. "K").
 - Lagerplätze bestehen aus Spalte (Buchstaben) und Zeile (0–99), geschrieben mit Lager-Kürzel: "K-B12" = Lager K, Spalte B, Zeile 12.
@@ -28,10 +30,10 @@ function createTools(core, opts = {}) {
   const { HttpError } = core;
   const db = () => core.db; // nach einer Wiederherstellung wird die Datenbank neu geöffnet
   const tz = opts.timeZone || 'Europe/Berlin';
-  const fmtDate = (s) => (s ? new Date(`${s.replace(' ', 'T')}Z`).toLocaleString('de-DE', { timeZone: tz, dateStyle: 'short', timeStyle: 'short' }) : '');
+  const fmtDate = (s) => (s ? new Date(`${s.replace(' ', 'T')}Z`).toLocaleString(locale(), { timeZone: tz, dateStyle: 'short', timeStyle: 'short' }) : '');
   const loc = (x) => `${x.wh_code}-${x.col}${x.row}`;
   const lower = (s) => String(s ?? '').trim().toLocaleLowerCase('de');
-  const day = (d) => d.split('-').reverse().join('.');
+  const day = (d) => new Date(`${d}T00:00:00Z`).toLocaleDateString(locale(), { timeZone: 'UTC', day: '2-digit', month: '2-digit', year: 'numeric' });
 
   // ---------- Auflösen von Angaben aus der Unterhaltung ----------
   const warehouses = () => db().prepare('SELECT * FROM warehouses ORDER BY id').all();
@@ -41,7 +43,7 @@ function createTools(core, opts = {}) {
     const r = lower(ref);
     const hit = list.find((w) => lower(w.code) === r) || list.find((w) => lower(w.name) === r)
       || (list.filter((w) => lower(w.name).includes(r)).length === 1 ? list.find((w) => lower(w.name).includes(r)) : null);
-    if (!hit) throw new HttpError(404, `Lager „${ref}“ nicht gefunden. Vorhanden: ${list.map((w) => `${w.code} (${w.name})`).join(', ')}.`);
+    if (!hit) throw new HttpError(404, tr('Lager „{ref}“ nicht gefunden. Vorhanden: {list}.', { ref, list: list.map((w) => `${w.code} (${w.name})`).join(', ') }));
     return hit;
   }
 
@@ -87,16 +89,16 @@ function createTools(core, opts = {}) {
       if (!(e instanceof HttpError)) throw e;
       const hits = placesByName(platz, lagerRef);
       if (hits.length === 1) return { wid: hits[0].wid, col: hits[0].col, row: hits[0].row };
-      if (hits.length > 1) throw new HttpError(409, `„${platz}“ passt zu mehreren Plätzen: ${hits.map(placeLabel).join('; ')}. Nachfragen, welcher gemeint ist.`);
+      if (hits.length > 1) throw new HttpError(409, tr('„{place}“ passt zu mehreren Plätzen: {list}. Nachfragen, welcher gemeint ist.', { place: platz, list: hits.map(placeLabel).join('; ') }));
       const named = namedPlaces();
-      throw new HttpError(400, `${e.message}${named.length ? ` Benannte Plätze: ${named.slice(0, 30).map(placeLabel).join('; ')}.` : ''}`);
+      throw new HttpError(400, named.length ? tr('{error} Benannte Plätze: {list}.', { error: e.message, list: named.slice(0, 30).map(placeLabel).join('; ') }) : e.message);
     }
   }
 
   function resolvePlaceCode(platz, lagerRef, fallbackWid) {
     const s = String(platz || '').trim().toUpperCase().replace(/^P-/, '').replace(/[\s/:.]+/g, '-');
     const m = s.match(/^(?:(.+?)-)?([A-Z]{1,3})-?(\d{1,2})$/);
-    if (!m) throw new HttpError(400, `Lagerplatz „${platz}“ nicht verstanden. Format: Lager-Kürzel, Spalte, Zeile – z. B. "K-B12".`);
+    if (!m) throw new HttpError(400, tr('Lagerplatz „{place}“ nicht verstanden. Format: Lager-Kürzel, Spalte, Zeile – z. B. "K-B12".', { place: platz }));
     let wid;
     if (m[1]) wid = resolveWarehouse(m[1]).id;
     else if (lagerRef) wid = resolveWarehouse(lagerRef).id;
@@ -104,7 +106,7 @@ function createTools(core, opts = {}) {
     else {
       const list = warehouses();
       if (list.length > 1) {
-        throw new HttpError(400, `Es gibt mehrere Lager – bitte mit Kürzel angeben (z. B. "${list[0].code}-${m[2]}${m[3]}"). Lager: ${list.map((w) => `${w.code} (${w.name})`).join(', ')}.`);
+        throw new HttpError(400, tr('Es gibt mehrere Lager – bitte mit Kürzel angeben (z. B. "{example}"). Lager: {list}.', { example: `${list[0].code}-${m[2]}${m[3]}`, list: list.map((w) => `${w.code} (${w.name})`).join(', ') }));
       }
       wid = list[0].id;
     }
@@ -114,7 +116,7 @@ function createTools(core, opts = {}) {
 
   function resolveItem(ref) {
     const r = String(ref ?? '').trim();
-    if (!r) throw new HttpError(400, 'Bitte einen Gegenstand angeben (ID, Code oder Name).');
+    if (!r) throw new HttpError(400, tr('Bitte einen Gegenstand angeben (ID, Code oder Name).'));
     if (/^\d+$/.test(r)) return core.getItem(Number(r));
     const code = core.parseCode(r);
     if (code?.type === 'item') {
@@ -125,9 +127,9 @@ function createTools(core, opts = {}) {
     const exact = hits.filter((i) => lower(i.name) === lower(r));
     if (exact.length === 1) return exact[0];
     if (!exact.length && hits.length === 1) return hits[0];
-    if (!hits.length) throw new HttpError(404, `Kein Gegenstand „${r}“ gefunden.`);
-    const cand = (exact.length ? exact : hits).slice(0, 8).map((i) => `ID ${i.id}: ${i.name} (${loc(i)}, ${i.quantity} Stück)`).join('; ');
-    throw new HttpError(409, `„${r}“ ist nicht eindeutig. Treffer: ${cand}. Bitte nachfragen und mit ID angeben.`);
+    if (!hits.length) throw new HttpError(404, tr('Kein Gegenstand „{name}“ gefunden.', { name: r }));
+    const cand = (exact.length ? exact : hits).slice(0, 8).map((i) => tr('ID {id}: {name} ({place}, {n} Stück)', { id: i.id, name: i.name, place: loc(i), n: i.quantity })).join('; ');
+    throw new HttpError(409, tr('„{name}“ ist nicht eindeutig. Treffer: {list}. Bitte nachfragen und mit ID angeben.', { name: r, list: cand }));
   }
 
   // ---------- Ausgabe ----------
@@ -144,11 +146,11 @@ function createTools(core, opts = {}) {
     behaelter: i.container ? true : undefined,
     inhalt: i.container ? i.contents : undefined,
     verbrauchsmaterial: i.consumable ? true : undefined,
-    haltbar_bis: i.expires_on ? `${day(i.expires_on)} (${i.expires_in < 0 ? `seit ${-i.expires_in} Tagen abgelaufen` : i.expires_in === 0 ? 'läuft heute ab' : `noch ${i.expires_in} Tage`})` : undefined,
+    haltbar_bis: i.expires_on ? `${day(i.expires_on)} (${i.expires_in < 0 ? trn(-i.expires_in, 'seit {n} Tag abgelaufen', 'seit {n} Tagen abgelaufen') : i.expires_in === 0 ? tr('läuft heute ab') : trn(i.expires_in, 'noch {n} Tag', 'noch {n} Tage')})` : undefined,
     auf_einkaufsliste: i.on_list || undefined,
     foto: i.photo_at ? true : undefined,
     letzte_buchung: i.last_type
-      ? `${i.last_type === 'in' ? 'eingebucht' : 'entnommen'} von ${i.last_person}, ${fmtDate(i.last_at)}`
+      ? (i.last_type === 'in' ? tr('eingebucht von {person}, {date}', { person: i.last_person, date: fmtDate(i.last_at) }) : tr('entnommen von {person}, {date}', { person: i.last_person, date: fmtDate(i.last_at) }))
       : undefined,
   });
   const shopOut = (e) => ({
@@ -160,7 +162,10 @@ function createTools(core, opts = {}) {
     platz: e.item_id ? loc(e) : undefined,
     objekt_id: e.item_id || undefined,
   });
-  const moveOut = (m) => `#${m.id} ${fmtDate(m.created_at)}: ${m.person} hat ${m.quantity}× ${m.item} (ID ${m.item_id}) ${m.type === 'in' ? 'eingebucht auf' : 'entnommen von'} ${loc(m)}`;
+  const moveOut = (m) => {
+    const p = { id: m.id, date: fmtDate(m.created_at), person: m.person, n: m.quantity, name: m.item, item_id: m.item_id, place: loc(m) };
+    return m.type === 'in' ? tr('#{id} {date}: {person} hat {n}× {name} (ID {item_id}) eingebucht auf {place}', p) : tr('#{id} {date}: {person} hat {n}× {name} (ID {item_id}) entnommen von {place}', p);
+  };
 
   // ---------- Werkzeuge ----------
   const str = (description) => ({ type: 'string', description });
@@ -169,7 +174,7 @@ function createTools(core, opts = {}) {
   const PLATZ = str('Lagerplatz: Adresse mit Lager-Kürzel, z. B. "K-B12" (Lager K, Spalte B, Zeile 12), oder der Name eines Platzes, z. B. "Kühlschrank"');
   const LAGER = str('Optional: Lager als Kürzel oder Name, falls nicht im Platz enthalten');
   const BOX = str('Behälter (Tasche, Box …), in den der Gegenstand gelegt wird: ID, Code oder Name. Statt "platz" – der Platz des Behälters gilt.');
-  const inBox = (i) => (i.parent_id ? ` in ${i.parent_name}` : '');
+  const inBox = (i) => (i.parent_id ? tr(' in {name}', { name: i.parent_name }) : '');
   const HALTBAR = str('Haltbar bis, z. B. "31.03.2027", "2027-03-31" oder nur Monat "03/2027" (= Monatsende)');
 
   const tools = [
@@ -195,7 +200,7 @@ function createTools(core, opts = {}) {
       },
       run: (a) => {
         const w = core.createWarehouse({ name: a.name, code: a.kuerzel, description: a.beschreibung });
-        return { meldung: `Lager ${w.code} (${w.name}) angelegt – Plätze z. B. "${w.code}-A1".`, kuerzel: w.code, name: w.name };
+        return { meldung: tr('Lager {code} ({name}) angelegt – Plätze z. B. "{code}-A1".', { code: w.code, name: w.name }), kuerzel: w.code, name: w.name };
       },
     },
     {
@@ -208,7 +213,7 @@ function createTools(core, opts = {}) {
       run: (a) => {
         const wid = a.lager ? resolveWarehouse(a.lager).id : null;
         const hits = core.searchItems(a.suchbegriff || '', Math.min(Number(a.limit) || 25, 200), wid);
-        return hits.length ? hits.map(itemOut) : 'Keine Treffer.';
+        return hits.length ? hits.map(itemOut) : tr('Keine Treffer.');
       },
     },
     {
@@ -220,7 +225,7 @@ function createTools(core, opts = {}) {
         return {
           ...itemOut(it),
           inhalt_liste: it.container ? it.items.map(itemOut) : undefined,
-          verlauf: it.history.map((h) => `${fmtDate(h.created_at)}: ${h.person} ${h.type === 'in' ? 'eingebucht' : 'entnommen'} ${h.quantity}× (${h.wh_code}-${h.col}${h.row}${inBox(h)})`),
+          verlauf: it.history.map((h) => (h.type === 'in' ? tr('{date}: {person} eingebucht {n}× ({place})', { date: fmtDate(h.created_at), person: h.person, n: h.quantity, place: `${h.wh_code}-${h.col}${h.row}${inBox(h)}` }) : tr('{date}: {person} entnommen {n}× ({place})', { date: fmtDate(h.created_at), person: h.person, n: h.quantity, place: `${h.wh_code}-${h.col}${h.row}${inBox(h)}` }))),
         };
       },
     },
@@ -231,7 +236,7 @@ function createTools(core, opts = {}) {
       run: (a) => {
         const it = resolveItem(a.objekt);
         const row = db().prepare('SELECT thumb, image FROM item_photos WHERE item_id = ?').get(it.id);
-        if (!row) return `Für ${it.name} gibt es kein Foto.`;
+        if (!row) return tr('Für {name} gibt es kein Foto.', { name: it.name });
         const data = Buffer.from(a.gross ? row.image : row.thumb);
         return { __content: [
           { type: 'text', text: `${it.name} (${loc(it)})` },
@@ -253,7 +258,7 @@ function createTools(core, opts = {}) {
         }
         return list.length
           ? list.slice(0, 100).map((p) => ({ platz: `${p.wh_code}-${p.col}${p.row}`, name: p.name || undefined, kategorie: p.category || undefined, lager: p.wh_name, beschreibung: p.description || undefined }))
-          : `Kein Platz zu „${a.suchbegriff}“ gefunden. Benannte Plätze: ${namedPlaces().slice(0, 30).map(placeLabel).join('; ') || 'keine'}.`;
+          : tr('Kein Platz zu „{query}“ gefunden. Benannte Plätze: {list}.', { query: a.suchbegriff, list: namedPlaces().slice(0, 30).map(placeLabel).join('; ') || tr('keine') });
       },
     },
     {
@@ -263,7 +268,7 @@ function createTools(core, opts = {}) {
       run: (a) => {
         const p = resolvePlace(a.platz, a.lager);
         const place = core.getPlace(p.wid, p.col, p.row);
-        if (!place) throw new HttpError(404, 'Dieser Lagerplatz ist nicht angelegt.');
+        if (!place) throw new HttpError(404, tr('Dieser Lagerplatz ist nicht angelegt.'));
         return {
           platz: loc(place), lager: place.wh_name, name: place.name || undefined, kategorie: place.category || undefined,
           beschreibung: place.description || undefined, gegenstaende: core.placeItems(p.wid, p.col, p.row).map(itemOut),
@@ -308,10 +313,10 @@ function createTools(core, opts = {}) {
           else if (a.platz) {
             const p = resolvePlace(a.platz, a.lager);
             Object.assign(body, { warehouse_id: p.wid, col: p.col, row: p.row });
-          } else throw new HttpError(400, 'Für einen neuen Gegenstand bitte einen Lagerplatz (z. B. "K-B12") oder einen Behälter angeben.');
+          } else throw new HttpError(400, tr('Für einen neuen Gegenstand bitte einen Lagerplatz (z. B. "K-B12") oder einen Behälter angeben.'));
           res = core.checkin(person, { ...body, source: ctx.source });
-        } else throw new HttpError(400, 'Bitte "objekt" (vorhandener Gegenstand) oder "name" (neuer Gegenstand) angeben.');
-        return { meldung: `${quantity}× ${res.name} eingebucht auf ${loc(res)}${inBox(res)}. Bestand jetzt ${res.quantity}.`, buchung_id: res.movement_id, gegenstand: itemOut(res) };
+        } else throw new HttpError(400, tr('Bitte "objekt" (vorhandener Gegenstand) oder "name" (neuer Gegenstand) angeben.'));
+        return { meldung: tr('{n}× {name} eingebucht auf {place}. Bestand jetzt {stock}.', { n: quantity, name: res.name, place: `${loc(res)}${inBox(res)}`, stock: res.quantity }), buchung_id: res.movement_id, gegenstand: itemOut(res) };
       },
     },
     {
@@ -322,8 +327,9 @@ function createTools(core, opts = {}) {
         const it = resolveItem(a.objekt);
         const res = core.checkout(person, { item_id: it.id, quantity: a.menge ?? 1, source: ctx.source });
         return {
-          meldung: `${a.menge ?? 1}× ${res.name} ausgebucht von ${loc(res)}. Noch ${res.quantity} Stück.`
-            + (res.shopping_added ? ` ${res.shopping_added}× auf die Einkaufsliste gesetzt.` : ''),
+          meldung: res.shopping_added
+            ? tr('{n}× {name} ausgebucht von {place}. Noch {stock} Stück. {added}× auf die Einkaufsliste gesetzt.', { n: a.menge ?? 1, name: res.name, place: loc(res), stock: res.quantity, added: res.shopping_added })
+            : tr('{n}× {name} ausgebucht von {place}. Noch {stock} Stück.', { n: a.menge ?? 1, name: res.name, place: loc(res), stock: res.quantity }),
           buchung_id: res.movement_id,
           gegenstand: itemOut(res),
         };
@@ -341,10 +347,15 @@ function createTools(core, opts = {}) {
         else if (a.platz) {
           const p = resolvePlace(a.platz, a.lager, it.warehouse_id);
           body = { warehouse_id: p.wid, col: p.col, row: p.row, container_id: null };
-        } else throw new HttpError(400, 'Bitte "platz" oder "behaelter" angeben.');
+        } else throw new HttpError(400, tr('Bitte "platz" oder "behaelter" angeben.'));
         const res = core.updateItem(it.id, body);
-        const mit = res.contents ? ` Der Inhalt (${res.contents} Gegenstände) ist mitgewandert.` : '';
-        return { meldung: `${res.name} liegt jetzt auf ${loc(res)}${inBox(res)} (${res.wh_name}).${mit}`, gegenstand: itemOut(res) };
+        const p = { name: res.name, place: `${loc(res)}${inBox(res)}`, area: res.wh_name, n: res.contents };
+        return {
+          meldung: res.contents
+            ? trn(res.contents, '{name} liegt jetzt auf {place} ({area}). Der Inhalt ({n} Gegenstand) ist mitgewandert.', '{name} liegt jetzt auf {place} ({area}). Der Inhalt ({n} Gegenstände) ist mitgewandert.', p)
+            : tr('{name} liegt jetzt auf {place} ({area}).', p),
+          gegenstand: itemOut(res),
+        };
       },
     },
     {
@@ -353,7 +364,7 @@ function createTools(core, opts = {}) {
       inputSchema: { type: 'object', properties: { tage: int('Zeitraum in Tagen ab heute (Standard 30)', { minimum: 0, maximum: 3650 }), lager: str('Optional: nur in diesem Lager (Kürzel oder Name)') } },
       run: (a) => {
         const list = core.expiringItems(a.tage ?? 30, a.lager ? resolveWarehouse(a.lager).id : null);
-        return list.length ? list.map(itemOut) : `Nichts abgelaufen und nichts, was in den nächsten ${a.tage ?? 30} Tagen abläuft.`;
+        return list.length ? list.map(itemOut) : tr('Nichts abgelaufen und nichts, was in den nächsten {n} Tagen abläuft.', { n: a.tage ?? 30 });
       },
     },
     {
@@ -362,7 +373,7 @@ function createTools(core, opts = {}) {
       inputSchema: { type: 'object', properties: { objekt: OBJ, haltbar_bis: str('Datum, z. B. "31.03.2027" oder "03/2027"; leer = Datum entfernen') }, required: ['objekt'] },
       run: (a) => {
         const res = core.updateItem(resolveItem(a.objekt).id, { expires_on: a.haltbar_bis ?? '' });
-        return { meldung: res.expires_on ? `${res.name} ist haltbar bis ${day(res.expires_on)}.` : `${res.name} hat kein Haltbarkeitsdatum mehr.`, gegenstand: itemOut(res) };
+        return { meldung: res.expires_on ? tr('{name} ist haltbar bis {date}.', { name: res.name, date: day(res.expires_on) }) : tr('{name} hat kein Haltbarkeitsdatum mehr.', { name: res.name }), gegenstand: itemOut(res) };
       },
     },
     {
@@ -371,7 +382,7 @@ function createTools(core, opts = {}) {
       inputSchema: { type: 'object', properties: {} },
       run: () => {
         const list = core.shoppingOpen();
-        return list.length ? list.map(shopOut) : 'Die Einkaufsliste ist leer.';
+        return list.length ? list.map(shopOut) : tr('Die Einkaufsliste ist leer.');
       },
     },
     {
@@ -385,11 +396,11 @@ function createTools(core, opts = {}) {
         const body = { quantity: a.menge ?? 1, note: a.notiz };
         if (a.objekt) body.item_id = resolveItem(a.objekt).id;
         else if (a.name) body.name = a.name;
-        else throw new HttpError(400, 'Bitte "objekt" oder "name" angeben.');
+        else throw new HttpError(400, tr('Bitte "objekt" oder "name" angeben.'));
         const e = core.shoppingAdd(person, body);
         return {
-          meldung: `${e.name} steht jetzt mit ${e.quantity}× auf der Einkaufsliste.`, eintrag: shopOut(e),
-          im_lager: e.item_id ? `ja, ${e.stock} Stück auf ${loc(e)}` : 'nein – beim Abhaken kann es mit platz neu angelegt werden',
+          meldung: tr('{name} steht jetzt mit {n}× auf der Einkaufsliste.', { name: e.name, n: e.quantity }), eintrag: shopOut(e),
+          im_lager: e.item_id ? tr('ja, {n} Stück auf {place}', { n: e.stock, place: loc(e) }) : tr('nein – beim Abhaken kann es mit platz neu angelegt werden'),
         };
       },
     },
@@ -417,14 +428,14 @@ function createTools(core, opts = {}) {
         let id = a.eintrag_id;
         if (!id) {
           const q = lower(a.name);
-          if (!q) throw new HttpError(400, 'Bitte den Namen des Eintrags angeben, z. B. "Fladenbrot".');
+          if (!q) throw new HttpError(400, tr('Bitte den Namen des Eintrags angeben, z. B. "Fladenbrot".'));
           const open = core.shoppingOpen();
           const exact = open.filter((e) => lower(e.name) === q);
           const hits = exact.length ? exact : open.filter((e) => lower(e.name).includes(q) || q.includes(lower(e.name)));
           if (hits.length !== 1) {
             throw new HttpError(hits.length ? 409 : 404, hits.length
-              ? `Mehrere Einträge passen: ${hits.map((e) => `${e.name} (eintrag_id ${e.id})`).join('; ')}. Nachfragen, welcher gemeint ist.`
-              : `„${a.name}“ steht nicht auf der Einkaufsliste. Offen: ${open.map((e) => e.name).join(', ') || 'nichts'}.`);
+              ? tr('Mehrere Einträge passen: {list}. Nachfragen, welcher gemeint ist.', { list: hits.map((e) => `${e.name} (eintrag_id ${e.id})`).join('; ') })
+              : tr('„{name}“ steht nicht auf der Einkaufsliste. Offen: {list}.', { name: a.name, list: open.map((e) => e.name).join(', ') || tr('nichts') }));
           }
           id = hits[0].id;
         }
@@ -435,16 +446,17 @@ function createTools(core, opts = {}) {
           else if (a.platz) Object.assign(body, (({ wid, col, row }) => ({ warehouse_id: wid, col, row }))(resolvePlace(a.platz, a.lager)));
           const r = core.shoppingStore(person, id, body);
           return {
-            meldung: `${r.entry.name} abgehakt und ${r.created ? 'neu angelegt' : 'eingebucht'} – jetzt ${r.item.quantity} Stück auf ${loc(r.item)}${r.item.parent_id ? ` in ${r.item.parent_name}` : ''}.`,
+            meldung: (r.created ? tr('{name} abgehakt und neu angelegt – jetzt {n} Stück auf {place}.', { name: r.entry.name, n: r.item.quantity, place: `${loc(r.item)}${inBox(r.item)}` })
+              : tr('{name} abgehakt und eingebucht – jetzt {n} Stück auf {place}.', { name: r.entry.name, n: r.item.quantity, place: `${loc(r.item)}${inBox(r.item)}` })),
             buchung_id: r.movement_id, gegenstand: itemOut(r.item),
           };
         }
         const e = core.shoppingUpdate(id, { done: true });
         return {
-          meldung: `${e.name} abgehakt.`,
+          meldung: tr('{name} abgehakt.', { name: e.name }),
           hinweis: e.item_id
-            ? `Frag den Nutzer, ob ${e.name} gleich wieder auf ${loc(e)} eingebucht werden soll – dann einbuchen mit objekt "${e.name}" und menge ${e.quantity}.`
-            : `${e.name} ist noch kein Gegenstand im Lager. Frag den Nutzer, ob und wo es eingelagert werden soll – dann einbuchen mit name "${e.name}", menge ${e.quantity}, platz und verbrauchsmaterial: true.`,
+            ? tr('Frag den Nutzer, ob {name} gleich wieder auf {place} eingebucht werden soll – dann einbuchen mit objekt "{name}" und menge {n}.', { name: e.name, place: loc(e), n: e.quantity })
+            : tr('{name} ist noch kein Gegenstand im Lager. Frag den Nutzer, ob und wo es eingelagert werden soll – dann einbuchen mit name "{name}", menge {n}, platz und verbrauchsmaterial: true.', { name: e.name, n: e.quantity }),
         };
       },
     },
@@ -473,7 +485,7 @@ function createTools(core, opts = {}) {
         required: ['gegenstaende'],
       },
       run: (a, person, ctx = {}) => {
-        if (!Array.isArray(a.gegenstaende) || !a.gegenstaende.length) throw new HttpError(400, 'Bitte mindestens einen Gegenstand angeben.');
+        if (!Array.isArray(a.gegenstaende) || !a.gegenstaende.length) throw new HttpError(400, tr('Bitte mindestens einen Gegenstand angeben.'));
         const einbuchen = toolByName.get('einbuchen');
         const ergebnisse = a.gegenstaende.slice(0, 50).map((g) => {
           const args = { ...g };
@@ -484,7 +496,7 @@ function createTools(core, opts = {}) {
           }
         });
         const ok = ergebnisse.filter((r) => !r.fehler).length;
-        return { meldung: `${ok} von ${ergebnisse.length} eingebucht.`, ergebnisse };
+        return { meldung: tr('{ok} von {n} eingebucht.', { ok, n: ergebnisse.length }), ergebnisse };
       },
     },
     {
@@ -501,7 +513,7 @@ function createTools(core, opts = {}) {
       run: (a) => {
         const it = resolveItem(a.objekt);
         const res = core.updateItem(it.id, { name: a.name, description: a.beschreibung, consumable: a.verbrauchsmaterial, container: a.ist_behaelter });
-        return { meldung: `${res.name} gespeichert.`, gegenstand: itemOut(res) };
+        return { meldung: tr('{name} gespeichert.', { name: res.name }), gegenstand: itemOut(res) };
       },
     },
     {
@@ -511,7 +523,7 @@ function createTools(core, opts = {}) {
       run: (a) => {
         const p = resolvePlace(a.platz, a.lager);
         const pl = core.savePlace(p.wid, p.col, p.row, { name: a.name, category: a.kategorie, description: a.beschreibung });
-        return { meldung: `Platz ${loc(pl)} gespeichert${pl.name ? `: ${pl.name}` : ''}.`, platz: loc(pl), name: pl.name || undefined, kategorie: pl.category || undefined };
+        return { meldung: pl.name ? tr('Platz {code} gespeichert: {name}.', { code: loc(pl), name: pl.name }) : tr('Platz {code} gespeichert.', { code: loc(pl) }), platz: loc(pl), name: pl.name || undefined, kategorie: pl.category || undefined };
       },
     },
     {
@@ -522,7 +534,7 @@ function createTools(core, opts = {}) {
       run: (a) => {
         const p = resolvePlace(a.platz, a.lager);
         const pl = core.deletePlace(p.wid, p.col, p.row);
-        return { meldung: `Platz ${loc(pl)}${pl.name ? ` (${pl.name})` : ''} gelöscht.`, platz: loc(pl) };
+        return { meldung: pl.name ? tr('Platz {code} ({name}) gelöscht.', { code: loc(pl), name: pl.name }) : tr('Platz {code} gelöscht.', { code: loc(pl) }), platz: loc(pl) };
       },
     },
     {
@@ -533,8 +545,8 @@ function createTools(core, opts = {}) {
         const r = core.resolveCode(a.code);
         if (r.type === 'place') return { typ: 'Lagerplatz', platz: loc(r.place), name: r.place.name || undefined, gegenstaende: r.place.items.map(itemOut) };
         if (r.type === 'item') return { typ: 'Gegenstand', gegenstand: itemOut(r.item) };
-        if (r.type === 'unknown') return `Code ${r.code} ist noch keinem Gegenstand zugeordnet – beim Einbuchen eines neuen Gegenstands kann er mitgegeben werden (Feld "code").`;
-        return r.reason || 'Das ist kein Heimlager-Code.';
+        if (r.type === 'unknown') return tr('Code {code} ist noch keinem Gegenstand zugeordnet – beim Einbuchen eines neuen Gegenstands kann er mitgegeben werden (Feld "code").', { code: r.code });
+        return r.reason || tr('Das ist kein Heimlager-Code.');
       },
     },
     {
@@ -543,10 +555,10 @@ function createTools(core, opts = {}) {
       inputSchema: { type: 'object', properties: { objekt: OBJ, bild: int('Nummer des Bildes in dieser Nachricht (1 = erstes Bild)') }, required: ['objekt', 'bild'] },
       run: (a, person, ctx = {}) => {
         const img = (ctx.images || [])[Number(a.bild) - 1];
-        if (!img) throw new HttpError(400, `Bild ${a.bild} gibt es in dieser Nachricht nicht.`);
+        if (!img) throw new HttpError(400, tr('Bild {n} gibt es in dieser Nachricht nicht.', { n: a.bild }));
         const it = resolveItem(a.objekt);
         const res = core.saveItemPhoto(it.id, img);
-        return { meldung: `Foto bei ${res.name} gespeichert.`, gegenstand: itemOut(res) };
+        return { meldung: tr('Foto bei {name} gespeichert.', { name: res.name }), gegenstand: itemOut(res) };
       },
     },
     {
@@ -556,7 +568,7 @@ function createTools(core, opts = {}) {
       inputSchema: { type: 'object', properties: {} },
       run: (a, person, ctx = {}) => {
         ctx.reset = true;
-        return 'Der Verlauf wird nach dieser Antwort gelöscht. Bestätige das dem Nutzer kurz.';
+        return tr('Der Verlauf wird nach dieser Antwort gelöscht. Bestätige das dem Nutzer kurz.');
       },
     },
     {
@@ -568,7 +580,7 @@ function createTools(core, opts = {}) {
         let id = a.buchung_id;
         if (!id) {
           const last = db().prepare('SELECT id FROM movements WHERE person_id = ? ORDER BY id DESC LIMIT 1').get(person.id);
-          if (!last) throw new HttpError(404, 'Es gibt keine eigene Buchung, die rückgängig gemacht werden könnte.');
+          if (!last) throw new HttpError(404, tr('Es gibt keine eigene Buchung, die rückgängig gemacht werden könnte.'));
           id = last.id;
         }
         const r = core.undoMovement({ person, via: 'key' }, id);
@@ -581,7 +593,7 @@ function createTools(core, opts = {}) {
       inputSchema: { type: 'object', properties: { lager: str('Optional: Lager (Kürzel oder Name)'), anzahl: int('Anzahl (Standard 20)', { maximum: 100 }) } },
       run: (a) => {
         const list = core.recentMovements(a.lager ? resolveWarehouse(a.lager).id : null, Math.min(Number(a.anzahl) || 20, 100));
-        return list.length ? list.map(moveOut) : 'Noch keine Buchungen.';
+        return list.length ? list.map(moveOut) : tr('Noch keine Buchungen.');
       },
     },
   ];
@@ -593,16 +605,16 @@ function createTools(core, opts = {}) {
   // Werkzeug ausführen → { content: [{type:'text'|'image', …}], isError }
   function call(name, args, auth, ctx = {}) {
     const tool = toolByName.get(name);
-    if (!tool) return { unknown: true, content: [{ type: 'text', text: `Unbekanntes Werkzeug: ${name}` }], isError: true };
-    if (tool.write && auth.scope !== 'write') return { content: [{ type: 'text', text: 'Dieser API-Schlüssel darf nur lesen.' }], isError: true };
-    if (tool.admin && auth.person.role !== 'admin') return { content: [{ type: 'text', text: 'Nur für Admins.' }], isError: true };
+    if (!tool) return { unknown: true, content: [{ type: 'text', text: tr('Unbekanntes Werkzeug: {name}', { name }) }], isError: true };
+    if (tool.write && auth.scope !== 'write') return { content: [{ type: 'text', text: tr('Dieser API-Schlüssel darf nur lesen.') }], isError: true };
+    if (tool.admin && auth.person.role !== 'admin') return { content: [{ type: 'text', text: tr('Nur für Admins.') }], isError: true };
     try {
       const out = tool.run(args || {}, auth.person, ctx);
       if (out?.__content) return { content: out.__content, isError: false, data: out };
       return { content: [{ type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 1) }], isError: false, data: out };
     } catch (e) {
       if (!(e instanceof HttpError)) console.error('Werkzeug', name, e);
-      return { content: [{ type: 'text', text: e instanceof HttpError ? e.message : 'Interner Fehler.' }], isError: true };
+      return { content: [{ type: 'text', text: e instanceof HttpError ? e.message : tr('Interner Fehler.') }], isError: true };
     }
   }
 

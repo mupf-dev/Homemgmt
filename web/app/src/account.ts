@@ -1,5 +1,6 @@
 // Konto in der App: Anmelden (E-Mail – oder per Kachel im Lager, dieselbe Sitzung), Passwort, Benutzerverwaltung und
 // gespeicherte Planungen (frühere Küchenplanungen) als Etage ins Haus übernehmen. Das Haus selbst speichert HouseSync.
+import { locale, tr, trn } from './i18n';
 import type { Project } from './model/types.ts';
 import { setPrefs, type Prefs } from './prefs';
 import { setTerminal, type TerminalInfo } from './terminal';
@@ -48,13 +49,13 @@ async function api<T = any>(path: string, opts: { method?: string; body?: unknow
   } catch {
     /* leer */
   }
-  if (!res.ok) throw new Error(data?.error ?? `Serverfehler (${res.status})`);
+  if (!res.ok) throw new Error(data?.error ?? tr('Serverfehler ({status})', { status: res.status }));
   return data as T;
 }
 
 const fmtDate = (s: string) => {
   const d = new Date(s.replace(' ', 'T') + 'Z');
-  return d.toLocaleString('de-DE', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+  return d.toLocaleString(locale(), { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
 };
 
 export class Account {
@@ -114,7 +115,7 @@ export class Account {
   private render() {
     const { esc } = this.h;
     if (!this.serverAvailable) {
-      this.root.innerHTML = `<span class="acc-status warn" title="Server nicht erreichbar – Änderungen werden nur in diesem Browser gespeichert">Offline</span>`;
+      this.root.innerHTML = `<span class="acc-status warn" title="${tr('Server nicht erreichbar – Änderungen werden nur in diesem Browser gespeichert')}">${tr('Offline')}</span>`;
       this.statusEl = null;
       return;
     }
@@ -125,7 +126,7 @@ export class Account {
       return;
     }
     if (!this.user) {
-      this.root.innerHTML = `<button class="btn primary" data-acc="login">Anmelden</button>`;
+      this.root.innerHTML = `<button class="btn primary" data-acc="login">${tr('Anmelden')}</button>`;
       this.root.querySelector('[data-acc="login"]')!.addEventListener('click', () => (location.hash = '#/lager'));
       this.statusEl = null;
       return;
@@ -133,15 +134,15 @@ export class Account {
     const u = this.user;
     this.root.innerHTML = `
       <div class="acc-menu">
-        <button class="acc-btn" data-acc="menu" aria-label="Konto"><span class="avatar" style="background:${esc((u as User & { color?: string }).color ?? 'var(--accent)')}">${esc(u.name.slice(0, 1).toUpperCase())}</span><span class="acc-name">${esc(u.name)}</span>${this.pendingCount ? `<span class="badge" title="${this.pendingCount} Konto/Konten warten auf Freigabe">${this.pendingCount}</span>` : ''}</button>
+        <button class="acc-btn" data-acc="menu" aria-label="${tr('Konto')}"><span class="avatar" style="background:${esc((u as User & { color?: string }).color ?? 'var(--accent)')}">${esc(u.name.slice(0, 1).toUpperCase())}</span><span class="acc-name">${esc(u.name)}</span>${this.pendingCount ? `<span class="badge" title="${trn(this.pendingCount, '{n} Konto wartet auf Freigabe', '{n} Konten warten auf Freigabe')}">${this.pendingCount}</span>` : ''}</button>
         <div class="dropdown" hidden>
-          <div class="dd-head"><b>${esc(u.name)}</b><small>${esc(u.email || 'ohne E-Mail')}${u.role === 'admin' ? ' · Administrator' : ''}</small></div>
-          <a class="dd-link" href="#/einstellungen">${ic('gear')}Einstellungen</a>
-          ${u.role === 'admin' ? '<button data-acc="plans">Gespeicherte Planungen übernehmen …</button>' : ''}
-          <button data-acc="password">Passwort ändern</button>
-          ${u.role === 'admin' ? `<button data-acc="admin">Benutzerverwaltung${this.pendingCount ? ` <span class="badge">${this.pendingCount}</span>` : ''}</button>` : ''}
+          <div class="dd-head"><b>${esc(u.name)}</b><small>${esc(u.email || tr('ohne E-Mail'))}${u.role === 'admin' ? ` · ${tr('Administrator')}` : ''}</small></div>
+          <a class="dd-link" href="#/einstellungen">${ic('gear')}${tr('Einstellungen')}</a>
+          ${u.role === 'admin' ? `<button data-acc="plans">${tr('Gespeicherte Planungen übernehmen …')}</button>` : ''}
+          <button data-acc="password">${tr('Passwort ändern')}</button>
+          ${u.role === 'admin' ? `<button data-acc="admin">${tr('Benutzerverwaltung')}${this.pendingCount ? ` <span class="badge">${this.pendingCount}</span>` : ''}</button>` : ''}
           <hr />
-          <button data-acc="logout">Abmelden</button>
+          <button data-acc="logout">${tr('Abmelden')}</button>
         </div>
       </div>`;
     this.statusEl = null;
@@ -175,7 +176,7 @@ export class Account {
     setPrefs(null);
     this.render();
     this.h.onUser(null);
-    this.h.toast('Abgemeldet.');
+    this.h.toast(tr('Abgemeldet.'));
   }
 
   // -------------------------------------------------------------------------
@@ -185,21 +186,21 @@ export class Account {
     await this.refresh();
     if (!this.registrationEnabled) mode = 'login';
     const body = `
-      ${this.registrationEnabled ? '<div class="seg auth-tabs"><button data-mode="login">Anmelden</button><button data-mode="register">Registrieren</button></div>' : ''}
+      ${this.registrationEnabled ? `<div class="seg auth-tabs"><button data-mode="login">${tr('Anmelden')}</button><button data-mode="register">${tr('Registrieren')}</button></div>` : ''}
       <form class="auth-form" novalidate>
-        <p class="hint" data-first ${this.firstUser ? '' : 'hidden'}>Es gibt noch kein Konto. Das erste registrierte Konto wird <b>Administrator</b>.</p>
-        <p class="hint" data-only="register" ${this.requireApproval ? '' : 'hidden'}>Neue Konten müssen von einem Administrator freigegeben werden, bevor du dich anmelden kannst.</p>
-        ${this.registrationEnabled ? '' : '<p class="hint">Neue Registrierungen sind derzeit deaktiviert.</p>'}
+        <p class="hint" data-first ${this.firstUser ? '' : 'hidden'}>${tr('Es gibt noch kein Konto. Das erste registrierte Konto wird <b>Administrator</b>.')}</p>
+        <p class="hint" data-only="register" ${this.requireApproval ? '' : 'hidden'}>${tr('Neue Konten müssen von einem Administrator freigegeben werden, bevor du dich anmelden kannst.')}</p>
+        ${this.registrationEnabled ? '' : `<p class="hint">${tr('Neue Registrierungen sind derzeit deaktiviert.')}</p>`}
         <p class="form-ok" hidden></p>
-        <label class="field" data-only="register"><span>Name</span><input type="text" name="name" autocomplete="name" /></label>
-        <label class="field"><span>E-Mail</span><input type="text" name="email" autocomplete="email" inputmode="email" required /></label>
-        <label class="field"><span>Passwort</span><input type="password" name="password" autocomplete="current-password" required /></label>
-        <label class="field" data-only="register" data-field><span>Passwort wiederholen</span><input type="password" name="password2" autocomplete="new-password" /></label>
+        <label class="field" data-only="register"><span>${tr('Name')}</span><input type="text" name="name" autocomplete="name" /></label>
+        <label class="field"><span>${tr('E-Mail')}</span><input type="text" name="email" autocomplete="email" inputmode="email" required /></label>
+        <label class="field"><span>${tr('Passwort')}</span><input type="password" name="password" autocomplete="current-password" required /></label>
+        <label class="field" data-only="register" data-field><span>${tr('Passwort wiederholen')}</span><input type="password" name="password2" autocomplete="new-password" /></label>
         <p class="form-error" hidden></p>
         <button class="btn primary" type="submit" style="width:100%;justify-content:center"></button>
-        <p class="hint">Im Lager meldest du dich per Kachel an – dieselbe Anmeldung gilt hier. Ohne Anmeldung kannst du planen; gespeichert wird dann nur in diesem Browser.</p>
+        <p class="hint">${tr('Im Lager meldest du dich per Kachel an – dieselbe Anmeldung gilt hier. Ohne Anmeldung kannst du planen; gespeichert wird dann nur in diesem Browser.')}</p>
       </form>`;
-    const m = this.h.modal('Konto', body);
+    const m = this.h.modal(tr('Konto'), body);
     m.el.querySelector('.modal')!.classList.add('narrow');
     const form = m.el.querySelector('form')!;
     const err = form.querySelector<HTMLElement>('.form-error')!;
@@ -211,7 +212,7 @@ export class Account {
         el.hidden = md !== 'register' || (!el.matches('label') && !this.requireApproval);
       });
       (form.querySelector('[name="password"]') as HTMLInputElement).autocomplete = md === 'register' ? 'new-password' : 'current-password';
-      form.querySelector('button[type="submit"]')!.textContent = md === 'register' ? 'Konto erstellen' : 'Anmelden';
+      form.querySelector('button[type="submit"]')!.textContent = md === 'register' ? tr('Konto erstellen') : tr('Anmelden');
       err.hidden = true;
     };
     m.el.querySelectorAll<HTMLElement>('.auth-tabs button').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode as any)));
@@ -225,7 +226,7 @@ export class Account {
       err.hidden = true;
       ok.hidden = true;
       if (mode === 'register' && password !== String(fd.get('password2') ?? '')) {
-        err.textContent = 'Die Passwörter stimmen nicht überein.';
+        err.textContent = tr('Die Passwörter stimmen nicht überein.');
         err.hidden = false;
         return;
       }
@@ -237,7 +238,7 @@ export class Account {
         if (r.pending || !r.user) {
           setMode('login');
           form.reset();
-          ok.textContent = r.message ?? 'Konto angelegt – bitte auf die Freigabe warten.';
+          ok.textContent = r.message ?? tr('Konto angelegt – bitte auf die Freigabe warten.');
           ok.hidden = false;
           return;
         }
@@ -247,7 +248,7 @@ export class Account {
         m.close();
         this.render();
         this.refreshPending();
-        this.h.toast(mode === 'register' ? `Willkommen, ${r.user.name}!${r.user.role === 'admin' ? ' Du bist Administrator.' : ''}` : `Angemeldet als ${r.user.name}.`);
+        this.h.toast(mode === 'register' ? (r.user.role === 'admin' ? tr('Willkommen, {name}! Du bist Administrator.', { name: r.user.name }) : tr('Willkommen, {name}!', { name: r.user.name })) : tr('Angemeldet als {name}.', { name: r.user.name }));
         this.h.onUser(this.user);
       } catch (ex) {
         err.textContent = (ex as Error).message;
@@ -259,7 +260,7 @@ export class Account {
   /** Gespeicherte Planungen (frühere Küchenplanungen) als Etage ins Haus übernehmen */
   async openPlans() {
     const { esc } = this.h;
-    const m = this.h.modal('Gespeicherte Planungen übernehmen', '<p class="hint">Lade …</p>');
+    const m = this.h.modal(tr('Gespeicherte Planungen übernehmen'), `<p class="hint">${tr('Lade …')}</p>`);
     m.el.querySelector('.modal')!.classList.add('wide');
     const body = m.el.querySelector('.body')!;
     let list: ProjectMeta[] = [];
@@ -270,15 +271,15 @@ export class Account {
       return;
     }
     if (!list.length) {
-      body.innerHTML = '<p class="hint">In deinem Konto sind keine Planungen gespeichert.</p>';
+      body.innerHTML = `<p class="hint">${tr('In deinem Konto sind keine Planungen gespeichert.')}</p>`;
       return;
     }
-    body.innerHTML = `<p class="hint">Planungen aus dem früheren Küchenplaner. Eine Planung wird zu einer Etage des Hauses – mit Wänden, Fenstern, Möbeln und Grundriss-Vorlage. Danach im Reiter „Etage“ die Räume festlegen.</p>
+    body.innerHTML = `<p class="hint">${tr('Planungen aus dem früheren Küchenplaner. Eine Planung wird zu einer Etage des Hauses – mit Wänden, Fenstern, Möbeln und Grundriss-Vorlage. Danach im Reiter „Etage“ die Räume festlegen.')}</p>
       <div class="proj-grid">${list
         .map((p) => `<div class="proj-card" data-id="${p.id}">
-          <div class="proj-thumb" ${p.thumbnail ? `style="background-image:url(${p.thumbnail})"` : ''}>${p.thumbnail ? '' : 'Keine Vorschau'}</div>
-          <div class="proj-info"><b>${esc(p.name)}</b><small>Zuletzt gespeichert ${fmtDate(p.updatedAt)}</small></div>
-          <div class="proj-actions"><button class="btn primary" data-act="new">Als neue Etage</button><button class="btn" data-act="replace">Aktuelle Etage ersetzen</button></div>
+          <div class="proj-thumb" ${p.thumbnail ? `style="background-image:url(${p.thumbnail})"` : ''}>${p.thumbnail ? '' : tr('Keine Vorschau')}</div>
+          <div class="proj-info"><b>${esc(p.name)}</b><small>${tr('Zuletzt gespeichert {date}', { date: fmtDate(p.updatedAt) })}</small></div>
+          <div class="proj-actions"><button class="btn primary" data-act="new">${tr('Als neue Etage')}</button><button class="btn" data-act="replace">${tr('Aktuelle Etage ersetzen')}</button></div>
         </div>`)
         .join('')}</div>`;
     body.querySelectorAll<HTMLElement>('.proj-card').forEach((card) => {
@@ -287,7 +288,7 @@ export class Account {
       card.querySelectorAll<HTMLElement>('[data-act]').forEach((b) =>
         b.addEventListener('click', async () => {
           const mode = b.dataset.act as 'new' | 'replace';
-          if (mode === 'replace' && !confirm('Wände, Öffnungen und Möbel der aktuellen Etage werden ersetzt. Räume bleiben, soweit sie im neuen Grundriss liegen. Fortfahren?')) return;
+          if (mode === 'replace' && !confirm(tr('Wände, Öffnungen und Möbel der aktuellen Etage werden ersetzt. Räume bleiben, soweit sie im neuen Grundriss liegen. Fortfahren?'))) return;
           try {
             const p = await api<{ data: Project }>(`/projects/${id}`);
             m.close();
@@ -302,13 +303,13 @@ export class Account {
 
   private openPassword() {
     const m = this.h.modal(
-      'Passwort ändern',
+      tr('Passwort ändern'),
       `<form class="auth-form">
-        <label class="field"><span>Aktuelles Passwort</span><input type="password" name="current" autocomplete="current-password" /></label>
-        <label class="field"><span>Neues Passwort (min. 8 Zeichen)</span><input type="password" name="password" autocomplete="new-password" /></label>
-        <label class="field"><span>Neues Passwort wiederholen</span><input type="password" name="password2" autocomplete="new-password" /></label>
+        <label class="field"><span>${tr('Aktuelles Passwort')}</span><input type="password" name="current" autocomplete="current-password" /></label>
+        <label class="field"><span>${tr('Neues Passwort (min. 8 Zeichen)')}</span><input type="password" name="password" autocomplete="new-password" /></label>
+        <label class="field"><span>${tr('Neues Passwort wiederholen')}</span><input type="password" name="password2" autocomplete="new-password" /></label>
         <p class="form-error" hidden></p>
-        <button class="btn primary" type="submit" style="width:100%;justify-content:center">Passwort ändern</button>
+        <button class="btn primary" type="submit" style="width:100%;justify-content:center">${tr('Passwort ändern')}</button>
       </form>`,
     );
     m.el.querySelector('.modal')!.classList.add('narrow');
@@ -318,14 +319,14 @@ export class Account {
       e.preventDefault();
       const fd = new FormData(form);
       if (fd.get('password') !== fd.get('password2')) {
-        err.textContent = 'Die neuen Passwörter stimmen nicht überein.';
+        err.textContent = tr('Die neuen Passwörter stimmen nicht überein.');
         err.hidden = false;
         return;
       }
       try {
         await api('/auth/password', { method: 'POST', body: { current: fd.get('current'), password: fd.get('password') } });
         m.close();
-        this.h.toast('Passwort geändert. Andere Sitzungen wurden abgemeldet.');
+        this.h.toast(tr('Passwort geändert. Andere Sitzungen wurden abgemeldet.'));
       } catch (ex) {
         err.textContent = (ex as Error).message;
         err.hidden = false;
@@ -335,7 +336,7 @@ export class Account {
 
   private async openAdmin() {
     const { esc } = this.h;
-    const m = this.h.modal('Benutzerverwaltung', '<p class="hint">Lade …</p>');
+    const m = this.h.modal(tr('Benutzerverwaltung'), `<p class="hint">${tr('Lade …')}</p>`);
     const body = m.el.querySelector('.body')!;
     const act = async (fn: () => Promise<unknown>) => {
       try {
@@ -363,30 +364,30 @@ export class Account {
       }
       const pending = users.filter((u) => u.status === 'pending');
       body.innerHTML = `
-        <h3>Registrierung</h3>
+        <h3>${tr('Registrierung')}</h3>
         <label class="row switch"><input type="checkbox" data-set="registrationEnabled" ${settings.registrationEnabled ? 'checked' : ''} />
-          <span><b>Registrierung erlauben</b><small>Wenn deaktiviert, können sich keine neuen Benutzer selbst registrieren.</small></span></label>
+          <span><b>${tr('Registrierung erlauben')}</b><small>${tr('Wenn deaktiviert, können sich keine neuen Benutzer selbst registrieren.')}</small></span></label>
         <label class="row switch"><input type="checkbox" data-set="requireApproval" ${settings.requireApproval ? 'checked' : ''} />
-          <span><b>Neue Benutzer müssen freigegeben werden</b><small>Neue Konten können das Tool erst nutzen, nachdem ein Administrator sie freigegeben hat.</small></span></label>
-        ${pending.length ? `<div class="pending-note">${pending.length > 1 ? `${pending.length} Konten warten` : '1 Konto wartet'} auf Freigabe.</div>` : ''}
-        <h3>Benutzer</h3>
+          <span><b>${tr('Neue Benutzer müssen freigegeben werden')}</b><small>${tr('Neue Konten können das Tool erst nutzen, nachdem ein Administrator sie freigegeben hat.')}</small></span></label>
+        ${pending.length ? `<div class="pending-note">${trn(pending.length, '{n} Konto wartet auf Freigabe.', '{n} Konten warten auf Freigabe.')}</div>` : ''}
+        <h3>${tr('Benutzer')}</h3>
         <table class="user-table">
-        <thead><tr><th>Name</th><th>E-Mail</th><th>Planungen</th><th>Seit</th><th>Status</th><th>Rolle</th><th></th></tr></thead>
+        <thead><tr><th>${tr('Name')}</th><th>${tr('E-Mail')}</th><th>${tr('Planungen')}</th><th>${tr('Seit')}</th><th>${tr('Status')}</th><th>${tr('Rolle')}</th><th></th></tr></thead>
         <tbody>${users
           .map((u) => {
             const self = u.id === this.user?.id;
             const actions = self
               ? ''
               : u.status === 'pending'
-                ? '<button class="btn primary" data-approve>Freigeben</button><button class="btn danger" data-del>Ablehnen</button>'
-                : '<button class="btn" data-lock title="Zugang sperren, bis er wieder freigegeben wird">Sperren</button><button class="btn danger icon" data-del title="Benutzer löschen">✕</button>';
+                ? `<button class="btn primary" data-approve>${tr('Freigeben')}</button><button class="btn danger" data-del>${tr('Ablehnen')}</button>`
+                : `<button class="btn" data-lock title="${tr('Zugang sperren, bis er wieder freigegeben wird')}">${tr('Sperren')}</button><button class="btn danger icon" data-del title="${tr('Benutzer löschen')}">✕</button>`;
             return `<tr data-id="${u.id}" class="${u.status === 'pending' ? 'is-pending' : ''}">
-              <td>${esc(u.name)}${self ? ' <small>(du)</small>' : ''}</td>
+              <td>${esc(u.name)}${self ? ` <small>${tr('(du)')}</small>` : ''}</td>
               <td>${esc(u.email)}</td>
               <td>${u.projects}</td>
               <td>${fmtDate(u.createdAt).split(',')[0]}</td>
-              <td>${u.status === 'pending' ? '<span class="pill warn">Wartet auf Freigabe</span>' : '<span class="pill">Aktiv</span>'}</td>
-              <td><select data-role ${self ? 'title="Eigene Rolle"' : ''}><option value="user" ${u.role === 'user' ? 'selected' : ''}>Benutzer</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>Administrator</option></select></td>
+              <td>${u.status === 'pending' ? `<span class="pill warn">${tr('Wartet auf Freigabe')}</span>` : `<span class="pill">${tr('Aktiv')}</span>`}</td>
+              <td><select data-role ${self ? `title="${tr('Eigene Rolle')}"` : ''}><option value="user" ${u.role === 'user' ? 'selected' : ''}>${tr('Benutzer')}</option><option value="admin" ${u.role === 'admin' ? 'selected' : ''}>${tr('Administrator')}</option></select></td>
               <td><div class="row-actions">${actions}</div></td>
             </tr>`;
           })
@@ -400,7 +401,7 @@ export class Account {
         const u = users.find((x) => x.id === id)!;
         row.querySelector<HTMLSelectElement>('[data-role]')!.addEventListener('change', async (e) => {
           const role = (e.target as HTMLSelectElement).value;
-          if (id === this.user?.id && role === 'user' && !confirm('Du entziehst dir selbst die Administratorrechte. Fortfahren?')) return draw();
+          if (id === this.user?.id && role === 'user' && !confirm(tr('Du entziehst dir selbst die Administratorrechte. Fortfahren?'))) return draw();
           try {
             await api(`/admin/users/${id}`, { method: 'PUT', body: { role } });
             if (id === this.user?.id && role === 'user') {
@@ -418,15 +419,15 @@ export class Account {
         row.querySelector('[data-approve]')?.addEventListener('click', () =>
           act(async () => {
             await api(`/admin/users/${id}`, { method: 'PUT', body: { status: 'active' } });
-            this.h.toast(`${u.name} wurde freigegeben.`);
+            this.h.toast(tr('{name} wurde freigegeben.', { name: u.name }));
           }),
         );
         row.querySelector('[data-lock]')?.addEventListener('click', () => {
-          if (!confirm(`Zugang von „${u.name}“ sperren? Der Benutzer wird sofort abgemeldet und muss erneut freigegeben werden.`)) return;
+          if (!confirm(tr('Zugang von „{name}“ sperren? Der Benutzer wird sofort abgemeldet und muss erneut freigegeben werden.', { name: u.name }))) return;
           act(() => api(`/admin/users/${id}`, { method: 'PUT', body: { status: 'pending' } }));
         });
         row.querySelector('[data-del]')?.addEventListener('click', () => {
-          const msg = u.status === 'pending' ? `Registrierung von „${u.name}“ (${u.email}) ablehnen und Konto löschen?` : `Benutzer „${u.name}“ (${u.email}) mit allen ${u.projects} Planungen endgültig löschen?`;
+          const msg = u.status === 'pending' ? tr('Registrierung von „{name}“ ({email}) ablehnen und Konto löschen?', { name: u.name, email: u.email }) : trn(u.projects, 'Benutzer „{name}“ ({email}) mit {n} Planung endgültig löschen?', 'Benutzer „{name}“ ({email}) mit allen {n} Planungen endgültig löschen?', { name: u.name, email: u.email });
           if (!confirm(msg)) return;
           act(() => api(`/admin/users/${id}`, { method: 'DELETE' }));
         });

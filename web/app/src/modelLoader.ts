@@ -3,6 +3,7 @@
 
 import * as THREE from 'three';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { tr } from './i18n';
 
 const loader = new GLTFLoader();
 const cache = new Map<string, { template?: THREE.Object3D; size?: THREE.Vector3; error?: string; promise: Promise<void> }>();
@@ -46,7 +47,7 @@ function load(url: string) {
 export async function modelSize(url: string): Promise<{ w: number; d: number; h: number }> {
   const e = load(url);
   await e.promise;
-  if (!e.size) throw new Error(e.error ?? 'Modell konnte nicht geladen werden');
+  if (!e.size) throw new Error(e.error ?? tr('Modell konnte nicht geladen werden'));
   return { w: Math.round(e.size.x * 1000) / 10, d: Math.round(e.size.z * 1000) / 10, h: Math.round(e.size.y * 1000) / 10 };
 }
 
