@@ -1,7 +1,7 @@
 {
   "name": "homemgmt-ng",
   "short_name": "homemgmt-ng",
-  "description": "Haus in 3D planen – jedes Fach ist ein Lagerplatz: scannen, ein- und ausbuchen, suchen, Einkaufsliste.",
+  "description": "Plan your house in 3D – every compartment is a storage location: scan, check in and take out, search, shopping list.",
   "lang": "de",
   "start_url": "/",
   "scope": "/",
