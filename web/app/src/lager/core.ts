@@ -235,7 +235,7 @@ export function pickPlace(ctx: LagerCtx, title = tr('Wohin?'), current?: { wareh
       }
       body.innerHTML = `
         ${withStorage.length ? `<div class="seg pp-floors">${withStorage.map((x) => `<button data-f="${x.id}" class="${x.id === floorId ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>` : `<p class="hint">${tr('Im Hausplan gibt es noch keine Möbel mit Fächern.')}</p>`}
-        ${[...rooms.values()].map((r) => `<details class="pp-room" ${rooms.size <= 4 ? 'open' : ''}><summary>${esc(r.name)} <small>${trn(r.items.length, '{n} Möbel', '{n} Möbel')}</small></summary>
+        ${[...rooms.values()].map((r) => `<details class="pp-room" ${rooms.size <= 4 ? 'open' : ''}><summary>${esc(r.name)} <small>${trn(r.items.length, '{n} Möbelstück', '{n} Möbel')}</small></summary>
           ${r.items.sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1)).map((it) => `<div class="pp-item"><div class="pp-head"><b>${esc(itemName(it))}</b></div><div class="pp-fach">${compartments(it, h.settings)
             .map((c) => {
               const pl = ctx.sync.fach(it.id, c.row);
