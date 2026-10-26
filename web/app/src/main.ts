@@ -2826,13 +2826,13 @@ async function setHeat(kind: string) {
     return Math.min(1, days / 365);
   };
   view.build();
-  toast(kind === 'moves' ? 'Bewegung: rot = oft gebucht (90 Tage), blau = selten.' : 'Lange unberührt: rot = seit einem Jahr nicht angefasst, blau = kürzlich, grau = leer.');
+  toast(kind === 'moves' ? tr('Bewegung: rot = oft gebucht (90 Tage), blau = selten.') : tr('Lange unberührt: rot = seit einem Jahr nicht angefasst, blau = kürzlich, grau = leer.'));
 }
 $('#heatSel').addEventListener('change', (e) => setHeat((e.target as HTMLSelectElement).value));
 $('#storageBtn').addEventListener('click', () => {
   setStorageMode(!view.storageMode);
-  if (view.storageMode && !sync.online) toast('Fächer werden angezeigt – Inhalte gibt es nach dem Anmelden.');
-  else if (view.storageMode) toast('Lager: blau = leer, grün = belegt, orange = läuft bald ab, rot = abgelaufen. Fach anklicken zeigt den Inhalt.');
+  if (view.storageMode && !sync.online) toast(tr('Fächer werden angezeigt – Inhalte gibt es nach dem Anmelden.'));
+  else if (view.storageMode) toast(tr('Lager: blau = leer, grün = belegt, orange = läuft bald ab, rot = abgelaufen. Fach anklicken zeigt den Inhalt.'));
 });
 view.fachInfo = (id, row) => {
   const pl = sync.fach(id, row);
@@ -2860,20 +2860,20 @@ const lagerApi = <T = any>(method: string, url: string, body?: unknown, label?: 
 
 function expiryBadge(i: { expires_in: number | null; expires_on: string | null }) {
   if (i.expires_in === null || !i.expires_on) return '';
-  const d = i.expires_on.split('-').reverse().join('.');
-  if (i.expires_in < 0) return `<span class="pill bad">abgelaufen ${d}</span>`;
-  if (i.expires_in <= 30) return `<span class="pill warn">bis ${d}</span>`;
-  return `<span class="pill">bis ${d}</span>`;
+  const d = new Date(i.expires_on + 'T00:00:00').toLocaleDateString(locale(), { day: '2-digit', month: '2-digit', year: 'numeric' });
+  if (i.expires_in < 0) return `<span class="pill bad">${tr('abgelaufen {date}', { date: d })}</span>`;
+  if (i.expires_in <= 30) return `<span class="pill warn">${tr('bis {date}', { date: d })}</span>`;
+  return `<span class="pill">${tr('bis {date}', { date: d })}</span>`;
 }
 
 function openFach(itemId: string, row: number) {
   // Ansehen: Inhalt in der Seitenleiste, der Plan bleibt sichtbar
   if (!document.body.classList.contains('haus-plan')) return showFach(itemId, row);
   if (!sync.online) {
-    toast('Zum Ein- und Ausbuchen bitte anmelden.');
+    toast(tr('Zum Ein- und Ausbuchen bitte anmelden.'));
     return;
   }
-  const m = modal('Fach', '<p class="hint">Lade …</p>');
+  const m = modal(tr('Fach'), `<p class="hint">${tr('Lade …')}</p>`);
   m.el.querySelector('.modal')!.classList.add('fach-modal');
   fachView(m.el.querySelector('header h2')!, m.el.querySelector('.body')!, itemId, row);
 }
@@ -2890,30 +2890,30 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
     const roomName = roomOf(found.floor, found.item)?.name ?? found.floor.name;
     if (!pl) {
       head.textContent = comp.label;
-      body.innerHTML = `<p class="hint">Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert. ${sync.canEdit ? '' : 'Den Hausplan speichern nur Personen mit dem Recht „Haus planen“.'}</p>`;
+      body.innerHTML = `<p class="hint">${tr('Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert.')} ${sync.canEdit ? '' : tr('Den Hausplan speichern nur Personen mit dem Recht „Haus planen“.')}</p>`;
       return;
     }
     head.textContent = `${pl.address} · ${comp.label}`;
     body.innerHTML = `
-      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">als Liste öffnen</a></p>
+      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">${tr('als Liste öffnen')}</a></p>
       ${pl.items.length ? `<div class="fach-items">${pl.items
         .map((i) => `<div class="fach-item" data-id="${i.id}">
           ${i.photo_at ? `<img src="/api/items/${i.id}/photo?size=thumb&v=${encodeURIComponent(i.photo_at)}" alt="">` : `<span class="ph">${ic(i.container ? 'box' : 'tag')}</span>`}
-          <div><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.code)}${i.parent_id ? ' · im Behälter' : ''}</small>${expiryBadge(i)}</div>
-          <button class="btn mini" data-out title="1 Stück entnehmen" ${i.quantity < 1 ? 'disabled' : ''}>${ic('minus')}1</button>
-          <a class="btn mini icon" href="#/item/${i.id}" title="Gegenstand öffnen" aria-label="Gegenstand öffnen">${ic('chev')}</a>
+          <div><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.code)}${i.parent_id ? ` · ${tr('im Behälter')}` : ''}</small>${expiryBadge(i)}</div>
+          <button class="btn mini" data-out title="${tr('1 Stück entnehmen')}" ${i.quantity < 1 ? 'disabled' : ''}>${ic('minus')}1</button>
+          <a class="btn mini icon" href="#/item/${i.id}" title="${tr('Gegenstand öffnen')}" aria-label="${tr('Gegenstand öffnen')}">${ic('chev')}</a>
         </div>`)
-        .join('')}</div>` : '<p class="hint">Das Fach ist leer.</p>'}
-      <h3>Hineinlegen</h3>
+        .join('')}</div>` : `<p class="hint">${tr('Das Fach ist leer.')}</p>`}
+      <h3>${tr('Hineinlegen')}</h3>
       <form class="fach-in">
-        <input type="text" name="name" placeholder="Was kommt hinein?" required maxlength="80" autocomplete="off" />
+        <input type="text" name="name" placeholder="${tr('Was kommt hinein?')}" required maxlength="80" autocomplete="off" />
         <div class="fach-sug"></div>
-        <input type="number" name="qty" value="1" min="1" max="9999" title="Menge" />
+        <input type="number" name="qty" value="1" min="1" max="9999" title="${tr('Menge')}" />
         ${expiryField('exp')}
-        <button class="btn primary" type="submit">${ic('in')}Einbuchen</button>
+        <button class="btn primary" type="submit">${ic('in')}${tr('Einbuchen')}</button>
       </form>
-      <h3>Vorhandenen Gegenstand hierher umlagern</h3>
-      <input type="search" class="fach-search" placeholder="Gegenstand suchen …" />
+      <h3>${tr('Vorhandenen Gegenstand hierher umlagern')}</h3>
+      <input type="search" class="fach-search" placeholder="${tr('Gegenstand suchen …')}" />
       <div class="fach-results"></div>
       <p class="form-error" hidden></p>`;
     bindExpiry(body);
@@ -2934,7 +2934,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
     body.querySelectorAll<HTMLElement>('.fach-item').forEach((row) =>
       row.querySelector('[data-out]')?.addEventListener('click', () => {
         const i = pl.items.find((x) => x.id === Number(row.dataset.id))!;
-        run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }, i.name), `1× ${i.name} entnommen.`);
+        run(() => lagerApi('POST', '/api/checkout', { item_id: i.id, quantity: 1, source: 'app' }, i.name), tr('1× {name} entnommen.', { name: i.name }));
       }),
     );
     // Vorschläge aus vorhandenen Gegenständen: gewählt → dieser Gegenstand wird hierher gebucht (kein Doppel)
@@ -2956,7 +2956,11 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
             const i = list.find((x) => x.id === Number(b.dataset.id));
             chosen = { id: i.id, name: i.name };
             nameIn.value = i.name;
-            sug.innerHTML = `<p class="hint">Vorhandener Gegenstand – Zugang wird gebucht${i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row ? '' : `, er liegt danach hier statt in <code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code>`}.</p>`;
+            sug.innerHTML = `<p class="hint">${
+              i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row
+                ? tr('Vorhandener Gegenstand – Zugang wird gebucht.')
+                : tr('Vorhandener Gegenstand – Zugang wird gebucht, er liegt danach hier statt in {place}.', { place: `<code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code>` })
+            }</p>`;
           }),
         );
       }, 200);
@@ -2969,7 +2973,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
       const what = chosen && chosen.name === name ? { item_id: chosen.id } : { name };
       run(
         () => lagerApi('POST', '/api/checkin', { ...what, quantity: Number(fd.get('qty')) || 1, warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null, expires_on: parseExpiry(fd.get('exp')) ?? undefined }, name),
-        `${name} liegt jetzt in ${pl.address}.`,
+        tr('{name} liegt jetzt in {place}.', { name, place: pl.address }),
       );
     });
     const search = body.querySelector<HTMLInputElement>('.fach-search')!;
@@ -2984,11 +2988,11 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
         results.innerHTML = list
           .filter((i) => !(i.warehouse_id === pl.warehouse_id && i.col === pl.col && i.row === pl.row))
           .map((i) => `<button class="fach-hit" data-id="${i.id}"><b>${esc(i.name)}</b><small>${i.quantity}× · ${esc(i.wh_code)}-${esc(i.col)}${i.row}${i.place_name ? ` · ${esc(i.place_name)}` : ''}</small></button>`)
-          .join('') || '<p class="hint">Nichts gefunden.</p>';
+          .join('') || `<p class="hint">${tr('Nichts gefunden.')}</p>`;
         results.querySelectorAll<HTMLElement>('.fach-hit').forEach((b) =>
           b.addEventListener('click', () => {
             const i = list.find((x) => x.id === Number(b.dataset.id));
-            run(() => lagerApi('PATCH', `/api/items/${i.id}`, { warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null }), `${i.name} liegt jetzt in ${pl.address}.`);
+            run(() => lagerApi('PATCH', `/api/items/${i.id}`, { warehouse_id: pl.warehouse_id, col: pl.col, row: pl.row, container_id: null }), tr('{name} liegt jetzt in {place}.', { name: i.name, place: pl.address }));
             search.value = '';
           }),
         );
@@ -3010,7 +3014,7 @@ async function runSearch() {
     return;
   }
   if (!sync.online) {
-    searchPop.innerHTML = '<p class="hint">Zum Suchen im Lager bitte anmelden.</p>';
+    searchPop.innerHTML = `<p class="hint">${tr('Zum Suchen im Lager bitte anmelden.')}</p>`;
     searchPop.hidden = false;
     return;
   }
@@ -3023,11 +3027,11 @@ async function runSearch() {
     ? hits
         .map(({ i, pl }) => {
           const f = pl && findItem(pl.plan_item);
-          const where = pl && f ? `${esc(f.floor.name)} · ${esc(roomOf(f.floor, f.item)?.name ?? '')} · ${esc(pl.name)}` : `${esc(i.wh_name ?? '')} – nicht im Hausplan`;
+          const where = pl && f ? `${esc(f.floor.name)} · ${esc(roomOf(f.floor, f.item)?.name ?? '')} · ${esc(pl.name)}` : tr('{area} – nicht im Hausplan', { area: esc(i.wh_name ?? '') });
           return `<button class="search-hit" data-plan="${pl ? `${pl.plan_item}:${pl.plan_slot}` : ''}" data-id="${i.id}"><b>${esc(i.name)}</b> <code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code><small>${i.quantity}× · ${where}</small></button>`;
         })
         .join('')
-    : '<p class="hint">Nichts gefunden.</p>';
+    : `<p class="hint">${tr('Nichts gefunden.')}</p>`;
   searchPop.hidden = false;
   searchPop.querySelectorAll<HTMLElement>('.search-hit').forEach((b) =>
     b.addEventListener('click', () => {
