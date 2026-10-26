@@ -5,6 +5,7 @@ import { api, bookedToast, esc, placeInfo, resolveOffline, thumb, type ApiItem }
 import { QueuedError } from './outbox';
 import type { View } from './views';
 import { ic } from '../icons';
+import { tr } from '../i18n';
 
 declare global {
   interface Window {
@@ -22,12 +23,12 @@ export class Scanner {
   constructor(private video: HTMLVideoElement, private onCode: (c: string) => void, private onStatus: (m: string, err: boolean) => void) {}
 
   async start() {
-    if (!window.isSecureContext) return this.onStatus('Die Kamera geht nur über HTTPS (oder localhost). Codes lassen sich unten eingeben.', true);
-    if (!navigator.mediaDevices?.getUserMedia) return this.onStatus('Dieser Browser unterstützt keinen Kamerazugriff.', true);
+    if (!window.isSecureContext) return this.onStatus(tr('Die Kamera geht nur über HTTPS (oder localhost). Codes lassen sich unten eingeben.'), true);
+    if (!navigator.mediaDevices?.getUserMedia) return this.onStatus(tr('Dieser Browser unterstützt keinen Kamerazugriff.'), true);
     try {
       this.stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } }, audio: false });
     } catch (e) {
-      return this.onStatus(`Kamera nicht verfügbar: ${(e as Error).message}`, true);
+      return this.onStatus(tr('Kamera nicht verfügbar: {error}', { error: (e as Error).message }), true);
     }
     this.video.srcObject = this.stream;
     await this.video.play().catch(() => {});
@@ -44,7 +45,7 @@ export class Scanner {
         document.head.appendChild(s);
       });
     }
-    this.onStatus(this.detector ? 'Kamera aktiv' : window.jsQR ? 'Kamera aktiv (Software-Erkennung)' : 'Keine QR-Erkennung verfügbar', false);
+    this.onStatus(this.detector ? tr('Kamera aktiv') : window.jsQR ? tr('Kamera aktiv (Software-Erkennung)') : tr('Keine QR-Erkennung verfügbar'), false);
     this.loop();
   }
 
@@ -127,13 +128,13 @@ function beep(ok = true) {
 
 export const viewScan: View = async (el, ctx, params) => {
   const flow: { place: any | null; box: ApiItem | null; pending: ApiItem | null; pendingAt: number; log: { item: ApiItem; type: 'in' | 'out'; qty: number; queued?: boolean }[] } = { place: null, box: params.get('box') ? await api<ApiItem>('GET', `/api/items/${params.get('box')}`).catch(() => null) : null, pending: null, pendingAt: 0, log: [] };
-  el.innerHTML = `<a class="l-back" href="#/lager">← Lager</a><h1>Scannen</h1>
+  el.innerHTML = `<a class="l-back" href="#/lager">← ${tr('Lager')}</a><h1>${tr('Scannen')}</h1>
     <div class="l-scan">
       <div><div class="l-video"><video id="video" muted playsinline></video><div class="frame"></div></div>
-        <div class="hint" id="cam">Kamera wird gestartet …</div>
-        <form class="l-add" id="manual"><input id="code" placeholder="Code eingeben oder Handscanner …" autocapitalize="characters" autocomplete="off" /><button class="btn">OK</button></form></div>
+        <div class="hint" id="cam">${tr('Kamera wird gestartet …')}</div>
+        <form class="l-add" id="manual"><input id="code" placeholder="${tr('Code eingeben oder Handscanner …')}" autocapitalize="characters" autocomplete="off" /><button class="btn">OK</button></form></div>
       <div><div class="l-card" id="state"></div>
-        <div class="l-card"><label>Menge je Buchung <input type="number" id="qty" value="1" min="1" max="999" /></label></div>
+        <div class="l-card"><label>${tr('Menge je Buchung')} <input type="number" id="qty" value="1" min="1" max="999" /></label></div>
         <div id="log"></div></div>
     </div>`;
   const stateEl = el.querySelector<HTMLElement>('#state')!;
@@ -142,7 +143,7 @@ export const viewScan: View = async (el, ctx, params) => {
     if (flow.box) {
       const b = flow.box;
       stateEl.className = 'l-card mode-in';
-      stateEl.innerHTML = `<b>${ic('box')} Einräumen in ${esc(b.name)}</b><p>liegt in ${esc(placeInfo(ctx, b).title)} <code>${esc(placeInfo(ctx, b).address)}</code></p><p>Jetzt die <b>Gegenstände</b> scannen – jeder kommt sofort in den Behälter.</p><button class="btn" id="leaveBox">Einräumen beenden</button>`;
+      stateEl.innerHTML = `<b>${ic('box')} ${tr('Einräumen in {name}', { name: esc(b.name) })}</b><p>${tr('liegt in {place}', { place: esc(placeInfo(ctx, b).title) })} <code>${esc(placeInfo(ctx, b).address)}</code></p><p>${tr('Jetzt die <b>Gegenstände</b> scannen – jeder kommt sofort in den Behälter.')}</p><button class="btn" id="leaveBox">${tr('Einräumen beenden')}</button>`;
       stateEl.querySelector('#leaveBox')!.addEventListener('click', () => {
         flow.box = null;
         render();
@@ -150,7 +151,7 @@ export const viewScan: View = async (el, ctx, params) => {
     } else if (flow.place) {
       const p = placeInfo(ctx, flow.place);
       stateEl.className = 'l-card mode-in';
-      stateEl.innerHTML = `<b>Einbuchen in ${esc(p.title)}</b><p><code>${esc(p.address)}</code> ${esc(p.plan?.fach ?? '')}</p><p>Jetzt die <b>Gegenstände</b> scannen – jeder wird sofort hier eingebucht.</p><button class="btn" id="leave">Fach verlassen</button>`;
+      stateEl.innerHTML = `<b>${tr('Einbuchen in {place}', { place: esc(p.title) })}</b><p><code>${esc(p.address)}</code> ${esc(p.plan?.fach ?? '')}</p><p>${tr('Jetzt die <b>Gegenstände</b> scannen – jeder wird sofort hier eingebucht.')}</p><button class="btn" id="leave">${tr('Fach verlassen')}</button>`;
       stateEl.querySelector('#leave')!.addEventListener('click', () => {
         flow.place = null;
         render();
@@ -159,9 +160,9 @@ export const viewScan: View = async (el, ctx, params) => {
       const it = flow.pending;
       const p = placeInfo(ctx, it);
       stateEl.className = 'l-card mode-out';
-      stateEl.innerHTML = `<b>${thumb(it, 'thumb small')} ${esc(it.name)}</b><p>liegt in ${esc(p.title)} · ${esc(p.plan?.fach ?? '')} <code>${esc(p.address)}</code> · ${it.quantity} Stück</p>
-        <p><b>Zum Ausbuchen erneut scannen.</b> Oder zuerst ein Fach scannen, um es dort einzubuchen.</p>
-        <div class="l-actions">${it.container ? `<button class="btn in" id="intoBox">${ic('box')}Einräumen (${it.contents ?? 0} drin)</button>` : ''}<button class="btn out" id="out" ${it.quantity ? '' : 'disabled'}>Jetzt ausbuchen</button><a class="btn" href="#/item/${it.id}">Details</a><button class="btn" id="cancel">Abbrechen</button></div>`;
+      stateEl.innerHTML = `<b>${thumb(it, 'thumb small')} ${esc(it.name)}</b><p>${tr('liegt in {place}', { place: esc(p.title) })} · ${esc(p.plan?.fach ?? '')} <code>${esc(p.address)}</code> · ${tr('{n} Stück', { n: it.quantity })}</p>
+        <p>${tr('<b>Zum Ausbuchen erneut scannen.</b> Oder zuerst ein Fach scannen, um es dort einzubuchen.')}</p>
+        <div class="l-actions">${it.container ? `<button class="btn in" id="intoBox">${ic('box')}${tr('Einräumen ({n} drin)', { n: it.contents ?? 0 })}</button>` : ''}<button class="btn out" id="out" ${it.quantity ? '' : 'disabled'}>${tr('Jetzt ausbuchen')}</button><a class="btn" href="#/item/${it.id}">${tr('Details')}</a><button class="btn" id="cancel">${tr('Abbrechen')}</button></div>`;
       stateEl.querySelector('#out')!.addEventListener('click', () => checkout(it));
       stateEl.querySelector('#intoBox')?.addEventListener('click', () => {
         flow.box = it;
@@ -174,11 +175,11 @@ export const viewScan: View = async (el, ctx, params) => {
       });
     } else {
       stateEl.className = 'l-card';
-      stateEl.innerHTML = `<b>Bereit</b><ul class="hint"><li><b>Einbuchen:</b> erst das <b>Fach</b> scannen, dann den <b>Gegenstand</b>.</li><li><b>Ausbuchen:</b> den Gegenstand <b>zweimal</b> scannen.</li><li>Unbekanntes Etikett: Der Gegenstand wird neu angelegt.</li></ul>`;
+      stateEl.innerHTML = `<b>${tr('Bereit')}</b><ul class="hint"><li>${tr('<b>Einbuchen:</b> erst das <b>Fach</b> scannen, dann den <b>Gegenstand</b>.')}</li><li>${tr('<b>Ausbuchen:</b> den Gegenstand <b>zweimal</b> scannen.')}</li><li>${tr('Unbekanntes Etikett: Der Gegenstand wird neu angelegt.')}</li></ul>`;
     }
   };
   const log = () => {
-    el.querySelector('#log')!.innerHTML = flow.log.length ? `<h2>In dieser Sitzung</h2><ul class="l-history">${flow.log.map((l) => `<li><span class="tag ${l.type}">${l.type === 'in' ? 'ein' : 'aus'}</span><span>${l.qty}× <a href="#/item/${l.item.id}">${esc(l.item.name)}</a> · ${l.queued ? '<b>wartet auf Verbindung</b>' : `jetzt ${l.item.quantity}`}</span></li>`).join('')}</ul>` : '';
+    el.querySelector('#log')!.innerHTML = flow.log.length ? `<h2>${tr('In dieser Sitzung')}</h2><ul class="l-history">${flow.log.map((l) => `<li><span class="tag ${l.type}">${l.type === 'in' ? tr('ein') : tr('aus')}</span><span>${l.qty}× <a href="#/item/${l.item.id}">${esc(l.item.name)}</a> · ${l.queued ? `<b>${tr('wartet auf Verbindung')}</b>` : tr('jetzt {n}', { n: l.item.quantity })}</span></li>`).join('')}</ul>` : '';
   };
   // ohne Verbindung vorgemerkt: positiv quittieren und in der Sitzungsliste als „wartet“ zeigen
   const queued = (e: unknown, item: ApiItem, type: 'in' | 'out') => {
@@ -195,7 +196,7 @@ export const viewScan: View = async (el, ctx, params) => {
         ? { item_id: item.id, container_id: flow.box.id, quantity: qty() }
         : { item_id: item.id, warehouse_id: flow.place.warehouse_id, col: flow.place.col, row: flow.place.row, container_id: null, quantity: qty() }, item.name);
       beep();
-      bookedToast(ctx, `${r.name} ${flow.box ? `in ${flow.box.name}` : `in ${placeInfo(ctx, r).address}`} eingebucht (${r.quantity}).`, r.movement_id);
+      bookedToast(ctx, tr('{name} in {where} eingebucht ({n}).', { name: r.name, where: flow.box ? flow.box.name : placeInfo(ctx, r).address, n: r.quantity }), r.movement_id);
       flow.log.unshift({ item: r, type: 'in', qty: qty() });
       log();
       ctx.sync.loadStorage();
@@ -209,7 +210,7 @@ export const viewScan: View = async (el, ctx, params) => {
     try {
       const r = await api<ApiItem>('POST', '/api/checkout', { item_id: item.id, quantity: qty() }, item.name);
       beep();
-      bookedToast(ctx, `${r.name} ausgebucht – noch ${r.quantity}.${r.shopping_added ? ' Steht auf der Einkaufsliste.' : ''}`, r.movement_id);
+      bookedToast(ctx, `${tr('{name} ausgebucht – noch {n}.', { name: r.name, n: r.quantity })}${r.shopping_added ? ` ${tr('Steht auf der Einkaufsliste.')}` : ''}`, r.movement_id);
       flow.log.unshift({ item: r, type: 'out', qty: qty() });
       flow.pending = null;
       log();
@@ -230,7 +231,7 @@ export const viewScan: View = async (el, ctx, params) => {
     const parsed = parseCode(raw);
     if (!parsed) {
       beep(false);
-      return ctx.toast(`Kein Lager-Code: ${String(raw).slice(0, 40)}`);
+      return ctx.toast(tr('Kein Lager-Code: {code}', { code: String(raw).slice(0, 40) }));
     }
     if (busy) return;
     busy = true;
@@ -239,7 +240,7 @@ export const viewScan: View = async (el, ctx, params) => {
       const r = await api<any>('GET', `/api/resolve?code=${encodeURIComponent(parsed.key)}`).catch((e) => {
         const off = resolveOffline(ctx, parsed.key);
         if (off) return off;
-        throw navigator.onLine === false || /Verbindung/.test(e.message) ? new Error(parsed.type === 'item' ? 'Keine Verbindung – dieser Gegenstand ist ohne Netz nicht bekannt.' : 'Keine Verbindung – dieses Fach ist ohne Netz nicht bekannt.') : e;
+        throw navigator.onLine === false || /Verbindung|connection/i.test(e.message) ? new Error(parsed.type === 'item' ? tr('Keine Verbindung – dieser Gegenstand ist ohne Netz nicht bekannt.') : tr('Keine Verbindung – dieses Fach ist ohne Netz nicht bekannt.')) : e;
       });
       if (r.type === 'place') {
         flow.place = r.place;
@@ -247,7 +248,7 @@ export const viewScan: View = async (el, ctx, params) => {
         flow.pending = null;
         beep();
       } else if (r.type === 'item') {
-        if (flow.box && flow.box.id === r.item.id) ctx.toast(`Das ist ${r.item.name} selbst – jetzt die Gegenstände scannen, die hinein sollen.`);
+        if (flow.box && flow.box.id === r.item.id) ctx.toast(tr('Das ist {name} selbst – jetzt die Gegenstände scannen, die hinein sollen.', { name: r.item.name }));
         else if (flow.box || flow.place) await checkin(r.item);
         else if (flow.pending?.id === r.item.id && Date.now() - flow.pendingAt < 60000) await checkout(r.item);
         else {
@@ -263,7 +264,7 @@ export const viewScan: View = async (el, ctx, params) => {
         return;
       } else {
         beep(false);
-        ctx.toast(r.reason ?? 'Code nicht erkannt.');
+        ctx.toast(r.reason ?? tr('Code nicht erkannt.'));
       }
       render();
     } catch (e) {
