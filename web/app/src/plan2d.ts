@@ -1,4 +1,5 @@
 import { store, makeItem, uid } from './state';
+import { locale, tr } from './i18n';
 import type { Item, Opening, OpeningType, Vec2, Wall } from './model/types.ts';
 import { getEntry } from './model/catalog.ts';
 import { islandColumnSpans } from './models';
@@ -244,13 +245,13 @@ export class Plan2D {
       case 'room': {
         const hitRoom = this.roomAt(p, true);
         if (hitRoom) {
-          if (hitRoom.locked) toast('Dieser Raum ist gesperrt.');
+          if (hitRoom.locked) toast(tr('Dieser Raum ist gesperrt.'));
           store.select({ kind: 'room', id: hitRoom.id });
           this.setTool('select');
           return;
         }
         if (!roomPolygon(proj.walls, p)) {
-          document.dispatchEvent(new CustomEvent('kp-toast', { detail: 'Hier ist kein geschlossener Bereich – Wände müssen den Raum vollständig umschließen.' }));
+          document.dispatchEvent(new CustomEvent('kp-toast', { detail: tr('Hier ist kein geschlossener Bereich – Wände müssen den Raum vollständig umschließen.') }));
           return;
         }
         this.onRoomRequest?.(p);
@@ -604,7 +605,7 @@ export class Plan2D {
     }
     if ((e.key === 'l' || e.key === 'L') && sel && this.tool === 'select') {
       store.setLocked(sel, true);
-      toast('Gesperrt – entsperren in der Etagen-Liste „Gesperrt“.');
+      toast(tr('Gesperrt – entsperren in der Etagen-Liste „Gesperrt“.'));
       return;
     }
     if (e.key === 'r' || e.key === 'R') {
@@ -886,10 +887,10 @@ export class Plan2D {
       ctx.textBaseline = 'middle';
       ctx.font = `600 ${13 * px}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = col('--ink');
-      ctx.fillText(r.locked && !this.viewOnly ? `${r.name} (gesperrt)` : r.name, 0, -8 * px);
+      ctx.fillText(r.locked && !this.viewOnly ? tr('{name} (gesperrt)', { name: r.name }) : r.name, 0, -8 * px);
       ctx.font = `${10.5 * px}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = col('--ink-soft');
-      ctx.fillText(this.viewOnly ? r.code : `Lager ${r.code} · ${area.toFixed(1).replace('.', ',')} m²`, 0, 8 * px);
+      ctx.fillText(this.viewOnly ? r.code : tr('Lager {code} · {area} m²', { code: r.code, area: area.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }), 0, 8 * px);
       ctx.restore();
     }
 

@@ -2,6 +2,8 @@
 // store.project mit der aktiven Etage (Wände, Möbel …) – Materialien und Einstellungen gelten fürs ganze Haus.
 // Undo/Redo umfasst das Haus; jede abgeschlossene Änderung (commit) erkennt Räume neu und vergibt Lager-Spalten.
 
+import './modelText';
+import { tr } from './i18n';
 import type { Floor, House, Item, Opening, Project, Selection, Wall } from './model/types.ts';
 import { getEntry } from './model/catalog.ts';
 import { setHouseObjects } from './model/catalog.ts';
@@ -42,7 +44,7 @@ function exampleFloor(): Floor {
   items.push(makeItem('pendant', { x: 190, y: 235 }));
   items.push(makeItem('pendant', { x: 270, y: 235 }));
   for (const sx of [180, 230, 280]) items.push(makeItem('stool', { x: sx, y: 318 }));
-  return makeFloor({ walls: [w1, w2, w3, w4], openings, items, rooms: [{ id: uid(), name: 'Küche', code: '', seed: { x: 60, y: 120 } }] });
+  return makeFloor({ walls: [w1, w2, w3, w4], openings, items, rooms: [{ id: uid(), name: tr('Küche'), code: '', seed: { x: 60, y: 120 } }] });
 }
 
 export function makeItem(type: string, over: Partial<Item> = {}): Item {
@@ -392,7 +394,7 @@ class Store {
     const s = this.selection;
     if (!s || this.lockedSel(s)) return;
     if (s.kind === 'wall' && this.floor.openings.some((o) => o.wallId === s.id && o.locked)) {
-      document.dispatchEvent(new CustomEvent('kp-toast', { detail: 'In dieser Wand sitzen gesperrte Fenster/Türen – erst entsperren.' }));
+      document.dispatchEvent(new CustomEvent('kp-toast', { detail: tr('In dieser Wand sitzen gesperrte Fenster/Türen – erst entsperren.') }));
       return;
     }
     const f = this.floor;
