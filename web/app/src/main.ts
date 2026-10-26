@@ -3484,7 +3484,7 @@ function openLocation() {
     store.commit();
     m.close();
     plan.draw();
-    toast('Lage gespeichert – Sonne und Wetter folgen jetzt dem Ort.');
+    toast(tr('Lage gespeichert – Sonne und Wetter folgen jetzt dem Ort.'));
     updateOutdoor(true);
   });
   m.el.querySelector('[data-del]')?.addEventListener('click', () => {
@@ -3502,17 +3502,17 @@ plan.north = () => store.house.settings.location?.north ?? null;
 let outdoorWeather: { at: number; data: any; q: string } | null = null;
 /** Testwetter zum Ausprobieren am Terminal: Adresse mit ?testwetter=schnee (siehe TEST_WEATHER) – nur dieses Fenster */
 const TEST_WEATHER: Record<string, Record<string, unknown>> = {
-  'schnee-hauch': { temperature: 0, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.05, rain_rate: 0, snowfall: 0.05, snow_depth: 0.004, visibility: 10000, wind_speed: 5, wind_direction: 240 },
-  'schnee-leicht': { temperature: -1, code: 71, text: 'leichter Schneefall', kind: 'snow', cloud: 90, precipitation: 0.1, rain_rate: 0, snowfall: 0.1, snow_depth: 0.03, visibility: 8000, wind_speed: 8, wind_direction: 240 },
-  schnee: { temperature: -2, code: 73, text: 'Schneefall', kind: 'snow', cloud: 100, precipitation: 0.3, rain_rate: 0, snowfall: 0.4, snow_depth: 0.12, visibility: 3000, wind_speed: 15, wind_direction: 250 },
-  schneesturm: { temperature: -6, code: 75, text: 'starker Schneefall', kind: 'snow', cloud: 100, precipitation: 0.8, rain_rate: 0, snowfall: 1.2, snow_depth: 0.35, visibility: 600, wind_speed: 45, wind_direction: 270 },
-  niesel: { temperature: 9, code: 53, text: 'Nieselregen', kind: 'drizzle', cloud: 100, precipitation: 0.1, rain_rate: 0.4, snowfall: 0, snow_depth: 0, visibility: 9000, wind_speed: 10, wind_direction: 240 },
-  regen: { temperature: 12, code: 63, text: 'Regen', kind: 'rain', cloud: 100, precipitation: 1, rain_rate: 4, snowfall: 0, snow_depth: 0, visibility: 10000, wind_speed: 20, wind_direction: 240 },
-  wolkenbruch: { temperature: 18, code: 65, text: 'starker Regen', kind: 'rain', cloud: 100, precipitation: 6, rain_rate: 24, snowfall: 0, snow_depth: 0, visibility: 4000, wind_speed: 35, wind_direction: 250 },
-  gewitter: { temperature: 21, code: 95, text: 'Gewitter', kind: 'thunder', cloud: 100, precipitation: 2.5, rain_rate: 10, snowfall: 0, snow_depth: 0, visibility: 7000, wind_speed: 30, wind_direction: 240 },
-  nebel: { temperature: 6, code: 45, text: 'Nebel', kind: 'fog', cloud: 100, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 250, wind_speed: 3, wind_direction: 0 },
-  wolkig: { temperature: 15, code: 2, text: 'wolkig', kind: 'clouds', cloud: 55, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 20000, wind_speed: 15, wind_direction: 240 },
-  klar: { temperature: 20, code: 0, text: 'klar', kind: 'clear', cloud: 0, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 30000, wind_speed: 5, wind_direction: 90 },
+  'schnee-hauch': { temperature: 0, code: 71, text: tr('leichter Schneefall'), kind: 'snow', cloud: 90, precipitation: 0.05, rain_rate: 0, snowfall: 0.05, snow_depth: 0.004, visibility: 10000, wind_speed: 5, wind_direction: 240 },
+  'schnee-leicht': { temperature: -1, code: 71, text: tr('leichter Schneefall'), kind: 'snow', cloud: 90, precipitation: 0.1, rain_rate: 0, snowfall: 0.1, snow_depth: 0.03, visibility: 8000, wind_speed: 8, wind_direction: 240 },
+  schnee: { temperature: -2, code: 73, text: tr('Schneefall'), kind: 'snow', cloud: 100, precipitation: 0.3, rain_rate: 0, snowfall: 0.4, snow_depth: 0.12, visibility: 3000, wind_speed: 15, wind_direction: 250 },
+  schneesturm: { temperature: -6, code: 75, text: tr('starker Schneefall'), kind: 'snow', cloud: 100, precipitation: 0.8, rain_rate: 0, snowfall: 1.2, snow_depth: 0.35, visibility: 600, wind_speed: 45, wind_direction: 270 },
+  niesel: { temperature: 9, code: 53, text: tr('Nieselregen'), kind: 'drizzle', cloud: 100, precipitation: 0.1, rain_rate: 0.4, snowfall: 0, snow_depth: 0, visibility: 9000, wind_speed: 10, wind_direction: 240 },
+  regen: { temperature: 12, code: 63, text: tr('Regen'), kind: 'rain', cloud: 100, precipitation: 1, rain_rate: 4, snowfall: 0, snow_depth: 0, visibility: 10000, wind_speed: 20, wind_direction: 240 },
+  wolkenbruch: { temperature: 18, code: 65, text: tr('starker Regen'), kind: 'rain', cloud: 100, precipitation: 6, rain_rate: 24, snowfall: 0, snow_depth: 0, visibility: 4000, wind_speed: 35, wind_direction: 250 },
+  gewitter: { temperature: 21, code: 95, text: tr('Gewitter'), kind: 'thunder', cloud: 100, precipitation: 2.5, rain_rate: 10, snowfall: 0, snow_depth: 0, visibility: 7000, wind_speed: 30, wind_direction: 240 },
+  nebel: { temperature: 6, code: 45, text: tr('Nebel'), kind: 'fog', cloud: 100, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 250, wind_speed: 3, wind_direction: 0 },
+  wolkig: { temperature: 15, code: 2, text: tr('wolkig'), kind: 'clouds', cloud: 55, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 20000, wind_speed: 15, wind_direction: 240 },
+  klar: { temperature: 20, code: 0, text: tr('klar'), kind: 'clear', cloud: 0, precipitation: 0, rain_rate: 0, snowfall: 0, snow_depth: 0, visibility: 30000, wind_speed: 5, wind_direction: 90 },
 };
 const testWeather = TEST_WEATHER[new URLSearchParams(location.search).get('testwetter') ?? ''] ?? null;
 async function updateOutdoor(force = false) {
@@ -3530,13 +3530,13 @@ async function updateOutdoor(force = false) {
     if (outdoorWeather?.data?.place !== 'Testwetter') {
       outdoorWeather = { at: Date.now(), data: { ...testWeather, place: 'Testwetter' }, q };
       const d = outdoorWeather.data;
-      setTermWeather(`Testwetter: ${d.temperature} °C · ${d.text}`);
+      setTermWeather(tr('Testwetter: {temp} °C · {text}', { temp: d.temperature, text: d.text }));
     }
   } else if ((force || due) && (loc || t.settings.plz)) {
     // ohne Lage und ohne Postleitzahl gibt es kein Wetter (z. B. bevor der Hausplan geladen ist)
     const data = await fetch(`/api/weather${q}`, { credentials: 'same-origin' }).then((r) => (r.ok ? r.json() : null)).catch(() => null);
     outdoorWeather = { at: Date.now(), data, q };
-    setTermWeather(data ? `${data.temperature} °C · ${data.text}${data.rain_rate >= 0.1 ? ` · ${String(data.rain_rate).replace('.', ',')} mm/h` : ''}` : '');
+    setTermWeather(data ? `${data.temperature} °C · ${data.text}${data.rain_rate >= 0.1 ? ` · ${Number(data.rain_rate).toLocaleString(locale())} mm/h` : ''}` : '');
   }
   const w = outdoorWeather?.data ?? null;
   const sun = loc ? sunPosition(new Date(), loc.lat, loc.lon) : null;
@@ -3593,7 +3593,7 @@ const rest = document.createElement('div');
 rest.id = 'rest';
 rest.className = 'rest';
 rest.hidden = true;
-rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><div class="rest-storm" hidden><canvas class="rest-radar" width="360" height="360"></canvas><div><b class="storm-title"></b><span class="storm-text"></span><small class="storm-src">Blitzdaten: Blitzortung.org</small></div></div><p class="rest-hint">Zum Bedienen antippen</p>`;
+rest.innerHTML = `<img class="rest-img" alt="" /><div class="rest-info"><b class="rest-clock"></b><span class="rest-date"></span><span class="rest-weather"></span><div class="rest-notes"></div></div><p class="rest-progress" hidden></p><div class="rest-storm" hidden><canvas class="rest-radar" width="360" height="360"></canvas><div><b class="storm-title"></b><span class="storm-text"></span><small class="storm-src">${tr('Blitzdaten: Blitzortung.org')}</small></div></div><p class="rest-hint">${tr('Zum Bedienen antippen')}</p>`;
 document.body.appendChild(rest);
 let restTimer = 0;
 let restClock = 0;
@@ -3700,7 +3700,7 @@ async function paintRest(key: string) {
       const t0 = performance.now();
       progress.hidden = false;
       while (!rest.hidden && !document.hidden && ptSamples < q.samples && performance.now() - t0 < q.ms) {
-        progress.textContent = `Bild wird fotorealistisch gerechnet … ${Math.min(100, Math.round(Math.max(ptSamples / q.samples, (performance.now() - t0) / q.ms) * 100))} %`;
+        progress.textContent = tr('Bild wird fotorealistisch gerechnet … {pct} %', { pct: Math.min(100, Math.round(Math.max(ptSamples / q.samples, (performance.now() - t0) / q.ms) * 100)) });
         await frames(10);
       }
       progress.hidden = true;
@@ -3730,9 +3730,9 @@ async function paintRest(key: string) {
     ]);
     const due = (tasks.open ?? []).filter((t: any) => t.overdue || t.due_today);
     rest.querySelector('.rest-notes')!.innerHTML = [
-      due.length ? `${ic('check')} ${due.length === 1 ? `Heute: ${esc(due[0].title)}` : `${due.length} Aufgaben fällig`}` : '',
-      shop.open?.length ? `${ic('cart')} ${shop.open.length} auf der Einkaufsliste` : '',
-      exp.length ? `${ic('clock')} ${exp.length} läuft in 7 Tagen ab` : '',
+      due.length ? `${ic('check')} ${due.length === 1 ? tr('Heute: {title}', { title: esc(due[0].title) }) : trn(due.length, '{n} Aufgabe fällig', '{n} Aufgaben fällig')}` : '',
+      shop.open?.length ? `${ic('cart')} ${tr('{n} auf der Einkaufsliste', { n: shop.open.length })}` : '',
+      exp.length ? `${ic('clock')} ${tr('{n} läuft in 7 Tagen ab', { n: exp.length })}` : '',
     ].filter(Boolean).map((x) => `<span>${x}</span>`).join('');
   } finally {
     painting = false;
@@ -3811,24 +3811,27 @@ function showLightning(r: { strikes: { km: number; bearing: number; age_s: numbe
     const near = Math.min(...fresh.map((s: any) => s.km));
     weatherFx().forEach((fx) => fx.flash(Math.max(0.35, 1 - near / 30)));
   }
-  const ago = (sec: number) => (sec < 10 ? 'gerade eben' : sec < 90 ? `vor ${sec} s` : `vor ${Math.round(sec / 60)} Min.`);
+  const ago = (sec: number) => (sec < 10 ? tr('gerade eben') : sec < 90 ? tr('vor {s} s', { s: sec }) : tr('vor {m} Min.', { m: Math.round(sec / 60) }));
   const km = (x: number) => x.toLocaleString(locale());
   const n = r.nearest;
-  const title = r.level >= 3 ? 'Gewitter direkt über uns' : r.level === 2 ? 'Gewitter in der Nähe' : r.level === 1 ? 'Gewitter in der Region' : '';
+  const title = r.level >= 3 ? tr('Gewitter direkt über uns') : r.level === 2 ? tr('Gewitter in der Nähe') : r.level === 1 ? tr('Gewitter in der Region') : '';
   // „Letzter Blitz“ = der neueste (den man gerade sieht), getrennt vom nächstgelegenen der letzten 15 Min.
   const l = r.latest ?? n;
   const text = l && n
-    ? `Letzter Blitz ${km(l.km)} km im ${l.direction}, ${ago(l.age_s)}\n${r.count15} Blitze in 15 Min.${n !== l && (n.km < l.km - 0.5) ? ` · am nächsten ${km(n.km)} km im ${n.direction} (${ago(n.age_s)})` : ''}`
+    ? tr('Letzter Blitz {km} km im {direction}, {ago}', { km: km(l.km), direction: l.direction, ago: ago(l.age_s) }) +
+      '\n' +
+      trn(r.count15, '{n} Blitz in 15 Min.', '{n} Blitze in 15 Min.') +
+      (n !== l && n.km < l.km - 0.5 ? ' · ' + tr('am nächsten {km} km im {direction} ({ago})', { km: km(n.km), direction: n.direction, ago: ago(n.age_s) }) : '')
     : '';
   // Kopfzeile des Terminals: Warnung ab „in der Nähe“
-  setTermStorm(r.level >= 2 && l ? `Gewitter · ${km(Math.round(l.km))} km ${l.direction}` : '', r.level);
+  setTermStorm(r.level >= 2 && l ? tr('Gewitter · {km} km {direction}', { km: km(Math.round(l.km)), direction: l.direction }) : '', r.level);
   // Ruhezustand: Hinweis und Karte, sobald es in 100 km blitzt
   const box = document.querySelector<HTMLElement>('#rest .rest-storm');
   if (!box) return;
   // nur bei Blitzen in der Nähe (bis 50 km, letzte 15 Min.) – sonst ausgeblendet
   box.hidden = r.level === 0;
   box.dataset.level = String(r.level);
-  box.querySelector('.storm-title')!.textContent = title || 'Blitze in der Ferne';
+  box.querySelector('.storm-title')!.textContent = title || tr('Blitze in der Ferne');
   box.querySelector('.storm-text')!.textContent = text;
   drawRadar(box.querySelector('canvas')!, r.strikes, loc.north);
 }
@@ -3927,7 +3930,7 @@ if (projectParam) {
       importPlan(p, p.name || file, 'new');
       history.replaceState(null, '', location.pathname);
     })
-    .catch((err) => toast(`Projekt „${file}“ konnte nicht geladen werden: ${err.message}`));
+    .catch((err) => toast(tr('Projekt „{file}“ konnte nicht geladen werden: {msg}', { file, msg: err.message })));
 }
 
 // Nur in der Entwicklung: Zugriff für automatisierte Ansichtstests
