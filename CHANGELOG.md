@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.9.0 – 2026-10-26
 
 **Stored names in your language**: floors, rooms, compartments, storage areas and furniture groups that match a
 built-in default ("Erdgeschoss", "Küche", "Schublade 1 (oben)" …) are shown in the selected language – in both
