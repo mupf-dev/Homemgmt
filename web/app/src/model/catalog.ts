@@ -1,6 +1,6 @@
 import type { FrontStyle, MaterialSlot } from './types.ts';
 import { OBJ_PREFIX, type ObjectType } from './objects.ts';
-import { tr } from './text.ts';
+import { objText, tr } from './text.ts';
 
 export type ItemKind =
   | 'base'
@@ -109,7 +109,7 @@ export function setPreviewObject(t: ObjectType | null) {
 }
 
 const entryOf = (t: ObjectType): CatalogEntry => ({
-  id: OBJ_PREFIX + t.id, name: t.name, group: t.group, kind: 'custom',
+  id: OBJ_PREFIX + t.id, name: objText(t).name, group: t.group, kind: 'custom',
   width: t.size.width, depth: t.size.depth, height: t.size.height, elevation: t.size.elevation,
   snapToWall: t.snapToWall, widths: t.size.widths, materials: t.materials, object: t,
   // Arbeitsplatte als Teil der Küchenzeile: countertopRuns fasst sie mit angrenzenden Unterschränken zusammen
@@ -119,12 +119,18 @@ const entryOf = (t: ObjectType): CatalogEntry => ({
 /** Möbelarten des Hauses (aus house.objectTypes) bekannt machen */
 export function setHouseObjects(defs: Record<string, ObjectType> | undefined) {
   houseObjects.clear();
-  for (const [id, t] of Object.entries(defs ?? {})) houseObjects.set(id, t);
+  for (const [id, t] of Object.entries(defs ?? {})) {
+    houseObjects.set(id, t);
+    objText(t); // englischen Namen für shown() bekannt machen
+  }
 }
 /** Möbelarten der Bibliothek (zum Platzieren) bekannt machen */
 export function setLibraryObjects(list: ObjectType[]) {
   libraryObjects.clear();
-  for (const t of list) libraryObjects.set(t.id, t);
+  for (const t of list) {
+    libraryObjects.set(t.id, t);
+    objText(t);
+  }
 }
 export const libraryObject = (id: string) => libraryObjects.get(id);
 export const libraryEntries = () => [...libraryObjects.values()].map(entryOf);

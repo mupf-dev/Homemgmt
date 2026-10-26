@@ -12,6 +12,7 @@ import {
   copyId, ELEMENT_KINDS, hasAppliance, objectCompartments, TEMPLATES, validateObjectType,
   type ElementKind, type KorpusBuild, type ModelBuild, type ObjectType,
 } from '../model/objects.ts';
+import { objText } from '../model/text.ts';
 import { PREVIEW_TYPE, setPreviewObject } from '../model/catalog.ts';
 import { buildItem } from '../models';
 import { store } from '../state';
@@ -83,7 +84,7 @@ export const viewObjects: View = async (el, ctx, params) => {
       box.innerHTML = `<p class="hint">${tr('Möbelarten aus dem {catalog} – frei verwendbar. Eigene Möbelarten beisteuern: exportieren und als Pull Request im {repo} einreichen. Beim Planen gibt es sie auch direkt unter „Möbel“ → <b>Online-Bibliothek</b>: auswählen installiert und setzt sie.', { catalog: `<a class="link" href="${GALLERY}" target="_blank" rel="noopener">${tr('Community-Katalog')} ${ic('external')}</a>`, repo: `<a class="link" href="${REPO}" target="_blank" rel="noopener">${tr('Katalog-Repo')} ${ic('external')}</a>` })}</p>
         <div class="ob-list">${c.objects.map((o) => `<div class="ob-row" data-id="${esc(o.id)}">
           <span class="ob-icon">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : ic('box')}</span>
-          <span class="l-main"><b>${esc(o.name)}</b><small>${esc(shown(o.group))}${o.places ? ` · ${trn(o.places, '{n} Fach', '{n} Fächer')}` : ''} · ${tr('Version {v}', { v: esc(o.version) })}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(o.description)}</small>` : ''}</span>
+          <span class="l-main"><b>${esc(objText(o).name)}</b><small>${esc(shown(o.group))}${o.places ? ` · ${trn(o.places, '{n} Fach', '{n} Fächer')}` : ''} · ${tr('Version {v}', { v: esc(o.version) })}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(objText(o).description ?? '')}</small>` : ''}</span>
           ${o.update ? `<button class="btn primary mini" data-a="install">${ic('in')}${tr('Aktualisieren auf {v}', { v: esc(o.version) })}</button>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : edit ? `<button class="btn mini" data-a="install">${ic('in')}${tr('Installieren')}</button>` : ''}
         </div>`).join('') || `<p class="hint">${tr('Der Katalog ist leer.')}</p>`}</div>`;
       box.querySelectorAll<HTMLElement>('[data-a="install"]').forEach((b) =>
@@ -111,7 +112,7 @@ function row(r: LibraryRow, edit: boolean) {
   const own = r.source !== 'community';
   return `<div class="ob-row ${r.hidden ? 'muted' : ''}" data-id="${esc(t.id)}">
     <span class="ob-icon">${objectIcon(t)}</span>
-    <span class="l-main"><b>${esc(t.name)}</b><small>${esc(shown(t.group))} · ${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${trn(n, '{n} Fach', '{n} Fächer')} · ${tr('Version {v}', { v: esc(t.version) })} · ${SOURCE[r.source] ?? r.source}${r.hidden ? ` · ${tr('ausgeblendet')}` : ''}</small></span>
+    <span class="l-main"><b>${esc(objText(t).name)}</b><small>${esc(shown(t.group))} · ${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${trn(n, '{n} Fach', '{n} Fächer')} · ${tr('Version {v}', { v: esc(t.version) })} · ${SOURCE[r.source] ?? r.source}${r.hidden ? ` · ${tr('ausgeblendet')}` : ''}</small></span>
     <span class="ob-acts">
       ${edit ? `<a class="btn mini" href="#/objekte/bearbeiten?${own ? 'id' : 'kopie'}=${encodeURIComponent(t.id)}">${ic(own ? 'pencil' : 'copy')}${own ? tr('Bearbeiten') : tr('Kopieren')}</a>` : ''}
       <button class="btn mini" data-a="export" title="${tr('Als Datei speichern (zum Teilen)')}">${ic('share')}${tr('Exportieren')}</button>
@@ -176,6 +177,10 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
         <div class="grid2"><label>${tr('Autor')}<input data-k="author" value="${esc(draft.author ?? '')}" maxlength="60" /></label>
         <label>${tr('Lizenz')}<select data-k="license">${opt([['CC0-1.0', tr('CC0 (frei, empfohlen)')], ['CC-BY-4.0', tr('CC BY 4.0 (Namensnennung)')], ['privat', tr('nur privat')]], draft.license ?? 'CC0-1.0')}</select></label></div>
         <label>${tr('Beschreibung')}<textarea data-k="description" rows="2" maxlength="500">${esc(draft.description ?? '')}</textarea></label>
+        <details ${draft.en ? 'open' : ''}><summary>${tr('Englisch (optional)')}</summary>
+          <label>${tr('Name (englisch)')}<input data-en="name" value="${esc(draft.en?.name ?? '')}" maxlength="60" /></label>
+          <label>${tr('Beschreibung (englisch)')}<textarea data-en="description" rows="2" maxlength="500">${esc(draft.en?.description ?? '')}</textarea></label>
+        </details>
       </section>
       <section class="l-card"><h2>${tr('Maße (cm)')}</h2>
         <div class="grid4"><label>${tr('Breite')}<input data-s="width" inputmode="decimal" value="${draft.size.width}" /></label><label>${tr('Tiefe')}<input data-s="depth" inputmode="decimal" value="${draft.size.depth}" /></label>
@@ -250,6 +255,11 @@ export const viewObjectEditor: View = async (el, ctx, params) => {
     if (inp.dataset.k) {
       const k = inp.dataset.k as keyof ObjectType;
       (draft as any)[k] = inp.type === 'checkbox' ? inp.checked : inp.value;
+    } else if (inp.dataset.en) {
+      const en: Record<string, string> = { ...(draft.en ?? {}), [inp.dataset.en]: inp.value.trim() };
+      for (const key of Object.keys(en)) if (!en[key]) delete en[key];
+      if (Object.keys(en).length) draft.en = en;
+      else delete draft.en;
     } else if (inp.dataset.s) {
       if (inp.dataset.s === 'widths') {
         const w = inp.value.split(/[;,\s]+/).map(num).filter((x) => x > 0);

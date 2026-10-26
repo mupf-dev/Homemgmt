@@ -11,6 +11,8 @@
 export type Lang = 'de' | 'en';
 export type LangPref = 'auto' | Lang;
 
+import { objectNames, objectNamesVersion } from './model/text.ts';
+
 const files = import.meta.glob('./i18n/en/*.json', { eager: true, import: 'default' }) as Record<string, Record<string, string>>;
 const EN: Record<string, string> = Object.assign({}, ...Object.keys(files).sort().map((k) => files[k]));
 
@@ -63,6 +65,7 @@ export function trn(n: number, one: string, other: string, params?: Record<strin
 type Rule = { re: RegExp; to: string; keys: string[] };
 let NAMES: { exact: Map<string, string>; rules: Rule[] } | null = null;
 const shownCache = new Map<string, string>();
+let shownVersion = 0;
 
 function nameTables() {
   if (NAMES) return NAMES;
@@ -84,7 +87,7 @@ function nameTables() {
 
 function shownPart(s: string, depth = 0): string {
   const { exact, rules } = nameTables();
-  const hit = exact.get(s);
+  const hit = exact.get(s) ?? (lang === 'en' ? objectNames.get(s) : undefined);
   if (hit !== undefined) return hit;
   if (depth > 2) return s;
   for (const r of rules) {
@@ -96,7 +99,8 @@ function shownPart(s: string, depth = 0): string {
   }
   // „Unterschrank 60“, „Obergeschoss 2“: Vorgabe mit angehängter Zahl
   const num = s.match(/^(.+?) (\d+)$/);
-  if (num && exact.has(num[1])) return `${exact.get(num[1])} ${num[2]}`;
+  const base = num && (exact.get(num[1]) ?? (lang === 'en' ? objectNames.get(num[1]) : undefined));
+  if (num && base) return `${base} ${num[2]}`;
   return s;
 }
 
@@ -104,6 +108,10 @@ function shownPart(s: string, depth = 0): string {
 export function shown(name: string | null | undefined): string {
   const s = String(name ?? '');
   if (!s) return s;
+  if (shownVersion !== objectNamesVersion) {
+    shownCache.clear(); // neue Möbelarten mit englischem Namen
+    shownVersion = objectNamesVersion;
+  }
   let out = shownCache.get(s);
   if (out === undefined) {
     out = s.split(' · ').map((p) => shownPart(p.trim())).join(' · ');

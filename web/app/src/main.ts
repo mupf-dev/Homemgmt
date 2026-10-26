@@ -30,6 +30,7 @@ import { clearTerminalChat } from './lager/assistant';
 import { sunPosition } from './sun';
 import { lookFromWeather, WeatherFx } from './weatherfx';
 import { locale, shown, tr, trn } from './i18n';
+import { objText } from './model/text.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 /** Zahl mit fester Nachkommastellenzahl im Format der Sprache */
@@ -843,10 +844,10 @@ function openModelLibrary() {
     });
     if (my !== seq) return;
     const q = modelState.q.toLowerCase();
-    const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.group} ${o.description}`.toLowerCase().includes(q)));
+    const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.en?.name ?? ''} ${o.group} ${shown(o.group)} ${o.description} ${o.en?.description ?? ''}`.toLowerCase().includes(q)));
     const page = hits.slice(offset, offset + 48);
     $('#mlCount', m.el).textContent = trn(hits.length, '{n} Möbelart', '{n} Möbelarten');
-    const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(o.name)}</b>
+    const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(objText(o).name)}</b>
       <small>${o.size ? `${o.size[0]} × ${o.size[1]} × ${o.size[2]} cm` : esc(shown(o.group))}</small>
       <span class="ml-tags">${o.places ? `<span class="tag">${trn(o.places, '{n} Fach', '{n} Fächer')}</span>` : ''}${o.update ? `<span class="tag warn">${tr('neue Version {version}', { version: esc(o.version) })}</span>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : ''}</span></button>`).join('');
     res.innerHTML = append ? res.innerHTML + html : html || `<p class="hint">${tr('Nichts gefunden.')}</p>`;
@@ -865,7 +866,7 @@ function openModelLibrary() {
           if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
           document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.type === OBJ_PREFIX + o.id));
           plan.setTool('place', OBJ_PREFIX + o.id);
-          toast(o.installed ? tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: o.name }) : tr('{name}: zum Platzieren in den Grundriss klicken (R dreht). Jetzt auch im Katalog unter „Möbel“.', { name: o.name }));
+          toast(o.installed ? tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: objText(o).name }) : tr('{name}: zum Platzieren in den Grundriss klicken (R dreht). Jetzt auch im Katalog unter „Möbel“.', { name: objText(o).name }));
         } catch (e) {
           b.classList.remove('busy');
           toast((e as Error).message);
@@ -2220,8 +2221,8 @@ function renderProps() {
       const warn = before !== after ? '\n\n' + tr('Achtung: Die Fächerzahl ändert sich von {before} auf {after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.', { before, after }) : '';
       const question =
         users === 1
-          ? tr('„{name}“ auf Version {version} bringen? Das betrifft dieses Möbel im Haus.', { name: obj.name, version: libObj.version })
-          : tr('„{name}“ auf Version {version} bringen? Das betrifft alle {n} Möbel dieser Art im Haus.', { name: obj.name, version: libObj.version, n: users });
+          ? tr('„{name}“ auf Version {version} bringen? Das betrifft dieses Möbel im Haus.', { name: objText(obj).name, version: libObj.version })
+          : tr('„{name}“ auf Version {version} bringen? Das betrifft alle {n} Möbel dieser Art im Haus.', { name: objText(obj).name, version: libObj.version, n: users });
       if (!confirm(question + warn)) return;
       store.house.objectTypes = { ...(store.house.objectTypes ?? {}), [obj.id]: structuredClone(libObj) };
       store.commit();

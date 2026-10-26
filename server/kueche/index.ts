@@ -354,6 +354,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
           return {
             id: String(o.id), name: str(o.name, 60), group: str(o.group, 40), version: str(o.version, 20), author: str(o.author, 60),
             license: str(o.license, 40), description: str(o.description, 500), file: str(o.file, 200),
+            ...(o.en && (o.en.name || o.en.description) ? { en: { name: str(o.en.name, 60), description: str(o.en.description, 500) } } : {}),
             preview: o.preview && /^[\w./-]+\.svg$/.test(String(o.preview)) && !String(o.preview).includes('..') ? CATALOG_URL + String(o.preview) : null,
             places: Number.isFinite(o.places) ? Number(o.places) : null,
             size: Array.isArray(o.size) && o.size.length === 3 && o.size.every((v: unknown) => Number.isFinite(v)) ? o.size.map(Number) : null,
