@@ -116,7 +116,7 @@ booking only with a selected person, portrait/landscape, idle mode with light by
 | 3D | Floor / up to here / whole house (stacked, with floor slabs), furniture library (Poly Haven CC0 via its API, FurniMesh via its public library pages – the GLB is shrunk and scaled on the server, `server/kueche/furnimesh.ts`), path tracing, walk-through with collision and changing floors via stairs (`walker.ts`), showroom as before |
 | Inventory in the plan | "Inventory" colors all compartments by fill level (empty, occupied, expiring, expired); click a compartment → contents, check in, take out, move an existing item, open in the inventory |
 | Search | "Where is …?" searches the whole inventory, lights up matches in the house, jumps to floor, furniture and compartment |
-| Saving | Automatically on the server ("Plan house" permission), conflict dialog for concurrent edits, draft additionally in the browser; users see the plan and book, but don't change it |
+| Saving | Automatically on the server ("Plan the house" permission), conflict dialog for concurrent edits, draft additionally in the browser; users see the plan and book, but don't change it |
 | Import | First creation from the browser draft; import saved kitchen plans "as a floor"; file import of house and plan files |
 
 ## 6. Deliberate interim states

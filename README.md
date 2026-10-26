@@ -28,7 +28,7 @@ lights up the matches in the house.
 
 Everything runs on your own computer or server: **one** Node process, **one** SQLite file, no cloud.
 
-The app is available in **German and English**. The language follows your browser and can be switched under *My account*.
+The app is available in **German and English**. The language follows your browser and can be switched under *More → Settings*.
 
 ## The AI assistant
 
@@ -114,7 +114,7 @@ Say, type or photograph what happened – the assistant books it into the right 
 - **Overview** as the home page: quick actions, shopping list to tick off, what expires soon, fill level per floor,
   recently moved
 - **Poor Wi-Fi**: transactions are queued ("2 transactions waiting") and synced automatically – the server never books twice
-- **Multiple people** signing in with a tile + PIN/password or email, "Plan house" permission per person
+- **Multiple people** signing in with a tile + PIN/password or email, "Plan the house" permission per person
 - **Settings per person**: home page, house in 2D or 3D first, light/dark, font size
 
 <a id="wall-terminal"></a>
@@ -136,7 +136,7 @@ A tablet on the wall becomes the control center for everyone in the house – wi
 </tr>
 </table>
 
-- **Setup:** *Administration → Wall terminals → Add wall terminal*, then open the **setup link** or its **QR code** on
+- **Setup:** *Administration → Wall terminals → Create wall terminal*, then open the **setup link** or its **QR code** on
   the tablet – no password on the device. Regenerate the link or remove the terminal at any time.
 - **Configurable per device:** portrait or landscape, house as floor plan or 3D, light/dark, font size up to "very
   large", minutes until it returns to the house, idle mode on/off, level of detail (draft 15 s, normal 30 s, high 90 s),
@@ -296,7 +296,7 @@ under *Expiring soon*.
 
 ### 5. Set up a wall terminal
 
-*Administration → Wall terminals → Add wall terminal*: choose portrait or landscape, then open the **setup link** (or
+*Administration → Wall terminals → Create wall terminal*: choose portrait or landscape, then open the **setup link** (or
 its QR code) on the tablet. The terminal needs no personal sign-in; when booking it asks **"Who is booking?"**. When
 not in use it switches to idle mode – with the **house location** (*Plan → ⋯*) including sun, sky and weather as
 outside. If there is lightning nearby, the terminal shows a warning and a lightning map. To try it out: open the
@@ -412,7 +412,7 @@ three-gpu-pathtracer.
 | PUT | `/api/house` | Save `{house, base_version}` → normalized plan, sync with the inventory; 409 if the version is outdated |
 | GET | `/api/house/storage` | All plan locations with code and contents |
 | GET | `/api/objects` | Object library: installed furniture types (`zuhause-objekt/1`) |
-| PUT / PATCH / DELETE | `/api/objects/:id` | Save, hide/show or delete a furniture type ("Plan house" permission) |
+| PUT / PATCH / DELETE | `/api/objects/:id` | Save, hide/show or delete a furniture type ("Plan the house" permission) |
 | POST | `/api/objects/import` | Import a furniture type from a file (`{object, replace?}`) |
 | GET / POST | `/api/objects/community`, `/api/objects/community/install` | Read the community catalog, install/update a furniture type |
 
