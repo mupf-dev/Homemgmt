@@ -7,6 +7,7 @@
 const crypto = require('node:crypto');
 const { createTools } = require('./tools.cjs');
 const { createResearch } = require('./research.cjs');
+const { tr, trn, lang, locale } = require('../i18n.cjs');
 
 const DEFAULT_BASE_URL = 'https://openrouter.ai/api/v1';
 const MAX_ROUNDS = 8; // Modell-Aufrufe je Anfrage
@@ -68,7 +69,7 @@ function createAssistant(core, opts = {}) {
   function saveSettings(body) {
     if (body.base_url !== undefined) {
       const u = String(body.base_url || '').trim();
-      if (u && !/^https?:\/\/[^\s]+$/i.test(u)) throw new HttpError(400, 'Die Adresse muss mit http:// oder https:// beginnen.');
+      if (u && !/^https?:\/\/[^\s]+$/i.test(u)) throw new HttpError(400, tr('Die Adresse muss mit http:// oder https:// beginnen.'));
       setSetting('ai_base_url', u);
     }
     if (body.model !== undefined) setSetting('ai_model', String(body.model || '').trim().slice(0, 200));
@@ -76,7 +77,7 @@ function createAssistant(core, opts = {}) {
     if (body.research_enabled !== undefined) setSetting('ai_research', body.research_enabled ? '' : '0'); // Standard: an
     if (body.search_tool !== undefined) {
       const t = String(body.search_tool || '').trim();
-      if (!/^[\w.-]{0,64}$/.test(t)) throw new HttpError(400, 'Der Name des Such-Tools darf nur Buchstaben, Ziffern, ".", "_" und "-" enthalten.');
+      if (!/^[\w.-]{0,64}$/.test(t)) throw new HttpError(400, tr('Der Name des Such-Tools darf nur Buchstaben, Ziffern, ".", "_" und "-" enthalten.'));
       setSetting('ai_search_tool', t);
     }
     // Schlüssel nur ändern, wenn mitgeschickt; leer = entfernen
@@ -98,17 +99,17 @@ function createAssistant(core, opts = {}) {
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
-      throw new HttpError(502, e.name === 'TimeoutError' ? 'Der KI-Anbieter antwortet nicht (Zeitüberschreitung).' : `KI-Anbieter nicht erreichbar: ${e.message}`);
+      throw new HttpError(502, e.name === 'TimeoutError' ? tr('Der KI-Anbieter antwortet nicht (Zeitüberschreitung).') : tr('KI-Anbieter nicht erreichbar: {error}', { error: e.message }));
     }
     const text = await res.text();
     let data = null;
     try { data = JSON.parse(text); } catch { /* unten */ }
     if (!res.ok || !data || data.error) {
       const msg = data?.error?.message || data?.message || text.slice(0, 200) || res.statusText;
-      throw new HttpError(502, `KI-Anbieter: ${msg}${res.ok ? '' : ` (HTTP ${res.status})`}`);
+      throw new HttpError(502, tr('KI-Anbieter: {error}', { error: `${msg}${res.ok ? '' : ` (HTTP ${res.status})`}` }));
     }
     const choice = data.choices?.[0]?.message;
-    if (!choice) throw new HttpError(502, 'KI-Anbieter: leere Antwort.');
+    if (!choice) throw new HttpError(502, tr('KI-Anbieter: leere Antwort.'));
     return { message: choice, usage: data.usage || {} };
   }
 
@@ -123,14 +124,14 @@ function createAssistant(core, opts = {}) {
         signal: AbortSignal.timeout(timeoutMs),
       });
     } catch (e) {
-      throw new HttpError(502, e.name === 'TimeoutError' ? 'Die Websuche antwortet nicht (Zeitüberschreitung).' : `Websuche nicht erreichbar: ${e.message}`);
+      throw new HttpError(502, e.name === 'TimeoutError' ? tr('Die Websuche antwortet nicht (Zeitüberschreitung).') : tr('Websuche nicht erreichbar: {error}', { error: e.message }));
     }
     const text = await res.text();
     let data = null;
     try { data = JSON.parse(text); } catch { /* unten */ }
     if (!res.ok || !data || data.error || !Array.isArray(data.results)) {
       const msg = data?.error?.message || data?.detail || data?.message || text.slice(0, 200) || res.statusText;
-      throw new HttpError(502, `Websuche: ${typeof msg === 'string' ? msg : JSON.stringify(msg).slice(0, 200)}${res.ok ? '' : ` (HTTP ${res.status})`}`);
+      throw new HttpError(502, tr('Websuche: {error}', { error: `${typeof msg === 'string' ? msg : JSON.stringify(msg).slice(0, 200)}${res.ok ? '' : ` (HTTP ${res.status})`}` }));
     }
     return data.results
       .filter((r) => r && /^https?:\/\/\S+$/i.test(String(r.url || '')))
@@ -161,7 +162,7 @@ function createAssistant(core, opts = {}) {
       const entries = Array.isArray(a.produkte) && a.produkte.length
         ? a.produkte.slice(0, 10).map((name) => ({ name: String(name) }))
         : core.shoppingOpen();
-      if (!entries.length) return 'Die Einkaufsliste ist leer – nichts zu recherchieren.';
+      if (!entries.length) return tr('Die Einkaufsliste ist leer – nichts zu recherchieren.');
       const rows = research.start(auth.person, entries, { force: !!a.neu });
       await research.waitFor(rows.map((r) => r.id), RESEARCH_WAIT_MS);
       const list = research.byIds(rows.map((r) => r.id));
@@ -186,7 +187,7 @@ function createAssistant(core, opts = {}) {
   }));
 
   async function callTool(name, args, auth, ctx) {
-    if (!permitted(name, auth)) return { content: [{ type: 'text', text: 'Am Wandterminal nicht möglich.' }], isError: true };
+    if (!permitted(name, auth)) return { content: [{ type: 'text', text: tr('Am Wandterminal nicht möglich.') }], isError: true };
     const t = asyncTool(name);
     if (!t) return kit.call(name, args, auth, ctx);
     try {
@@ -194,20 +195,23 @@ function createAssistant(core, opts = {}) {
       return { content: [{ type: 'text', text: typeof out === 'string' ? out : JSON.stringify(out, null, 1) }], isError: false, data: out };
     } catch (e) {
       if (!(e instanceof HttpError)) console.error('Werkzeug', name, e);
-      return { content: [{ type: 'text', text: e instanceof HttpError ? e.message : 'Interner Fehler.' }], isError: true };
+      return { content: [{ type: 'text', text: e instanceof HttpError ? e.message : tr('Interner Fehler.') }], isError: true };
     }
   }
 
   // ---------- Systemprompt ----------
   function systemPrompt(auth, context, codes) {
-    const today = new Date().toLocaleDateString('de-DE', { timeZone: tz, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
+    const today = new Date().toLocaleDateString(locale(), { timeZone: tz, weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' });
     const whs = db().prepare('SELECT code, name FROM warehouses ORDER BY id').all().map((w) => `${w.code} (${w.name})`).join(', ');
     const named = db().prepare(`SELECT w.code, pl.col, pl.row, pl.name FROM places pl JOIN warehouses w ON w.id = pl.warehouse_id
       WHERE pl.name != '' ORDER BY w.id, LENGTH(pl.col), pl.col, pl.row LIMIT 80`).all().map((p) => `${p.code}-${p.col}${p.row} „${p.name}“`).join(', ');
     const lines = [
       kit.instructions(auth),
       '',
-      'Du bist der Assistent in der Heimlager-App. Antworte auf Deutsch, kurz und freundlich (1–3 Sätze), ohne Markdown-Tabellen.',
+      // Systemprompt bleibt deutsch; die Antwortsprache folgt der Spracheinstellung der App
+      lang() === 'en'
+        ? 'Du bist der Assistent in der Heimlager-App. Antworte auf Englisch (die App ist auf Englisch eingestellt), kurz und freundlich (1–3 Sätze), ohne Markdown-Tabellen.'
+        : 'Du bist der Assistent in der Heimlager-App. Antworte auf Deutsch, kurz und freundlich (1–3 Sätze), ohne Markdown-Tabellen.',
       `Heute ist ${today}. Lager: ${whs}.`,
       ...(named ? [`Benannte Lagerplätze: ${named}. Als "platz" genügt auch der Name.`] : []),
       '- Führe Wünsche direkt mit den Werkzeugen aus, statt nur zu beschreiben, was man tun könnte. Buchungen können in der App rückgängig gemacht werden.',
@@ -243,14 +247,14 @@ function createAssistant(core, opts = {}) {
   // Bilder: [{image, thumb, codes?}] – image/thumb Base64-JPEG/WebP aus der App (schon verkleinert)
   function readImages(list) {
     if (!Array.isArray(list)) return [];
-    if (list.length > MAX_IMAGES) throw new HttpError(400, `Höchstens ${MAX_IMAGES} Fotos je Nachricht.`);
+    if (list.length > MAX_IMAGES) throw new HttpError(400, tr('Höchstens {n} Fotos je Nachricht.', { n: MAX_IMAGES }));
     return list.map((x, i) => {
       const b64 = String(x?.image || '').replace(/^data:[^,]*,/, '');
       const buf = Buffer.from(b64, 'base64');
       const jpeg = buf[0] === 0xff && buf[1] === 0xd8;
       const webp = buf.subarray(8, 12).toString('latin1') === 'WEBP';
-      if (!jpeg && !webp) throw new HttpError(400, `Foto ${i + 1}: nur JPEG oder WebP.`);
-      if (buf.length > 3 * 1024 * 1024) throw new HttpError(413, `Foto ${i + 1} ist zu groß.`);
+      if (!jpeg && !webp) throw new HttpError(400, tr('Foto {n}: nur JPEG oder WebP.', { n: i + 1 }));
+      if (buf.length > 3 * 1024 * 1024) throw new HttpError(413, tr('Foto {n} ist zu groß.', { n: i + 1 }));
       return { image: b64, thumb: String(x?.thumb || b64).replace(/^data:[^,]*,/, ''), type: jpeg ? 'image/jpeg' : 'image/webp',
         codes: Array.isArray(x?.codes) ? x.codes.slice(0, 10).map(String) : [] };
     });
@@ -297,12 +301,19 @@ function createAssistant(core, opts = {}) {
   function parseArgs(call) {
     try { return JSON.parse(call.function?.arguments || '{}') || {}; } catch { return null; }
   }
+  // Titel der buchenden Werkzeuge für die Rückfrage in der App (die Werkzeug-Titel selbst bleiben deutsch, siehe tools.cjs)
+  const actionTitle = (name) => ({
+    lager_anlegen: tr('Lager anlegen'), einbuchen: tr('Einbuchen'), ausbuchen: tr('Ausbuchen'), umlagern: tr('Umlagern'),
+    haltbarkeit_setzen: tr('Haltbarkeitsdatum setzen'), einkaufsliste_hinzufuegen: tr('Auf die Einkaufsliste'),
+    einkaufsliste_abhaken: tr('Einkaufsliste abhaken'), objekt_bearbeiten: tr('Gegenstand bearbeiten'), lagerplatz_benennen: tr('Lagerplatz benennen'),
+    lagerplatz_loeschen: tr('Lagerplatz löschen'), foto_zuordnen: tr('Foto zuordnen'), buchung_rueckgaengig: tr('Buchung rückgängig machen'),
+  })[name];
   const describeAction = (name, a) => {
     const t = kit.get(name);
     if (name === 'mehrere_einbuchen') return (a.gegenstaende || []).map((g) => `${g.menge ?? 1}× ${g.name || g.objekt} → ${g.behaelter || g.platz || a.behaelter || a.platz || '?'}`);
     const what = a.name || a.objekt || '';
-    const where = a.behaelter ? ` → in ${a.behaelter}` : a.platz ? ` → ${a.platz}` : '';
-    return [`${t?.title || name}: ${a.menge ? `${a.menge}× ` : ''}${what}${where}`.trim()];
+    const where = a.behaelter ? ` → ${tr('in {name}', { name: a.behaelter })}` : a.platz ? ` → ${a.platz}` : '';
+    return [`${actionTitle(name) || t?.title || name}: ${a.menge ? `${a.menge}× ` : ''}${what}${where}`.trim()];
   };
 
   // Verlauf aus der App begrenzen: nur Text, die neuesten Nachrichten bis MAX_HISTORY / MAX_HISTORY_CHARS
@@ -323,10 +334,10 @@ function createAssistant(core, opts = {}) {
   // body: { message, history: [{role, content}], images: [{image, thumb, codes}], context }
   async function chat(auth, body) {
     const c = config();
-    if (!c.key || !c.model) throw new HttpError(409, 'Der Assistent ist noch nicht eingerichtet (Administration → Assistent).');
+    if (!c.key || !c.model) throw new HttpError(409, tr('Der Assistent ist noch nicht eingerichtet (Administration → Assistent).'));
     const text = String(body.message || '').trim().slice(0, 4000);
     const images = readImages(body.images);
-    if (!text && !images.length) throw new HttpError(400, 'Bitte eine Nachricht, ein Foto oder beides schicken.');
+    if (!text && !images.length) throw new HttpError(400, tr('Bitte eine Nachricht, ein Foto oder beides schicken.'));
     const context = resolveContext(body.context);
     const codes = describeCodes(images);
 
@@ -346,7 +357,7 @@ function createAssistant(core, opts = {}) {
       const { message, usage } = await complete(c, { messages, tools, tool_choice: 'auto' });
       logUsage(auth.person.id, c.model, usage);
       const calls = Array.isArray(message.tool_calls) ? message.tool_calls : [];
-      if (!calls.length) return { reply: String(message.content || '').trim() || 'Erledigt.', bookings, places: [...places], reset: ctx.reset };
+      if (!calls.length) return { reply: String(message.content || '').trim() || tr('Erledigt.'), bookings, places: [...places], reset: ctx.reset };
 
       messages.push({ role: 'assistant', content: message.content || null, tool_calls: calls });
       // Buchungen dieses Schritts zählen – ab CONFIRM_FROM erst nachfragen
@@ -359,7 +370,7 @@ function createAssistant(core, opts = {}) {
         const name = p.call.function?.name;
         let result;
         if (!p.args) result = 'Die Argumente waren kein gültiges JSON.';
-        else if (!permitted(name, auth)) result = 'Am Wandterminal nicht möglich.';
+        else if (!permitted(name, auth)) result = tr('Am Wandterminal nicht möglich.');
         else if (deferred && p.tool?.write) {
           actions.push({ name, args: p.args });
           result = 'Zurückgestellt: Der Nutzer muss diese Buchungen erst bestätigen.';
@@ -375,21 +386,21 @@ function createAssistant(core, opts = {}) {
         const count = actions.reduce((n, a) => n + toolCount(kit.get(a.name), a.args), 0);
         pending.set(token, { personId: auth.person.id, actions, images, expires: Date.now() + PENDING_MS });
         return {
-          reply: String(message.content || '').trim() || `Das sind ${count} Buchungen – soll ich sie ausführen?`,
+          reply: String(message.content || '').trim() || trn(count, 'Das ist {n} Buchung – soll ich sie ausführen?', 'Das sind {n} Buchungen – soll ich sie ausführen?'),
           bookings, places: [...places], reset: ctx.reset,
           confirm: { token, count, actions: actions.flatMap((a) => describeAction(a.name, a.args)) },
         };
       }
       writes += newWrites;
     }
-    return { reply: 'Das war mir zu verschachtelt – bitte in kleineren Schritten versuchen.', bookings, places: [...places], reset: ctx.reset };
+    return { reply: tr('Das war mir zu verschachtelt – bitte in kleineren Schritten versuchen.'), bookings, places: [...places], reset: ctx.reset };
   }
 
   // Zurückgestellte Buchungen ausführen (ohne erneuten Modell-Aufruf)
   function confirm(auth, token) {
     for (const [t, p] of pending) if (p.expires < Date.now()) pending.delete(t);
     const p = pending.get(String(token || ''));
-    if (!p || p.personId !== auth.person.id) throw new HttpError(404, 'Diese Rückfrage ist abgelaufen – bitte noch einmal sagen, was gebucht werden soll.');
+    if (!p || p.personId !== auth.person.id) throw new HttpError(404, tr('Diese Rückfrage ist abgelaufen – bitte noch einmal sagen, was gebucht werden soll.'));
     pending.delete(token);
     const bookings = [];
     const errors = [];
@@ -401,19 +412,20 @@ function createAssistant(core, opts = {}) {
         for (const e of r.data?.ergebnisse || []) if (e.fehler) errors.push(e.fehler);
       }
     }
-    const reply = `${bookings.length} ${bookings.length === 1 ? 'Buchung' : 'Buchungen'} ausgeführt.${errors.length ? ` Nicht geklappt: ${errors.join('; ')}` : ''}`;
+    const done = trn(bookings.length, '{n} Buchung ausgeführt.', '{n} Buchungen ausgeführt.');
+    const reply = errors.length ? `${done} ${tr('Nicht geklappt: {errors}', { errors: errors.join('; ') })}` : done;
     return { reply, bookings };
   }
   const cancel = (auth, token) => {
     const p = pending.get(String(token || ''));
     if (p && p.personId === auth.person.id) pending.delete(token);
-    return { reply: 'Okay, nichts gebucht.' };
+    return { reply: tr('Okay, nichts gebucht.') };
   };
 
   // Verbindung testen: kleiner Aufruf mit einem Werkzeug
   async function test() {
     const c = config();
-    if (!c.key || !c.model) throw new HttpError(409, 'Bitte zuerst Adresse, Modell und API-Schlüssel eintragen.');
+    if (!c.key || !c.model) throw new HttpError(409, tr('Bitte zuerst Adresse, Modell und API-Schlüssel eintragen.'));
     const probe = { type: 'function', function: { name: 'ping', description: 'Test: immer aufrufen.', parameters: { type: 'object', properties: { ok: { type: 'boolean' } } } } };
     const { message, usage } = await complete(c, {
       messages: [{ role: 'user', content: 'Verbindungstest. Rufe bitte das Werkzeug ping mit ok=true auf.' }],
@@ -423,8 +435,8 @@ function createAssistant(core, opts = {}) {
     const tools = Array.isArray(message.tool_calls) && message.tool_calls.some((t) => t.function?.name === 'ping');
     return {
       ok: true, model: c.model, tools,
-      message: tools ? `Verbindung klappt, ${c.model} kann Werkzeuge nutzen.`
-        : `Verbindung klappt, aber ${c.model} hat das Werkzeug nicht aufgerufen – für den Assistenten ein Modell mit Tool-Calling wählen.`,
+      message: tools ? tr('Verbindung klappt, {model} kann Werkzeuge nutzen.', { model: c.model })
+        : tr('Verbindung klappt, aber {model} hat das Werkzeug nicht aufgerufen – für den Assistenten ein Modell mit Tool-Calling wählen.', { model: c.model }),
     };
   }
 
