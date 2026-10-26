@@ -32,6 +32,8 @@ import { lookFromWeather, WeatherFx } from './weatherfx';
 import { locale, tr, trn } from './i18n';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
+/** Zahl mit fester Nachkommastellenzahl im Format der Sprache */
+const fixed = (v: number, d: number) => v.toLocaleString(locale(), { minimumFractionDigits: d, maximumFractionDigits: d });
 const esc = (s: string) => s.replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]!);
 
 const ICON = {
@@ -2035,7 +2037,7 @@ function renderProps() {
     const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
     const furniture = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1));
     const floorDef = slotMaterialDef(p, 'floor', r.floorMaterial);
-    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">${tr('Raum auf {floor} · {area} m²', { floor: esc(f.name), area: area.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</div>
+    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">${tr('Raum auf {floor} · {area} m²', { floor: esc(f.name), area: fixed(area, 1) })}</div>
       <div class="row"><label>${tr('Name')}</label><input type="text" data-rk="name" value="${esc(r.name)}" maxlength="40" style="width:160px" /></div>
       <div class="row"><label title="${tr('Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.')}">${tr('Lager-Kürzel')}</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
       ${r.manual ? `<p class="hint">${tr('Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.')}${f.walls.length ? ` <button class="btn mini" data-rk="detect">${tr('Aus Wänden erkennen')}</button>` : ''}</p>` : ''}
@@ -2482,7 +2484,7 @@ if (shareToken) {
   fetch(`/api/shared/${encodeURIComponent(shareToken)}`)
     .then(async (r) => {
       const d = await r.json().catch(() => ({}));
-      if (!r.ok) throw new Error(d.error ?? `Fehler ${r.status}`);
+      if (!r.ok) throw new Error(d.error ?? tr('Fehler {status}', { status: r.status }));
       return d as { name: string; data: Project };
     })
     .then((d) => {
@@ -2492,7 +2494,7 @@ if (shareToken) {
       view.setView('perspective');
     })
     .catch((e) => {
-      $('#sharedTitle').textContent = 'Link nicht verfügbar';
+      $('#sharedTitle').textContent = tr('Link nicht verfügbar');
       toast((e as Error).message);
     });
 }
@@ -2606,8 +2608,8 @@ function renderFloorTabs() {
   // Etagen mit Suchtreffern bekommen einen Punkt
   const hl = new Set([...view.highlight].map((k) => findItem(k.split(':')[0])?.floor.id));
   $('#floorTabs').innerHTML =
-    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${(f.elevation / 100).toFixed(2).replace('.', ',')} m">${esc(f.name)}${hl.has(f.id) && f.id !== store.floorId ? '<span class="hl-dot" title="Treffer auf dieser Etage"></span>' : ''}</button>`).join('') +
-    `<button class="floor-tab add plan-only" data-add title="Etage hinzufügen">${ic('plus')}</button>`;
+    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${fixed(f.elevation / 100, 2)} m">${esc(f.name)}${hl.has(f.id) && f.id !== store.floorId ? `<span class="hl-dot" title="${tr('Treffer auf dieser Etage')}"></span>` : ''}</button>`).join('') +
+    `<button class="floor-tab add plan-only" data-add title="${tr('Etage hinzufügen')}">${ic('plus')}</button>`;
   $('#floorTabs').querySelectorAll<HTMLElement>('[data-f]').forEach((b) => b.addEventListener('click', () => store.setFloor(b.dataset.f!)));
   $('#floorTabs').querySelector('[data-add]')!.addEventListener('click', () => openAddFloor());
 }
@@ -2616,15 +2618,15 @@ function renderFloorPanel() {
   const f = store.floor;
   const el = $('#floorPanel');
   el.innerHTML = `
-    <label class="field"><span>Name</span><input type="text" data-fk="name" value="${esc(f.name)}" maxlength="40" /></label>
+    <label class="field"><span>${tr('Name')}</span><input type="text" data-fk="name" value="${esc(f.name)}" maxlength="40" /></label>
     <div class="grid2">
-      <label class="field"><span>Art</span><select data-fk="kind">${(Object.keys(FLOOR_KINDS) as FloorKind[]).map((k) => `<option value="${k}" ${f.kind === k ? 'selected' : ''}>${FLOOR_KINDS[k]}</option>`).join('')}</select></label>
-      <label class="field"><span>Höhenlage</span><span class="unit" data-unit="cm"><input type="number" data-fk="elevation" value="${f.elevation}" step="1" title="Fußbodenoberkante relativ zum Erdgeschoss (Keller negativ)" /></span></label>
-      <label class="field"><span>Raumhöhe</span><span class="unit" data-unit="cm"><input type="number" data-fk="height" value="${f.height}" min="180" max="600" /></span></label>
-      <label class="field"><span>&nbsp;</span><button class="btn" data-fk="heightAll" title="Raumhöhe auf alle Wände dieser Etage übertragen">Auf Wände</button></label>
+      <label class="field"><span>${tr('Art')}</span><select data-fk="kind">${(Object.keys(FLOOR_KINDS) as FloorKind[]).map((k) => `<option value="${k}" ${f.kind === k ? 'selected' : ''}>${FLOOR_KINDS[k]}</option>`).join('')}</select></label>
+      <label class="field"><span>${tr('Höhenlage')}</span><span class="unit" data-unit="cm"><input type="number" data-fk="elevation" value="${f.elevation}" step="1" title="${tr('Fußbodenoberkante relativ zum Erdgeschoss (Keller negativ)')}" /></span></label>
+      <label class="field"><span>${tr('Raumhöhe')}</span><span class="unit" data-unit="cm"><input type="number" data-fk="height" value="${f.height}" min="180" max="600" /></span></label>
+      <label class="field"><span>&nbsp;</span><button class="btn" data-fk="heightAll" title="${tr('Raumhöhe auf alle Wände dieser Etage übertragen')}">${tr('Auf Wände')}</button></label>
     </div>
     <div id="lockedList"></div>
-    ${store.house.floors.length > 1 ? `<details class="danger-zone"><summary>Etage entfernen …</summary><button class="btn danger" data-fk="delete" style="width:100%;justify-content:center;margin-top:8px">${ICON.trash}Etage „${esc(f.name)}“ löschen</button></details>` : ''}`;
+    ${store.house.floors.length > 1 ? `<details class="danger-zone"><summary>${tr('Etage entfernen …')}</summary><button class="btn danger" data-fk="delete" style="width:100%;justify-content:center;margin-top:8px">${ICON.trash}${tr('Etage „{name}“ löschen', { name: esc(f.name) })}</button></details>` : ''}`;
   renderLockedList();
   el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('input[data-fk], select[data-fk]').forEach((inp) =>
     inp.addEventListener('change', () => {
@@ -2642,7 +2644,9 @@ function renderFloorPanel() {
   });
   el.querySelector('[data-fk="delete"]')?.addEventListener('click', () => {
     const n = f.items.filter((i) => compartments(i, store.house.settings).length).length;
-    if (!confirm(`Etage „${f.name}“ mit ${f.walls.length} Wänden und ${f.items.length} Möbeln löschen?${n ? `\n\n${n} Möbel mit Fächern verschwinden aus dem Lager (Plätze mit Inhalt bleiben erhalten).` : ''}`)) return;
+    const question = tr('Etage „{name}“ mit {walls} Wänden und {items} Möbeln löschen?', { name: f.name, walls: f.walls.length, items: f.items.length });
+    const lost = n ? '\n\n' + tr('{n} Möbel mit Fächern verschwinden aus dem Lager (Plätze mit Inhalt bleiben erhalten).', { n }) : '';
+    if (!confirm(question + lost)) return;
     store.removeFloor(f.id);
   });
 }
@@ -2655,21 +2659,21 @@ function renderLockedList() {
   const locked = store.lockedObjects();
   const name = (s: NonNullable<PlanSelection>) => {
     if (s.kind === 'item') return itemName(store.item(s.id)!);
-    if (s.kind === 'room') return `Raum ${store.room(s.id)!.name}`;
-    if (s.kind === 'wall') return `Wand ${(wallLength(store.wall(s.id)!) / 100).toFixed(2).replace('.', ',')} m`;
+    if (s.kind === 'room') return tr('Raum {name}', { name: store.room(s.id)!.name });
+    if (s.kind === 'wall') return tr('Wand {len} m', { len: fixed(wallLength(store.wall(s.id)!) / 100, 2) });
     const o = store.opening(s.id)!;
-    return `${o.type === 'window' ? 'Fenster' : o.type === 'door' ? 'Tür' : 'Durchgang'} ${o.width} cm`;
+    return o.type === 'window' ? tr('Fenster {w} cm', { w: o.width }) : o.type === 'door' ? tr('Tür {w} cm', { w: o.width }) : tr('Durchgang {w} cm', { w: o.width });
   };
   const openWalls = f.walls.filter((w) => !w.locked).length;
-  el.innerHTML = `<h3 class="locked-h">${ICON.lock}Gesperrt${locked.length ? ` (${locked.length})` : ''}</h3>
-    ${locked.length ? `<div class="locked-list">${locked.map((l, i) => `<div class="locked-row"><span>${esc(name(l.sel))}</span><button class="btn mini" data-unlock="${i}">Entsperren</button></div>`).join('')}</div>` : '<p class="hint">Nichts gesperrt. Ein ausgewähltes Objekt mit „Sperren“ oder Taste L sperren – es ist dann im Editor nicht mehr auswählbar oder veränderbar.</p>'}
-    <div class="actions">${openWalls ? `<button class="btn mini" data-lockwalls>Alle Wände sperren</button>` : ''}${locked.length > 1 ? `<button class="btn mini" data-unlockall>Alle entsperren</button>` : ''}</div>`;
+  el.innerHTML = `<h3 class="locked-h">${ICON.lock}${tr('Gesperrt')}${locked.length ? ` (${locked.length})` : ''}</h3>
+    ${locked.length ? `<div class="locked-list">${locked.map((l, i) => `<div class="locked-row"><span>${esc(name(l.sel))}</span><button class="btn mini" data-unlock="${i}">${tr('Entsperren')}</button></div>`).join('')}</div>` : `<p class="hint">${tr('Nichts gesperrt. Ein ausgewähltes Objekt mit „Sperren“ oder Taste L sperren – es ist dann im Editor nicht mehr auswählbar oder veränderbar.')}</p>`}
+    <div class="actions">${openWalls ? `<button class="btn mini" data-lockwalls>${tr('Alle Wände sperren')}</button>` : ''}${locked.length > 1 ? `<button class="btn mini" data-unlockall>${tr('Alle entsperren')}</button>` : ''}</div>`;
   el.querySelectorAll<HTMLElement>('[data-unlock]').forEach((b) => b.addEventListener('click', () => store.setLocked(locked[+b.dataset.unlock!].sel, false)));
   el.querySelector('[data-lockwalls]')?.addEventListener('click', () => {
     f.walls.forEach((w) => (w.locked = true));
     if (store.selection?.kind === 'wall') store.select(null);
     store.commit();
-    toast(`${f.walls.length} Wände gesperrt.`);
+    toast(trn(f.walls.length, '{n} Wand gesperrt.', '{n} Wände gesperrt.'));
   });
   el.querySelector('[data-unlockall]')?.addEventListener('click', () => {
     for (const l of locked) delete l.obj.locked;
@@ -2683,26 +2687,26 @@ function openAddFloor() {
   const low = [...h.floors].sort((a, b) => a.elevation - b.elevation)[0];
   const above = top.elevation + top.height + 30;
   const m = modal(
-    'Etage hinzufügen',
+    tr('Etage hinzufügen'),
     `<div class="choice-grid">
-      <button class="choice" data-k="floor"><b>Etage darüber</b><span>Obergeschoss auf ${(above / 100).toFixed(2).replace('.', ',')} m</span></button>
-      <button class="choice" data-k="attic"><b>Dachgeschoss</b><span>Ganz oben, mit Dachschräge</span></button>
-      <button class="choice" data-k="basement"><b>Keller</b><span>Unter „${esc(low.name)}“</span></button>
-      <button class="choice" data-k="outdoor"><b>Außenbereich</b><span>Garten, Garage, Carport, Gartenhaus</span></button>
+      <button class="choice" data-k="floor"><b>${tr('Etage darüber')}</b><span>${tr('Obergeschoss auf {h} m', { h: fixed(above / 100, 2) })}</span></button>
+      <button class="choice" data-k="attic"><b>${tr('Dachgeschoss')}</b><span>${tr('Ganz oben, mit Dachschräge')}</span></button>
+      <button class="choice" data-k="basement"><b>${tr('Keller')}</b><span>${tr('Unter „{name}“', { name: esc(low.name) })}</span></button>
+      <button class="choice" data-k="outdoor"><b>${tr('Außenbereich')}</b><span>${tr('Garten, Garage, Carport, Gartenhaus')}</span></button>
     </div>
-    <label class="row switch"><input type="checkbox" id="copyOutline" checked /><span><b>Außenwände von „${esc(store.floor.name)}“ übernehmen</b><small>Der Umriss der aktuellen Etage wird als Wände vorgegeben.</small></span></label>`,
+    <label class="row switch"><input type="checkbox" id="copyOutline" checked /><span><b>${tr('Außenwände von „{name}“ übernehmen', { name: esc(store.floor.name) })}</b><small>${tr('Der Umriss der aktuellen Etage wird als Wände vorgegeben.')}</small></span></label>`,
   );
   m.el.querySelectorAll<HTMLElement>('[data-k]').forEach((b) =>
     b.addEventListener('click', () => {
       const kind = b.dataset.k as FloorKind;
-      const names: Record<FloorKind, string> = { floor: h.floors.some((f) => f.name === 'Obergeschoss') ? 'Obergeschoss 2' : 'Obergeschoss', attic: 'Dachgeschoss', basement: 'Keller', outdoor: 'Außen' };
+      const names: Record<FloorKind, string> = { floor: h.floors.some((f) => f.name === tr('Obergeschoss')) ? tr('Obergeschoss 2') : tr('Obergeschoss'), attic: tr('Dachgeschoss'), basement: tr('Keller'), outdoor: tr('Außen') };
       const elevation = kind === 'basement' ? low.elevation - 280 : kind === 'outdoor' ? 0 : above;
       const copy = ($('#copyOutline', m.el) as HTMLInputElement).checked && kind !== 'outdoor';
       const walls = copy ? outlineWalls(store.floor) : [];
       m.close();
       store.addFloor({ name: names[kind], kind, elevation, height: kind === 'basement' ? 230 : 260, walls, underlay: undefined });
       afterLoad();
-      toast(`„${names[kind]}“ angelegt. Die Etage darunter erscheint gestrichelt als Hilfe zum Zeichnen.`);
+      toast(tr('„{name}“ angelegt. Die Etage darunter erscheint gestrichelt als Hilfe zum Zeichnen.', { name: names[kind] }));
     }),
   );
 }
@@ -2721,35 +2725,35 @@ function renderRoomList() {
   const sel = store.selection;
   const el = $('#roomList');
   if (!f.rooms.length) {
-    el.innerHTML = `<p class="hint">Noch keine Räume. Mit <b>Raum festlegen</b> in eine von Wänden umschlossene Fläche klicken. Jeder Raum wird ein Lager.</p>`;
+    el.innerHTML = `<p class="hint">${tr('Noch keine Räume. Mit <b>Raum festlegen</b> in eine von Wänden umschlossene Fläche klicken. Jeder Raum wird ein Lager.')}</p>`;
     return;
   }
   el.innerHTML = `<div class="room-list">${f.rooms
     .map((r, i) => {
       const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
       const n = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).length;
-      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${area.toFixed(1).replace('.', ',')} m²${n ? ` · ${n} Möbel` : ''}</small></button>`;
+      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${fixed(area, 1)} m²${n ? ` · ${trn(n, '{n} Möbelstück', '{n} Möbel')}` : ''}</small></button>`;
     })
     .join('')}</div>`;
   el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) =>
     b.addEventListener('click', () => {
-      if (store.room(b.dataset.r!)?.locked) return toast('Der Raum ist gesperrt – entsperren unter „Etage“ → „Gesperrt“.');
+      if (store.room(b.dataset.r!)?.locked) return toast(tr('Der Raum ist gesperrt – entsperren unter „Etage“ → „Gesperrt“.'));
       store.select({ kind: 'room', id: b.dataset.r! });
     }),
   );
 }
 
-const ROOM_NAMES = ['Küche', 'Wohnzimmer', 'Esszimmer', 'Schlafzimmer', 'Kinderzimmer', 'Arbeitszimmer', 'Bad', 'Gäste-WC', 'Flur', 'Diele', 'Abstellraum', 'Speisekammer', 'Hauswirtschaftsraum', 'Vorratskeller', 'Heizungsraum', 'Werkstatt', 'Garage', 'Dachboden', 'Gartenhaus'];
+const ROOM_NAMES = [tr('Küche'), tr('Wohnzimmer'), tr('Esszimmer'), tr('Schlafzimmer'), tr('Kinderzimmer'), tr('Arbeitszimmer'), tr('Bad'), tr('Gäste-WC'), tr('Flur'), tr('Diele'), tr('Abstellraum'), tr('Speisekammer'), tr('Hauswirtschaftsraum'), tr('Vorratskeller'), tr('Heizungsraum'), tr('Werkstatt'), tr('Garage'), tr('Dachboden'), tr('Gartenhaus')];
 
 plan.onRoomRequest = (seed: Vec2) => {
   const m = modal(
-    'Raum festlegen',
+    tr('Raum festlegen'),
     `<form class="auth-form">
-      <label class="field"><span>Name des Raums</span><input type="text" name="n" list="roomNames" maxlength="40" required /></label>
+      <label class="field"><span>${tr('Name des Raums')}</span><input type="text" name="n" list="roomNames" maxlength="40" required /></label>
       <datalist id="roomNames">${ROOM_NAMES.map((n) => `<option value="${n}">`).join('')}</datalist>
-      <p class="hint">Der Raum wird im Lager ein eigenes Lager mit Kürzel (z. B. „Küche“ → KU). Möbel mit Fächern darin bekommen automatisch Lagerplätze.</p>
+      <p class="hint">${tr('Der Raum wird im Lager ein eigenes Lager mit Kürzel (z. B. „Küche“ → KU). Möbel mit Fächern darin bekommen automatisch Lagerplätze.')}</p>
     </form>`,
-    '<button class="btn" data-close>Abbrechen</button><button class="btn primary" data-ok>Raum anlegen</button>',
+    `<button class="btn" data-close>${tr('Abbrechen')}</button><button class="btn primary" data-ok>${tr('Raum anlegen')}</button>`,
   );
   m.el.querySelector('.modal')!.classList.add('narrow');
   const input = m.el.querySelector<HTMLInputElement>('input')!;
@@ -2763,7 +2767,7 @@ plan.onRoomRequest = (seed: Vec2) => {
     m.close();
     store.commit();
     store.select({ kind: 'room', id: r.id });
-    toast(`Raum „${name}“ angelegt – Lager ${r.code}.`);
+    toast(tr('Raum „{name}“ angelegt – Lager {code}.', { name, code: r.code }));
   };
   m.el.querySelector('form')!.addEventListener('submit', (e) => {
     e.preventDefault();
