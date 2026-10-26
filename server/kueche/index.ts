@@ -5,6 +5,8 @@ import express from 'express';
 import type { NextFunction, Request, Response } from 'express';
 import type { DatabaseSync } from 'node:sqlite';
 import { randomBytes } from 'node:crypto';
+import { createRequire } from 'node:module';
+const { tr } = createRequire(import.meta.url)('../i18n.cjs'); // Sprache der Servermeldungen je Anfrage
 import { createLibrary, type Resolution, type Source } from './library.ts';
 
 export interface Person {
@@ -82,18 +84,18 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   // Nur JSON für schreibende Aufrufe (erschwert CSRF über einfache Formulare)
   router.use(OWN, (req, res, next) => {
     if (req.originalUrl.startsWith('/api/library/models/upload')) return next(); // Datei (Rohdaten)
-    if ((req.method === 'POST' || req.method === 'PUT') && !req.is('application/json')) return res.status(415).json({ error: 'JSON erwartet.' });
+    if ((req.method === 'POST' || req.method === 'PUT') && !req.is('application/json')) return res.status(415).json({ error: tr('JSON erwartet.') });
     next();
   });
 
   const requireUser = (req: Request, res: Response, next: NextFunction) => {
-    if (!req.auth) return res.status(401).json({ error: 'Bitte anmelden.' });
-    if (req.auth.scope === 'read' && req.method !== 'GET') return res.status(403).json({ error: 'Dieser API-Schlüssel darf nur lesen.' });
-    if (req.auth.via === 'terminal' && req.method !== 'GET') return res.status(403).json({ error: 'Am Wandterminal nicht möglich.' });
+    if (!req.auth) return res.status(401).json({ error: tr('Bitte anmelden.') });
+    if (req.auth.scope === 'read' && req.method !== 'GET') return res.status(403).json({ error: tr('Dieser API-Schlüssel darf nur lesen.') });
+    if (req.auth.via === 'terminal' && req.method !== 'GET') return res.status(403).json({ error: tr('Am Wandterminal nicht möglich.') });
     next();
   };
   const requireAdmin = (req: Request, res: Response, next: NextFunction) => {
-    if (req.auth?.via !== 'session' || req.auth.person.role !== 'admin') return res.status(403).json({ error: 'Nur für Admins.' });
+    if (req.auth?.via !== 'session' || req.auth.person.role !== 'admin') return res.status(403).json({ error: tr('Nur für Admins.') });
     next();
   };
   const me = (req: Request) => req.auth!.person.id;
@@ -113,14 +115,14 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
 
   router.get('/api/projects/:id', requireUser, (req, res) => {
     const row = db().prepare('SELECT * FROM kitchen_projects WHERE id = ? AND person_id = ?').get(Number(req.params.id), me(req)) as any;
-    if (!row) return res.status(404).json({ error: 'Planung nicht gefunden.' });
+    if (!row) return res.status(404).json({ error: tr('Planung nicht gefunden.') });
     res.json({ ...projectMeta(row), data: JSON.parse(row.data) });
   });
 
   router.post('/api/projects', requireUser, (req, res) => {
     const { data } = req.body ?? {};
-    if (!validProject(data)) return res.status(400).json({ error: 'Ungültige Planung.' });
-    const name = str(req.body.name, 120) || 'Unbenannte Küche';
+    if (!validProject(data)) return res.status(400).json({ error: tr('Ungültige Planung.') });
+    const name = str(req.body.name, 120) || tr('Unbenannte Küche');
     const r = db().prepare('INSERT INTO kitchen_projects (person_id, name, data, thumbnail) VALUES (?, ?, ?, ?)')
       .run(me(req), name, JSON.stringify(data), thumb(req.body.thumbnail));
     res.status(201).json(projectMeta(db().prepare(`SELECT ${META} FROM kitchen_projects WHERE id = ?`).get(r.lastInsertRowid)));
@@ -128,10 +130,10 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
 
   router.put('/api/projects/:id', requireUser, (req, res) => {
     const id = Number(req.params.id);
-    if (!db().prepare('SELECT 1 FROM kitchen_projects WHERE id = ? AND person_id = ?').get(id, me(req))) return res.status(404).json({ error: 'Planung nicht gefunden.' });
+    if (!db().prepare('SELECT 1 FROM kitchen_projects WHERE id = ? AND person_id = ?').get(id, me(req))) return res.status(404).json({ error: tr('Planung nicht gefunden.') });
     const { data } = req.body ?? {};
     const name = str(req.body?.name, 120);
-    if (data !== undefined && !validProject(data)) return res.status(400).json({ error: 'Ungültige Planung.' });
+    if (data !== undefined && !validProject(data)) return res.status(400).json({ error: tr('Ungültige Planung.') });
     db().prepare(`UPDATE kitchen_projects SET name = COALESCE(?, name), data = COALESCE(?, data), thumbnail = COALESCE(?, thumbnail),
       updated_at = datetime('now') WHERE id = ?`).run(name || null, data !== undefined ? JSON.stringify(data) : null, thumb(req.body?.thumbnail), id);
     res.json(projectMeta(db().prepare(`SELECT ${META} FROM kitchen_projects WHERE id = ?`).get(id)));
@@ -139,14 +141,14 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
 
   router.delete('/api/projects/:id', requireUser, (req, res) => {
     const r = db().prepare('DELETE FROM kitchen_projects WHERE id = ? AND person_id = ?').run(Number(req.params.id), me(req));
-    if (!r.changes) return res.status(404).json({ error: 'Planung nicht gefunden.' });
+    if (!r.changes) return res.status(404).json({ error: tr('Planung nicht gefunden.') });
     res.json({ ok: true });
   });
 
   // --- Teilen (nur ansehen, ohne Anmeldung) ---
   router.post('/api/projects/:id/share', requireUser, (req, res) => {
     const row = db().prepare('SELECT id, share_token FROM kitchen_projects WHERE id = ? AND person_id = ?').get(Number(req.params.id), me(req)) as any;
-    if (!row) return res.status(404).json({ error: 'Planung nicht gefunden.' });
+    if (!row) return res.status(404).json({ error: tr('Planung nicht gefunden.') });
     let token: string = row.share_token;
     if (!token) {
       token = randomBytes(18).toString('base64url');
@@ -157,15 +159,15 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
 
   router.delete('/api/projects/:id/share', requireUser, (req, res) => {
     const r = db().prepare('UPDATE kitchen_projects SET share_token = NULL WHERE id = ? AND person_id = ?').run(Number(req.params.id), me(req));
-    if (!r.changes) return res.status(404).json({ error: 'Planung nicht gefunden.' });
+    if (!r.changes) return res.status(404).json({ error: tr('Planung nicht gefunden.') });
     res.json({ ok: true });
   });
 
   router.get('/api/shared/:token', (req, res) => {
     const token = String(req.params.token);
-    if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) return res.status(404).json({ error: 'Link ungültig.' });
+    if (!/^[A-Za-z0-9_-]{16,64}$/.test(token)) return res.status(404).json({ error: tr('Link ungültig.') });
     const row = db().prepare('SELECT name, data, updated_at FROM kitchen_projects WHERE share_token = ?').get(token) as any;
-    if (!row) return res.status(404).json({ error: 'Dieser Link ist nicht (mehr) gültig.' });
+    if (!row) return res.status(404).json({ error: tr('Dieser Link ist nicht (mehr) gültig.') });
     res.setHeader('Cache-Control', 'no-store');
     res.json({ name: row.name, updatedAt: row.updated_at, data: JSON.parse(row.data) });
   });
@@ -191,7 +193,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     for (const key of ['registrationEnabled', 'requireApproval'] as const) {
       const v = req.body?.[key];
       if (v === undefined) continue;
-      if (typeof v !== 'boolean') return res.status(400).json({ error: `Ungültiger Wert für ${key}.` });
+      if (typeof v !== 'boolean') return res.status(400).json({ error: tr('Ungültiger Wert für {key}.', { key }) });
       core.setAuthSetting(key, v);
     }
     res.json({ settings: core.authSettings() });
@@ -200,12 +202,12 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   router.put('/api/admin/users/:id', requireUser, requireAdmin, (req, res) => {
     const id = Number(req.params.id);
     const { role, status } = req.body ?? {};
-    if (role !== undefined && role !== 'admin' && role !== 'user') return res.status(400).json({ error: 'Ungültige Rolle.' });
-    if (status !== undefined && status !== 'active' && status !== 'pending') return res.status(400).json({ error: 'Ungültiger Status.' });
+    if (role !== undefined && role !== 'admin' && role !== 'user') return res.status(400).json({ error: tr('Ungültige Rolle.') });
+    if (status !== undefined && status !== 'active' && status !== 'pending') return res.status(400).json({ error: tr('Ungültiger Status.') });
     const target = db().prepare('SELECT * FROM persons WHERE id = ?').get(id) as any;
-    if (!target) return res.status(404).json({ error: 'Benutzer nicht gefunden.' });
+    if (!target) return res.status(404).json({ error: tr('Benutzer nicht gefunden.') });
     const losesAdmin = target.role === 'admin' && target.status === 'active' && (role === 'user' || status === 'pending');
-    if (losesAdmin && activeAdmins(id) === 0) return res.status(400).json({ error: 'Es muss mindestens ein aktiver Admin bleiben.' });
+    if (losesAdmin && activeAdmins(id) === 0) return res.status(400).json({ error: tr('Es muss mindestens ein aktiver Admin bleiben.') });
     if (role) db().prepare('UPDATE persons SET role = ? WHERE id = ?').run(role, id);
     if (status) {
       db().prepare('UPDATE persons SET status = ? WHERE id = ?').run(status, id);
@@ -217,12 +219,12 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   // Löschen nur ohne Lager-Buchungen – sonst im Lager archivieren oder zusammenführen (Verlauf bleibt erhalten)
   router.delete('/api/admin/users/:id', requireUser, requireAdmin, (req, res) => {
     const id = Number(req.params.id);
-    if (id === me(req)) return res.status(400).json({ error: 'Das eigene Konto kann hier nicht gelöscht werden.' });
+    if (id === me(req)) return res.status(400).json({ error: tr('Das eigene Konto kann hier nicht gelöscht werden.') });
     const target = db().prepare('SELECT * FROM persons WHERE id = ?').get(id) as any;
-    if (!target) return res.status(404).json({ error: 'Benutzer nicht gefunden.' });
-    if (target.role === 'admin' && activeAdmins(id) === 0) return res.status(400).json({ error: 'Es muss mindestens ein aktiver Admin bleiben.' });
+    if (!target) return res.status(404).json({ error: tr('Benutzer nicht gefunden.') });
+    if (target.role === 'admin' && activeAdmins(id) === 0) return res.status(400).json({ error: tr('Es muss mindestens ein aktiver Admin bleiben.') });
     const used = (db().prepare('SELECT COUNT(*) AS n FROM movements WHERE person_id = ?').get(id) as { n: number }).n;
-    if (used) return res.status(409).json({ error: 'Diese Person hat Buchungen im Lager. Bitte dort unter „Personen verwalten“ archivieren oder zusammenführen.' });
+    if (used) return res.status(409).json({ error: tr('Diese Person hat Buchungen im Lager. Bitte dort unter „Personen verwalten“ archivieren oder zusammenführen.') });
     db().prepare('DELETE FROM persons WHERE id = ?').run(id);
     res.json({ ok: true });
   });
@@ -235,7 +237,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     try {
       res.json(await library.search(source, str(req.query.q, 100), Number(req.query.limit) || 48, Number(req.query.offset) || 0));
     } catch (e) {
-      res.status(502).json({ error: `Bibliothek nicht erreichbar: ${(e as Error).message}` });
+      res.status(502).json({ error: tr('Bibliothek nicht erreichbar: {error}', { error: (e as Error).message }) });
     }
   });
 
@@ -252,7 +254,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     try {
       res.json(await library.searchModels(str(req.query.q, 100), str(req.query.cat, 30), Math.min(96, Number(req.query.limit) || 48), Math.max(0, Number(req.query.offset) || 0), req.query.all === '1', str(req.query.source, 20) || 'polyhaven'));
     } catch (e) {
-      res.status(502).json({ error: `Bibliothek nicht erreichbar: ${(e as Error).message}` });
+      res.status(502).json({ error: tr('Bibliothek nicht erreichbar: {error}', { error: (e as Error).message }) });
     }
   });
   router.post('/api/library/models/import', requireUser, async (req, res) => {
@@ -275,7 +277,7 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   // Lesen: alle Angemeldeten (auch Wandterminals); Ändern und Installieren: wer planen darf (Admins immer)
   const requirePlanner = (req: Request, res: Response, next: NextFunction) => {
     const a = req.auth;
-    if (a?.via !== 'session' || (a.person.role !== 'admin' && !a.person.can_plan)) return res.status(403).json({ error: 'Die Objektbibliothek ändern nur Personen mit dem Recht „Haus planen“.' });
+    if (a?.via !== 'session' || (a.person.role !== 'admin' && !a.person.can_plan)) return res.status(403).json({ error: tr('Die Objektbibliothek ändern nur Personen mit dem Recht „Haus planen“.') });
     next();
   };
   const CATALOG_URL = (process.env.OBJECT_CATALOG_URL || 'https://mupf-dev.github.io/homemgmt-object-library/').replace(/\/?$/, '/');
@@ -301,10 +303,10 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     } catch (e) {
       return fail400(res, e);
     }
-    if (t.id !== req.params.id) return res.status(400).json({ error: 'Kennung passt nicht zur Adresse.' });
-    if (t.build.type === 'modell' && !t.build.model.url) return res.status(400).json({ error: 'Bitte zuerst ein 3D-Modell hochladen.' });
+    if (t.id !== req.params.id) return res.status(400).json({ error: tr('Kennung passt nicht zur Adresse.') });
+    if (t.build.type === 'modell' && !t.build.model.url) return res.status(400).json({ error: tr('Bitte zuerst ein 3D-Modell hochladen.') });
     const old = getObj(t.id);
-    if (old?.source === 'community') return res.status(409).json({ error: 'Möbelarten aus dem Community-Katalog werden nicht verändert – bitte kopieren und die Kopie bearbeiten.' });
+    if (old?.source === 'community') return res.status(409).json({ error: tr('Möbelarten aus dem Community-Katalog werden nicht verändert – bitte kopieren und die Kopie bearbeiten.') });
     res.json(saveObj(t, 'eigene', null, me(req)));
   });
   // Import einer Datei (.json); vorhandene Kennung nur mit replace
@@ -315,13 +317,13 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     } catch (e) {
       return fail400(res, e);
     }
-    if (t.build.type === 'modell' && !t.build.model.url) return res.status(400).json({ error: 'Möbelarten mit 3D-Modell bitte über den Community-Katalog installieren (die Datei enthält das Modell nicht).' });
-    if (getObj(t.id) && !req.body?.replace) return res.status(409).json({ error: `Die Möbelart „${t.id}“ gibt es schon.`, exists: true });
+    if (t.build.type === 'modell' && !t.build.model.url) return res.status(400).json({ error: tr('Möbelarten mit 3D-Modell bitte über den Community-Katalog installieren (die Datei enthält das Modell nicht).') });
+    if (getObj(t.id) && !req.body?.replace) return res.status(409).json({ error: tr('Die Möbelart „{id}“ gibt es schon.', { id: t.id }), exists: true });
     res.json(saveObj(t, 'datei', null, me(req)));
   });
   router.patch('/api/objects/:id', requireUser, requirePlanner, (req, res) => {
     const id = String(req.params.id);
-    if (!getObj(id)) return res.status(404).json({ error: 'Möbelart nicht gefunden.' });
+    if (!getObj(id)) return res.status(404).json({ error: tr('Möbelart nicht gefunden.') });
     db().prepare("UPDATE object_types SET hidden = ?, updated_at = datetime('now') WHERE id = ?").run(req.body?.hidden ? 1 : 0, id);
     res.json(objRow(getObj(id)!));
   });
@@ -335,9 +337,9 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
   const fetchCatalog = async () => {
     if (catalogCache && Date.now() - catalogCache.at < 30 * 60000) return catalogCache.data;
     const r = await fetch(CATALOG_URL + 'index.json', { signal: AbortSignal.timeout(10000) });
-    if (!r.ok) throw new Error(`Community-Katalog nicht erreichbar (${r.status}).`);
+    if (!r.ok) throw new Error(tr('Community-Katalog nicht erreichbar ({status}).', { status: r.status }));
     const data = await r.json();
-    if (data?.format !== 'zuhause-katalog/1' || !Array.isArray(data.objects)) throw new Error('Community-Katalog hat ein unbekanntes Format.');
+    if (data?.format !== 'zuhause-katalog/1' || !Array.isArray(data.objects)) throw new Error(tr('Community-Katalog hat ein unbekanntes Format.'));
     catalogCache = { at: Date.now(), data };
     return data;
   };
@@ -369,21 +371,21 @@ export function createKitchen(core: Core, { dataDir }: { dataDir: string }) {
     try {
       const cat = await fetchCatalog();
       const entry = cat.objects.find((o: any) => String(o.id) === String(req.body?.id));
-      if (!entry) return res.status(404).json({ error: 'Nicht im Community-Katalog.' });
+      if (!entry) return res.status(404).json({ error: tr('Nicht im Community-Katalog.') });
       const file = String(entry.file ?? '');
-      if (!/^[\w./-]+\.json$/.test(file) || file.includes('..')) return res.status(400).json({ error: 'Ungültiger Eintrag im Katalog.' });
+      if (!/^[\w./-]+\.json$/.test(file) || file.includes('..')) return res.status(400).json({ error: tr('Ungültiger Eintrag im Katalog.') });
       const url = CATALOG_URL + file;
       const raw = await fetch(url, { signal: AbortSignal.timeout(15000) }).then((r) => {
-        if (!r.ok) throw new Error(`Möbelart nicht ladbar (${r.status}).`);
+        if (!r.ok) throw new Error(tr('Möbelart nicht ladbar ({status}).', { status: r.status }));
         return r.json();
       });
       const t = validateObjectType(raw);
-      if (t.id !== entry.id) throw new Error('Kennung der Datei passt nicht zum Katalog.');
+      if (t.id !== entry.id) throw new Error(tr('Kennung der Datei passt nicht zum Katalog.'));
       const old = getObj(t.id);
-      if (old && old.source !== 'community') return res.status(409).json({ error: `Es gibt schon eine eigene Möbelart „${t.id}“.` });
+      if (old && old.source !== 'community') return res.status(409).json({ error: tr('Es gibt schon eine eigene Möbelart „{id}“.', { id: t.id }) });
       if (t.build.type === 'modell' && t.build.model.file) {
         const glb = await fetch(CATALOG_URL + t.build.model.file, { signal: AbortSignal.timeout(60000) }).then(async (r) => {
-          if (!r.ok) throw new Error(`3D-Modell nicht ladbar (${r.status}).`);
+          if (!r.ok) throw new Error(tr('3D-Modell nicht ladbar ({status}).', { status: r.status }));
           return Buffer.from(await r.arrayBuffer());
         });
         t.build.model.url = library.uploadModel(glb, t.build.model.name || t.name).url;

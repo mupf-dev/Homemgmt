@@ -6,6 +6,8 @@
 const PROTOCOL_VERSIONS = ['2025-06-18', '2025-03-26', '2024-11-05'];
 
 const { createTools } = require('./tools.cjs');
+// MCP-Anfragen haben kein Sprach-Cookie der App: Meldungen in DEFAULT_LANG (Standard Deutsch)
+const { tr } = require('../i18n.cjs');
 
 function createMcpHandler(core, opts = {}) {
   const allowedOrigins = new Set(opts.allowedOrigins || []);
@@ -52,7 +54,7 @@ function createMcpHandler(core, opts = {}) {
       }
       case 'resources/list': return rpcResult(msg.id, { resources: [] });
       case 'prompts/list': return rpcResult(msg.id, { prompts: [] });
-      default: return rpcError(msg.id, -32601, `Methode nicht unterstützt: ${msg.method}`);
+      default: return rpcError(msg.id, -32601, tr('Methode nicht unterstützt: {method}', { method: msg.method }));
     }
   }
 
@@ -65,23 +67,23 @@ function createMcpHandler(core, opts = {}) {
   return function handleMcp(req, res) {
     const url = new URL(req.url, 'http://mcp.local');
     const m = url.pathname.match(/^\/(?:mcp\/?)?(?:(hlk_[A-Za-z0-9_-]+)\/?)?$/);
-    if (!m) return send(res, 404, { error: 'Nicht gefunden. MCP-Endpunkt: /mcp' });
+    if (!m) return send(res, 404, { error: tr('Nicht gefunden. MCP-Endpunkt: /mcp') });
 
     // Schutz vor DNS-Rebinding: Browser-Anfragen nur von erlaubten Ursprüngen
     const origin = req.headers.origin;
-    if (origin && !allowedOrigins.has(origin)) return send(res, 403, rpcError(null, -32000, 'Origin nicht erlaubt.'));
+    if (origin && !allowedOrigins.has(origin)) return send(res, 403, rpcError(null, -32000, tr('Origin nicht erlaubt.')));
 
     const token = (String(req.headers.authorization || '').match(/^Bearer\s+(\S+)$/i) || [])[1]
       || (keyInUrl ? m[1] || url.searchParams.get('key') : null);
     const auth = core.keyAuth(token);
     if (!auth) {
-      return send(res, 401, rpcError(null, -32001, 'API-Schlüssel fehlt oder ist ungültig.'),
+      return send(res, 401, rpcError(null, -32001, tr('API-Schlüssel fehlt oder ist ungültig.')),
         { 'WWW-Authenticate': 'Bearer realm="Heimlager"' });
     }
 
     if (req.method !== 'POST') {
       // Kein serverseitiger Ereignis-Stream und keine Sitzungen (zustandslos)
-      return send(res, 405, rpcError(null, -32000, 'Nur POST wird unterstützt.'), { Allow: 'POST' });
+      return send(res, 405, rpcError(null, -32000, tr('Nur POST wird unterstützt.')), { Allow: 'POST' });
     }
 
     let raw = '';
