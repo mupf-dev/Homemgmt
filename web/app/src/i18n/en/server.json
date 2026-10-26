@@ -331,7 +331,7 @@
   "Die Objektbibliothek ändern nur Personen mit dem Recht „Haus planen“.": "Only people with the \"Plan house\" permission may change the object library.",
   "Kennung passt nicht zur Adresse.": "ID does not match the address.",
   "Bitte zuerst ein 3D-Modell hochladen.": "Please upload a 3D model first.",
-  "Möbelarten aus dem Community-Katalog werden nicht verändert – bitte kopieren und die Kopie bearbeiten.": "Furniture types from the community catalogue are not changed – please copy and edit the copy.",
+  "Möbelarten aus dem Community-Katalog werden nicht verändert – bitte kopieren und die Kopie bearbeiten.": "Furniture types from the community catalogue are left as they are – please copy and edit the copy.",
   "Möbelarten mit 3D-Modell bitte über den Community-Katalog installieren (die Datei enthält das Modell nicht).": "Please install furniture types with a 3D model via the community catalogue (the file does not contain the model).",
   "Die Möbelart „{id}“ gibt es schon.": "The furniture type \"{id}\" already exists.",
   "Möbelart nicht gefunden.": "Furniture type not found.",
