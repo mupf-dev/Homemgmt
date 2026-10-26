@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+**German and English**: the whole app – overview, house planner, 3D, wall terminal, guide, server messages and the
+assistant's answers – is available in German and English. The language follows the browser and can be set per person
+under More → Settings → Language. Stored names (floors, rooms, compartments) and import/export column names stay as
+entered. Documentation and website are now in English.
+
 **New name: homemgmt-ng** – the app, website and manual are now called homemgmt-ng (formerly "Zuhause"). Technical
 names (container, database file, folders) stay the same; an update needs no changes.
 
