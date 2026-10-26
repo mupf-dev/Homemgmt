@@ -497,7 +497,7 @@
   "Raum anlegen": "Create room",
   "Raum „{name}“ angelegt – Lager {code}.": "Room \"{name}\" created – storage area {code}.",
   "{n} Möbelstück": "{n} piece of furniture",
-  "Fußboden": "Floor",
+  "Fußboden": "Flooring",
   "Bewegung: rot = oft gebucht (90 Tage), blau = selten.": "Activity: red = frequent transactions (90 days), blue = rare.",
   "Lange unberührt: rot = seit einem Jahr nicht angefasst, blau = kürzlich, grau = leer.": "Untouched for a long time: red = not touched for a year, blue = recently, grey = empty.",
   "Fächer werden angezeigt – Inhalte gibt es nach dem Anmelden.": "Compartments are shown – contents are available after signing in.",
