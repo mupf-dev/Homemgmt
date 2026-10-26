@@ -8,7 +8,7 @@ import { roomOf } from '../model/house.ts';
 import { ic } from '../icons';
 import { describe, enqueue, queueable, QueuedError, requestId } from './outbox';
 import { pickWho, terminal } from '../terminal';
-import { getLang, locale, tr, trn } from '../i18n';
+import { getLang, locale, shown, tr, trn } from '../i18n';
 
 export interface LagerCtx {
   modal: (title: string, body: string, footer?: string) => { el: HTMLElement; close: () => void };
@@ -130,11 +130,11 @@ export function placeInfo(ctx: LagerCtx, x: { warehouse_id: number; col: string;
       const it = f.items.find((i) => i.id === pl.plan_item);
       if (!it) continue;
       const comp = compartments(it, ctx.house().settings)[pl.plan_slot];
-      const room = roomOf(f, it)?.name ?? f.name;
-      return { address, title: `${room} · ${itemName(it)}`, sub: `${comp?.label ?? tr('Fach {n}', { n: pl.plan_slot })} · ${f.name}`, plan: { place: pl, floor: f, item: it, room, fach: comp?.label ?? '' } };
+      const room = shown(roomOf(f, it)?.name ?? f.name);
+      return { address, title: `${room} · ${shown(itemName(it))}`, sub: `${comp?.label ?? tr('Fach {n}', { n: pl.plan_slot })} · ${shown(f.name)}`, plan: { place: pl, floor: f, item: it, room, fach: comp?.label ?? '' } };
     }
   }
-  return { address, title: x.place_name || tr('Platz {place}', { place: `${x.col}${x.row}` }), sub: x.wh_name ?? '', plan: null };
+  return { address, title: shown(x.place_name) || tr('Platz {place}', { place: `${x.col}${x.row}` }), sub: shown(x.wh_name), plan: null };
 }
 
 export function thumb(i: { id: number; photo_at: string | null; container?: number }, cls = 'thumb') {
@@ -234,8 +234,8 @@ export function pickPlace(ctx: LagerCtx, title = tr('Wohin?'), current?: { wareh
         rooms.get(k)!.items.push(it);
       }
       body.innerHTML = `
-        ${withStorage.length ? `<div class="seg pp-floors">${withStorage.map((x) => `<button data-f="${x.id}" class="${x.id === floorId ? 'on' : ''}">${esc(x.name)}</button>`).join('')}</div>` : `<p class="hint">${tr('Im Hausplan gibt es noch keine Möbel mit Fächern.')}</p>`}
-        ${[...rooms.values()].map((r) => `<details class="pp-room" ${rooms.size <= 4 ? 'open' : ''}><summary>${esc(r.name)} <small>${trn(r.items.length, '{n} Möbelstück', '{n} Möbel')}</small></summary>
+        ${withStorage.length ? `<div class="seg pp-floors">${withStorage.map((x) => `<button data-f="${x.id}" class="${x.id === floorId ? 'on' : ''}">${esc(shown(x.name))}</button>`).join('')}</div>` : `<p class="hint">${tr('Im Hausplan gibt es noch keine Möbel mit Fächern.')}</p>`}
+        ${[...rooms.values()].map((r) => `<details class="pp-room" ${rooms.size <= 4 ? 'open' : ''}><summary>${esc(shown(r.name))} <small>${trn(r.items.length, '{n} Möbelstück', '{n} Möbel')}</small></summary>
           ${r.items.sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1)).map((it) => `<div class="pp-item"><div class="pp-head"><b>${esc(itemName(it))}</b></div><div class="pp-fach">${compartments(it, h.settings)
             .map((c) => {
               const pl = ctx.sync.fach(it.id, c.row);
@@ -263,7 +263,7 @@ export function pickPlace(ctx: LagerCtx, title = tr('Wohin?'), current?: { wareh
           const r = await api<any>('GET', `/api/resolve?code=${encodeURIComponent(raw.startsWith('P-') ? raw : `P-${raw}`)}`);
           if (r.type !== 'place') throw new Error(r.reason ?? tr('Unbekannte Platzadresse – Format: Lager-Kürzel, Strich, Platz (z. B. H-B12).'));
           const p = r.place;
-          finish({ warehouse_id: p.warehouse_id, col: p.col, row: p.row, address: `${p.wh_code}-${p.col}${p.row}`, label: p.name || p.wh_name });
+          finish({ warehouse_id: p.warehouse_id, col: p.col, row: p.row, address: `${p.wh_code}-${p.col}${p.row}`, label: shown(p.name || p.wh_name) });
         } catch (ex) {
           ctx.toast((ex as Error).message);
         }

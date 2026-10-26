@@ -27,7 +27,8 @@ export const DEFAULT_SLOTS: Record<HouseSlot, string> = {
 export const DEFAULT_SETTINGS: Project['settings'] = { ceiling: false, backsplash: true, plinth: 10, countertopThickness: 4, timeOfDay: 14 };
 
 // Anzeigenamen der Etagen-Arten (nur Anzeige). Vorgaben, die als Daten gespeichert werden („Erdgeschoss“, „Raum“,
-// „… (ohne Raum)“ als Lagername), bleiben deutsch – sie entstehen auch auf dem Server.
+// „… (ohne Raum)“ als Lagername), bleiben deutsch – sie entstehen auch auf dem Server; angezeigt werden sie über
+// shown() (i18n.ts, Einträge in i18n/en/names.json).
 export const FLOOR_KINDS: Record<FloorKind, string> = { basement: tr('Keller'), floor: tr('Etage'), attic: tr('Dachgeschoss'), outdoor: tr('Außenbereich') };
 
 export function makeFloor(over: Partial<Floor> = {}): Floor {

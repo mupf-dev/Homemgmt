@@ -7,7 +7,7 @@ import { compartments, itemName } from '../model/storage.ts';
 import { roomOf } from '../model/house.ts';
 import type { View } from './views';
 import { ic } from '../icons';
-import { tr, trn } from '../i18n';
+import { shown, tr, trn } from '../i18n';
 
 declare global {
   interface Window {
@@ -73,7 +73,7 @@ function fachLabels(ctx: LagerCtx, itemIds: Set<string>): Label[] {
       for (const c of compartments(it, h.settings)) {
         const pl = ctx.sync.fach(it.id, c.row);
         if (!pl) continue;
-        out.push({ kind: 'fach', content: `P-${pl.wh_code}-${pl.col}${pl.row}`, addr: pl.address, name: `${itemName(it)} · ${c.label}`, sub: `${room} · ${f.name}` });
+        out.push({ kind: 'fach', content: `P-${pl.wh_code}-${pl.col}${pl.row}`, addr: pl.address, name: `${shown(itemName(it))} · ${c.label}`, sub: `${shown(room)} · ${shown(f.name)}` });
       }
     }
   }
@@ -83,13 +83,13 @@ function fachLabels(ctx: LagerCtx, itemIds: Set<string>): Label[] {
 export const viewLabels: View = async (el, ctx, params) => {
   await script(`${import.meta.env.BASE_URL}vendor/qrcode.js`, () => !!window.qrcode);
   const h = ctx.house();
-  const furn = h.floors.flatMap((f) => f.items.filter((it) => it.storageCol).map((it) => ({ f, it, room: roomOf(f, it)?.name ?? tr('{floor} (ohne Raum)', { floor: f.name }) })));
+  const furn = h.floors.flatMap((f) => f.items.filter((it) => it.storageCol).map((it) => ({ f, it, room: roomOf(f, it)?.name ?? tr('{floor} (ohne Raum)', { floor: shown(f.name) }) })));
   const preset = new Set((params.get('moebel') ?? '').split(',').filter(Boolean));
   let labels: Label[] = [];
   el.innerHTML = `<div class="no-print"><a class="l-back" href="javascript:history.back()">← ${tr('Zurück')}</a><h1>${tr('Etiketten &amp; QR-Schilder')}</h1>
     <div class="seg" id="tabs"><button data-t="fach" class="on">${tr('Fächer')}</button><button data-t="item">${tr('Gegenstände')}</button><button data-t="blank">${tr('Leere Etiketten')}</button></div>
-    <div id="t-fach" class="l-card">${h.floors.filter((f) => furn.some((x) => x.f === f)).map((f) => `<details class="lab-floor" open><summary>${esc(f.name)}</summary>
-      ${[...new Set(furn.filter((x) => x.f === f).map((x) => x.room))].map((room) => `<div class="lab-room"><label class="l-check"><input type="checkbox" data-room="${esc(f.id + '|' + room)}" /> <b>${esc(room)}</b></label>
+    <div id="t-fach" class="l-card">${h.floors.filter((f) => furn.some((x) => x.f === f)).map((f) => `<details class="lab-floor" open><summary>${esc(shown(f.name))}</summary>
+      ${[...new Set(furn.filter((x) => x.f === f).map((x) => x.room))].map((room) => `<div class="lab-room"><label class="l-check"><input type="checkbox" data-room="${esc(f.id + '|' + room)}" /> <b>${esc(shown(room))}</b></label>
         <div class="lab-items">${furn.filter((x) => x.f === f && x.room === room).map((x) => `<label class="l-check"><input type="checkbox" data-it="${x.it.id}" data-r="${esc(f.id + '|' + room)}" ${preset.has(x.it.id) ? 'checked' : ''} /> <code>${esc(x.it.storageCol!)}</code> ${esc(itemName(x.it))} <small>(${compartments(x.it, h.settings).length})</small></label>`).join('')}</div></div>`).join('')}
     </details>`).join('') || `<p class="hint">${tr('Im Hausplan gibt es noch keine Möbel mit Fächern.')}</p>`}
       <div class="l-actions"><button class="btn" id="allF">${tr('Alle')}</button><button class="btn primary" id="showF">${tr('Etiketten anzeigen')}</button></div></div>

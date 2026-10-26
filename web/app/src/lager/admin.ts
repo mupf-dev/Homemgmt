@@ -4,7 +4,7 @@
 import { api, esc, fmtDate, type LagerCtx } from './core';
 import type { View } from './views';
 import { ic, type IconName } from '../icons';
-import { locale, tr, trn } from '../i18n';
+import { locale, shown, tr, trn } from '../i18n';
 
 declare global {
   interface Window {
@@ -120,7 +120,7 @@ export const viewWarehouses: View = async (el, ctx) => {
   const list = await api<any[]>('GET', '/api/warehouses');
   el.innerHTML = `${back}<h1>${tr('Lager')}</h1>
     <p class="hint">${tr('Jeder Raum im Hausplan ist ein Lager – Name und Kürzel werden dort gepflegt (Raum auswählen). Hier lassen sich zusätzliche Lager ohne Hausplan anlegen, z. B. für eine Garage, die (noch) nicht geplant ist.')}</p>
-    <div class="l-list">${list.map((w) => `<div class="l-item" data-id="${w.id}"><code>${esc(w.code)}</code><span class="l-main"><b>${esc(w.name)}</b><small>${w.plan_key ? `${tr('aus dem Hausplan')} · ` : ''}${trn(w.places, '{n} Platz', '{n} Plätze')} · ${trn(w.items, '{n} Gegenstand', '{n} Gegenstände')}${w.description ? ` · ${esc(w.description)}` : ''}</small></span>
+    <div class="l-list">${list.map((w) => `<div class="l-item" data-id="${w.id}"><code>${esc(w.code)}</code><span class="l-main"><b>${esc(shown(w.name))}</b><small>${w.plan_key ? `${tr('aus dem Hausplan')} · ` : ''}${trn(w.places, '{n} Platz', '{n} Plätze')} · ${trn(w.items, '{n} Gegenstand', '{n} Gegenstände')}${w.description ? ` · ${esc(shown(w.description))}` : ''}</small></span>
       ${w.plan_key ? `<a class="btn mini" href="#/haus">${tr('im Hausplan')}</a>` : `<button class="btn mini" data-edit>${tr('Bearbeiten')}</button>`}</div>`).join('')}</div>
     <div class="l-actions"><button class="btn primary" id="add">+ ${tr('Lager anlegen')}</button></div>`;
   const reload = () => viewWarehouses(el, ctx, new URLSearchParams());

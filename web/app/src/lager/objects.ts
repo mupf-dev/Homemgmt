@@ -16,7 +16,7 @@ import { PREVIEW_TYPE, setPreviewObject } from '../model/catalog.ts';
 import { buildItem } from '../models';
 import { store } from '../state';
 import { LIBRARY } from '../materials';
-import { tr, trn } from '../i18n';
+import { shown, tr, trn } from '../i18n';
 
 const SOURCE: Record<string, string> = { eigene: tr('Eigene'), community: tr('Community'), datei: tr('Importiert') };
 const REPO = 'https://github.com/mupf-dev/homemgmt-object-library';
@@ -83,7 +83,7 @@ export const viewObjects: View = async (el, ctx, params) => {
       box.innerHTML = `<p class="hint">${tr('Möbelarten aus dem {catalog} – frei verwendbar. Eigene Möbelarten beisteuern: exportieren und als Pull Request im {repo} einreichen. Beim Planen gibt es sie auch direkt unter „Möbel“ → <b>Online-Bibliothek</b>: auswählen installiert und setzt sie.', { catalog: `<a class="link" href="${GALLERY}" target="_blank" rel="noopener">${tr('Community-Katalog')} ${ic('external')}</a>`, repo: `<a class="link" href="${REPO}" target="_blank" rel="noopener">${tr('Katalog-Repo')} ${ic('external')}</a>` })}</p>
         <div class="ob-list">${c.objects.map((o) => `<div class="ob-row" data-id="${esc(o.id)}">
           <span class="ob-icon">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : ic('box')}</span>
-          <span class="l-main"><b>${esc(o.name)}</b><small>${esc(o.group)}${o.places ? ` · ${trn(o.places, '{n} Fach', '{n} Fächer')}` : ''} · ${tr('Version {v}', { v: esc(o.version) })}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(o.description)}</small>` : ''}</span>
+          <span class="l-main"><b>${esc(o.name)}</b><small>${esc(shown(o.group))}${o.places ? ` · ${trn(o.places, '{n} Fach', '{n} Fächer')}` : ''} · ${tr('Version {v}', { v: esc(o.version) })}${o.author ? ` · ${esc(o.author)}` : ''}${o.license ? ` · ${esc(o.license)}` : ''}</small>${o.description ? `<small class="ob-desc">${esc(o.description)}</small>` : ''}</span>
           ${o.update ? `<button class="btn primary mini" data-a="install">${ic('in')}${tr('Aktualisieren auf {v}', { v: esc(o.version) })}</button>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : edit ? `<button class="btn mini" data-a="install">${ic('in')}${tr('Installieren')}</button>` : ''}
         </div>`).join('') || `<p class="hint">${tr('Der Katalog ist leer.')}</p>`}</div>`;
       box.querySelectorAll<HTMLElement>('[data-a="install"]').forEach((b) =>
@@ -111,7 +111,7 @@ function row(r: LibraryRow, edit: boolean) {
   const own = r.source !== 'community';
   return `<div class="ob-row ${r.hidden ? 'muted' : ''}" data-id="${esc(t.id)}">
     <span class="ob-icon">${objectIcon(t)}</span>
-    <span class="l-main"><b>${esc(t.name)}</b><small>${esc(t.group)} · ${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${trn(n, '{n} Fach', '{n} Fächer')} · ${tr('Version {v}', { v: esc(t.version) })} · ${SOURCE[r.source] ?? r.source}${r.hidden ? ` · ${tr('ausgeblendet')}` : ''}</small></span>
+    <span class="l-main"><b>${esc(t.name)}</b><small>${esc(shown(t.group))} · ${t.size.width} × ${t.size.depth} × ${t.size.height} cm · ${trn(n, '{n} Fach', '{n} Fächer')} · ${tr('Version {v}', { v: esc(t.version) })} · ${SOURCE[r.source] ?? r.source}${r.hidden ? ` · ${tr('ausgeblendet')}` : ''}</small></span>
     <span class="ob-acts">
       ${edit ? `<a class="btn mini" href="#/objekte/bearbeiten?${own ? 'id' : 'kopie'}=${encodeURIComponent(t.id)}">${ic(own ? 'pencil' : 'copy')}${own ? tr('Bearbeiten') : tr('Kopieren')}</a>` : ''}
       <button class="btn mini" data-a="export" title="${tr('Als Datei speichern (zum Teilen)')}">${ic('share')}${tr('Exportieren')}</button>

@@ -1,5 +1,5 @@
 import { store, makeItem, uid } from './state';
-import { locale, tr } from './i18n';
+import { locale, shown, tr } from './i18n';
 import type { Item, Opening, OpeningType, Vec2, Wall } from './model/types.ts';
 import { getEntry } from './model/catalog.ts';
 import { islandColumnSpans } from './models';
@@ -887,7 +887,7 @@ export class Plan2D {
       ctx.textBaseline = 'middle';
       ctx.font = `600 ${13 * px}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = col('--ink');
-      ctx.fillText(r.locked && !this.viewOnly ? tr('{name} (gesperrt)', { name: r.name }) : r.name, 0, -8 * px);
+      ctx.fillText(r.locked && !this.viewOnly ? tr('{name} (gesperrt)', { name: shown(r.name) }) : shown(r.name), 0, -8 * px);
       ctx.font = `${10.5 * px}px Inter, system-ui, sans-serif`;
       ctx.fillStyle = col('--ink-soft');
       ctx.fillText(this.viewOnly ? r.code : tr('Lager {code} · {area} m²', { code: r.code, area: area.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) }), 0, 8 * px);
