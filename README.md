@@ -2,220 +2,229 @@
 
 # 🏠 homemgmt-ng
 
-**Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz.**
+**Plan your whole house in 3D – and every compartment of every piece of furniture becomes a storage location.**
 
-Hausplaner, Heimlager und Einkaufsliste in einer selbst gehosteten Web-App – am PC, auf dem Handy und am Wandtablet.
+House planner, home inventory and shopping list in one self-hosted web app – on the PC, on your phone and on a wall-mounted tablet.
 
 [![Node.js ≥ 22.18](https://img.shields.io/badge/Node.js-%E2%89%A5%2022.18-5FA04E?logo=nodedotjs&logoColor=white)](https://nodejs.org)
-[![Docker](https://img.shields.io/badge/Docker-bereit-2496ED?logo=docker&logoColor=white)](#mit-docker-empfohlen)
-[![MCP](https://img.shields.io/badge/MCP-Server-6B4FBB)](#ki-assistent)
-[![Lizenz: AGPL-3.0](https://img.shields.io/badge/Lizenz-AGPL--3.0-blue)](LICENSE)
+[![Docker](https://img.shields.io/badge/Docker-ready-2496ED?logo=docker&logoColor=white)](#with-docker-recommended)
+[![MCP](https://img.shields.io/badge/MCP-Server-6B4FBB)](#ai-assistant)
+[![License: AGPL-3.0](https://img.shields.io/badge/License-AGPL--3.0-blue)](LICENSE)
 [![Website](https://img.shields.io/badge/Website-mupf--dev.github.io-E8692E)](https://mupf-dev.github.io/Homemgmt/)
 
-[KI-Assistent](#der-ki-assistent) · [Funktionen](#funktionen) · [Wandterminal](#wandterminal) · [Live-Wetter](#live-wetter) · [Ein echtes Haus](#ein-echtes-haus) · [Installation](#installation) · [Anleitung](#anleitung) · [Betrieb](#betrieb) · [Entwicklung](#entwicklung)
+[AI assistant](#the-ai-assistant) · [Features](#features) · [Wall terminal](#wall-terminal) · [Live weather](#live-weather) · [A real house](#a-real-house) · [Installation](#installation) · [Guide](#guide) · [Operation](#operation) · [Development](#development)
 
-<img src="site/img/haus-3d.webp" alt="Das Erdgeschoss in 3D, Möbel nach Füllstand eingefärbt, im Dunkelmodus" width="900">
+<img src="site/img/haus-3d.webp" alt="The ground floor in 3D, furniture colored by fill level, in dark mode" width="900">
 
 </div>
 
-## Worum geht's?
+## What is it?
 
-Wo liegen die Batterien? Ist noch Spülmittel da? Was läuft diese Woche ab? **homemgmt-ng** beantwortet das, indem es dein
-Haus abbildet: Du zeichnest Etagen, Wände und Räume, stellst Möbel hinein – und jedes Fach, jede Schublade wird
-automatisch ein **Lagerplatz** mit eigener Adresse (`KU-C2` = Küche, Möbel C, Fach 2). Gegenstände buchst du per
-Klick, QR-Scan, Sprache oder KI-Assistent ein und aus. Die Suche „Wo liegt …?“ lässt die Treffer im Haus aufleuchten.
+Where are the batteries? Is there any dish soap left? What expires this week? **homemgmt-ng** answers these questions
+by modeling your house: you draw floors, walls and rooms, place furniture in them – and every compartment and every
+drawer automatically becomes a **location** with its own code (`KU-C2` = kitchen, furniture C, compartment 2). You
+check items in and take them out with a click, a QR scan, your voice or the AI assistant. The search "Where is …?"
+lights up the matches in the house.
 
-Alles läuft auf deinem eigenen Rechner oder Server: **ein** Node-Prozess, **eine** SQLite-Datei, keine Cloud.
+Everything runs on your own computer or server: **one** Node process, **one** SQLite file, no cloud.
 
-## Der KI-Assistent
+The app is available in **German and English**. The language follows your browser and can be switched under *More → Settings*.
 
-Sag, schreib oder fotografiere, was passiert ist – der Assistent bucht es ins richtige Fach.
+## The AI assistant
 
-- 📷 **Regal fotografieren = inventarisiert:** Foto vom Regal oder der Schublade, am besten mit dem QR-Etikett des
-  Fachs im Bild. Der Assistent erkennt **alle Gegenstände auf dem Foto**, legt neue an, erhöht vorhandene und bucht
-  alles in einem Schritt in dieses Fach – ab vier Buchungen erst nach Bestätigung. Das Foto speichert er auf Wunsch am
-  Gegenstand.
-- 🎤 **Einfach sagen:** „3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“ – Fächer versteht er beim Namen
-  („Küche Kühlschrank oben“), Antworten liest er vor.
-- 🔎 **Fragen und finden:** „Wo ist der Akkuschrauber?“, „Was läuft diese Woche ab?“ – mit „Im Haus zeigen“.
-- 🏷️ **QR-Etiketten auf Fotos** liest die App selbst: „das kommt hierhin“ genügt.
-- 🛒 **Einkauf und Preise:** auf die Liste setzen, abhaken, „Wo gibt's Butter gerade am günstigsten?“ (Preisrecherche
-  mit Händler, Filiale und Quelle).
-- 🖥️ **Am Wandterminal sprechen:** Knopf „Sprechen“, Kachel antippen, loslegen – dort nur Suchen, Buchen und Einkauf.
-- ↩️ **Sicher:** jede Buchung mit Rückgängig, handelt mit den Rechten der Person; jeder OpenAI-kompatible Anbieter
-  (OpenRouter, LiteLLM …), dazu ein MCP-Server für Claude & Co. – Details unter
-  [KI-Assistent und MCP-Server](#ki-assistent).
+Say, type or photograph what happened – the assistant books it into the right compartment.
 
-## Funktionen
+- 📷 **Photograph a shelf = inventory done:** take a photo of the shelf or drawer, ideally with the compartment's QR
+  label in the picture. The assistant recognizes **all items in the photo**, creates new ones, increases existing ones
+  and checks everything into that compartment in one step – from four transactions on, only after you confirm. If you
+  like, it stores the photo with the item.
+- 🎤 **Just say it:** "3 cans of tomatoes into the pantry cabinet, best before 05/2027" – it understands compartments
+  by name ("kitchen fridge top") and reads its answers aloud.
+- 🔎 **Ask and find:** "Where is the cordless drill?", "What expires this week?" – with "Show in house".
+- 🏷️ **QR labels in photos** are read by the app itself: "this goes here" is enough.
+- 🛒 **Shopping and prices:** add to the list, tick off, "Where is butter cheapest right now?" (price research with
+  retailer, store and source).
+- 🖥️ **Talk to the wall terminal:** press "Speak", tap your tile, go – limited to search, transactions and shopping there.
+- ↩️ **Safe:** every transaction can be undone, the assistant acts with the person's permissions; works with any
+  OpenAI-compatible provider (OpenRouter, LiteLLM …), plus an MCP server for Claude & co. – details under
+  [AI assistant and MCP server](#ai-assistant).
+
+## Features
 
 <table>
 <tr>
-<td width="50%"><img src="site/img/plan-fach.webp" alt="Grundriss der Küche, ein Fach ist ausgewählt und zeigt seinen Inhalt"></td>
-<td width="50%"><img src="site/img/fach-3d.webp" alt="3D-Ansicht der Küche, eine Schublade ist hervorgehoben"></td>
+<td width="50%"><img src="site/img/plan-fach.webp" alt="Floor plan of the kitchen, a compartment is selected and shows its contents"></td>
+<td width="50%"><img src="site/img/fach-3d.webp" alt="3D view of the kitchen, a drawer is highlighted"></td>
 </tr>
 <tr>
-<td><b>Lager im Plan:</b> Möbel antippen zeigt die Fächer, ein Fach seinen Inhalt – einbuchen, entnehmen, umlagern.</td>
-<td><b>Lager in 3D:</b> Fächer nach Füllstand, Haltbarkeit oder Bewegung (Heatmap) eingefärbt.</td>
+<td><b>Inventory in the plan:</b> tap a piece of furniture to see its compartments, a compartment to see its contents – check in, take out, move.</td>
+<td><b>Inventory in 3D:</b> compartments colored by fill level, expiry or activity (heatmap).</td>
 </tr>
 <tr>
-<td><img src="site/img/planen-bibliothek.webp" alt="Planungsmodus mit Möbelkatalog, Grundriss und 3D-Vorschau nebeneinander"></td>
-<td><img src="site/img/suche.webp" alt="Suche nach Testgabel, Treffer ist im Grundriss markiert"></td>
+<td><img src="site/img/planen-bibliothek.webp" alt="Planning mode with furniture catalog, floor plan and 3D preview side by side"></td>
+<td><img src="site/img/suche.webp" alt="Search for a test fork, the match is highlighted in the floor plan"></td>
 </tr>
 <tr>
-<td><b>Hausplaner:</b> Wände zeichnen oder Grundriss nachzeichnen, Möbelkatalog, 3D-Modelle aus Online-Bibliotheken.</td>
-<td><b>„Wo liegt …?“:</b> Suche über alle Lager, Treffer leuchten im Haus auf.</td>
+<td><b>House planner:</b> draw walls or trace a floor plan, furniture catalog, 3D models from online libraries.</td>
+<td><b>"Where is …?":</b> search across all storage areas, matches light up in the house.</td>
 </tr>
 </table>
 
-### 🏗️ Haus planen
+### 🏗️ Plan your house
 
-- **Etagen** – Erdgeschoss, Obergeschoss, Keller, Dachgeschoss und Außenbereich, die Etage darunter als Zeichenhilfe
-- **Wände** mit Fang und Maßen, Türen, Fenster, Treppen; Grundriss als Bild hochladen und nachzeichnen
-- **Räume** per Klick in eine umschlossene Fläche – jeder Raum wird ein Lager mit Kürzel (Küche → `KU`)
-- **Möbelkatalog**: Küchenschränke, Regale, Schwerlastregal, Vorrats- und Kleiderschrank, Sideboard, Kommode, Werkbank
-- **Objektbibliothek**: eigene Möbelarten im Editor bauen (Spalten, Schubladen, Türen mit Böden, offene Fächer – oder
-  ein eigenes 3D-Modell mit Fächern) und aus dem **Community-Katalog** ([homemgmt-object-library](https://mupf-dev.github.io/homemgmt-object-library/)) installieren; jedes Fach
-  wird ein Lagerplatz
-- **3D-Modelle** von [Poly Haven](https://polyhaven.com) (CC0) und FurniMesh suchen und einsetzen, eigene `.glb` hochladen
-- **3D-Ansicht** mit PBR-Materialien, Tageslicht nach Uhrzeit, **fotorealistischem Pathtracing** und **Begehen** wie
-  im Spiel (inklusive Treppen zwischen den Etagen)
-- **Lage des Hauses**: Adresse oder Koordinaten und Nordrichtung – die Sonne steht wie draußen
+- **Floors** – ground floor, upper floor, basement, attic and outdoors, with the floor below as a drawing aid
+- **Walls** with snapping and dimensions, doors, windows, stairs; upload a floor plan image and trace it
+- **Rooms** with one click into an enclosed area – every room becomes a storage area with a code (kitchen → `KU`)
+- **Furniture catalog**: kitchen cabinets, shelf units, heavy-duty shelving, pantry and wardrobe, sideboard, chest of
+  drawers, workbench
+- **Object library**: build your own furniture types in the editor (columns, drawers, doors with shelves, open
+  compartments – or your own 3D model with compartments) and install them from the **community catalog**
+  ([homemgmt-object-library](https://mupf-dev.github.io/homemgmt-object-library/)); every compartment becomes a location
+- **3D models** from [Poly Haven](https://polyhaven.com) (CC0) and FurniMesh – search and place them, or upload your own `.glb`
+- **3D view** with PBR materials, daylight by time of day, **photorealistic path tracing** and **walk-through** like
+  in a game (including stairs between floors)
+- **House location**: address or coordinates and north direction – the sun is where it is outside
 
-### 📦 Lager
+### 📦 Inventory
 
-- **Ein-/Ausbuchen, Umlagern, Rückgängig** mit vollständigem Verlauf je Gegenstand
-- **QR-Scan** mit der Handykamera: Fach-Code + Gegenstand = einbuchen, Gegenstand zweimal = ausbuchen
-- **Etiketten & QR-Schilder** zum Drucken – oder als 3D-Druckmodell (STL/3MF, auch mehrfarbig)
-- **Einkaufsliste**: Verbrauchsmaterial landet beim Ausbuchen automatisch drauf, teilen per WhatsApp
-- **Aufgaben** im Haushalt: wiederkehrend, Personen zugeordnet, an Fächern („Filter tauschen“), abhaken auch am Wandterminal
-- **Haltbarkeit** mit Warnungen, **Behälter** (Kiste in der Werkzeugkiste), **Fotos** je Gegenstand
-- **Auswertung**, **Export/Import** als Excel, **automatische Backups**
-- **Offline-fest**: Buchungen bei schlechtem WLAN werden vorgemerkt und automatisch nachgebucht
+- **Check in, take out, move, undo** with a complete history per item
+- **QR scan** with the phone camera: compartment code + item = check in, the same item twice = take out
+- **Labels & QR signs** to print – or as a 3D print model (STL/3MF, multicolor too)
+- **Shopping list**: consumables land on it automatically when taken out, share via WhatsApp
+- **Household tasks**: recurring, assigned to people, attached to compartments ("replace filter"), can be ticked off
+  on the wall terminal too
+- **Expiry** with warnings, **containers** (a box inside the toolbox), **photos** per item
+- **Insights**, **export/import** as Excel, **automatic backups**
+- **Offline-safe**: transactions made on poor Wi-Fi are queued and synced automatically
 
-### 📱 Am Handy
+### 📱 On your phone
 
 <table>
 <tr>
-<td align="center" width="50%"><img src="site/img/handy-uebersicht.webp" alt="Startseite auf dem Handy" width="230"></td>
-<td align="center" width="50%"><img src="site/img/handy-blatt.webp" alt="Fach-Details auf dem Handy als Blatt von unten" width="230"></td>
+<td align="center" width="50%"><img src="site/img/handy-uebersicht.webp" alt="Home screen on the phone" width="230"></td>
+<td align="center" width="50%"><img src="site/img/handy-blatt.webp" alt="Compartment details on the phone as a bottom sheet" width="230"></td>
 </tr>
 <tr>
-<td align="center">Übersicht: Schnellaktionen, Einkauf, Ablaufendes</td>
-<td align="center">Fach als Blatt von unten</td>
+<td align="center">Overview: quick actions, shopping, expiring items</td>
+<td align="center">Compartment as a bottom sheet</td>
 </tr>
 </table>
 
-- **Als App installierbar** (PWA) mit Schnellzugriffen; am Handy Leiste unten, **Scannen** in der Mitte
-- **Übersicht** als Startseite: Schnellaktionen, Einkaufsliste zum Abhaken, was bald abläuft, Füllstand je Etage, zuletzt bewegt
-- **Schlechtes WLAN**: Buchungen werden vorgemerkt („2 Buchungen warten“) und automatisch nachgebucht – der Server bucht nie doppelt
-- **Mehrere Personen** mit Anmeldung per Kachel + PIN/Passwort oder E-Mail, Recht „Haus planen“ pro Person
-- **Einstellungen pro Person**: Startseite, Haus zuerst in 2D oder 3D, Hell/Dunkel, Schriftgröße
+- **Installable as an app** (PWA) with shortcuts; on the phone a bar at the bottom with **Scan** in the middle
+- **Overview** as the home page: quick actions, shopping list to tick off, what expires soon, fill level per floor,
+  recently moved
+- **Poor Wi-Fi**: transactions are queued ("2 transactions waiting") and synced automatically – the server never books twice
+- **Multiple people** signing in with a tile + PIN/password or email, "Plan the house" permission per person
+- **Settings per person**: home page, house in 2D or 3D first, light/dark, font size
 
-<a id="wandterminal"></a>
+<a id="wall-terminal"></a>
 
-### 🖥️ Wandterminal
+### 🖥️ Wall terminal
 
-Ein Tablet an der Wand wird zur Schaltzentrale für alle im Haus – ohne persönliche Anmeldung.
+A tablet on the wall becomes the control center for everyone in the house – without personal sign-in.
 
 <table>
 <tr>
-<td width="50%"><img src="site/img/terminal-quer.webp" alt="Wandterminal im Querformat: Navigation links, Grundriss, Wetter und Uhr in der Kopfzeile"></td>
-<td width="25%"><img src="site/img/terminal-wer-bucht.webp" alt="Wandterminal im Hochformat: Auswahl „Wer bucht?“"></td>
-<td width="25%"><img src="site/img/terminal-ruhe.webp" alt="Wandterminal im Ruhezustand mit Uhr, Haus und Einkaufsliste"></td>
+<td width="50%"><img src="site/img/terminal-quer.webp" alt="Wall terminal in landscape: navigation on the left, floor plan, weather and clock in the header"></td>
+<td width="25%"><img src="site/img/terminal-wer-bucht.webp" alt="Wall terminal in portrait: the &quot;Who is booking?&quot; picker"></td>
+<td width="25%"><img src="site/img/terminal-ruhe.webp" alt="Wall terminal in idle mode with clock, house and shopping list"></td>
 </tr>
 <tr>
-<td>Querformat: Navigation am linken Rand, Wetter und Uhr oben</td>
-<td>„Wer bucht?“</td>
-<td>Ruhezustand</td>
+<td>Landscape: navigation on the left edge, weather and clock at the top</td>
+<td>"Who is booking?"</td>
+<td>Idle mode</td>
 </tr>
 </table>
 
-- **Einrichten:** *Verwaltung → Wandterminals → Wandterminal anlegen*, den **Einrichtungslink** oder seinen **QR-Code**
-  am Tablet öffnen – kein Passwort am Gerät. Link jederzeit neu erzeugen oder Terminal entfernen.
-- **Je Gerät einstellbar:** Hoch- oder Querformat, Haus als Grundriss oder 3D, hell/dunkel, Schriftgröße bis „sehr groß“,
-  Minuten bis zurück zum Haus, Ruhezustand an/aus, Detailgrad (Entwurf 15 s, Normal 30 s, Hoch 90 s), Postleitzahl fürs Wetter.
-- **Buchen für alle:** Fach antippen, einbuchen oder entnehmen, dann auf die eigene **„Wer bucht?“**-Kachel tippen; die
-  Person bleibt 90 Sekunden gemerkt. Große Touch-Flächen; nur Haus, Suchen, Einkauf und Haltbarkeit – Planen ist gesperrt.
-- **Ruhezustand:** das Haus gedimmt und fotorealistisch mit Rasen, große Uhr, Datum, Wetter, Einkaufsliste und
-  Ablaufendes. Sparsam: rechnet nur neu, wenn sich Sonne oder Wetter ändern, pausiert bei verdecktem Bildschirm.
+- **Setup:** *Administration → Wall terminals → Create wall terminal*, then open the **setup link** or its **QR code** on
+  the tablet – no password on the device. Regenerate the link or remove the terminal at any time.
+- **Configurable per device:** portrait or landscape, house as floor plan or 3D, light/dark, font size up to "very
+  large", minutes until it returns to the house, idle mode on/off, level of detail (draft 15 s, normal 30 s, high 90 s),
+  postal code for the weather.
+- **Booking for everyone:** tap a compartment, check in or take out, then tap your own **"Who is booking?"** tile; the
+  person is remembered for 90 seconds. Large touch targets; only house, search, shopping and expiry – planning is locked.
+- **Idle mode:** the house dimmed and photorealistic with lawn, a large clock, date, weather, shopping list and
+  expiring items. Economical: re-renders only when the sun or weather changes, pauses when the screen is hidden.
 
-<a id="live-wetter"></a>
+<a id="live-weather"></a>
 
-### 🌦️ Live-Wetter am Haus
+### 🌦️ Live weather at the house
 
 <table>
 <tr>
-<td width="20%"><img src="site/img/wetter-klar.webp" alt="Ruhezustand bei klarem Wetter"></td>
-<td width="20%"><img src="site/img/wetter-regen.webp" alt="Ruhezustand bei Regen mit nassem Rasen"></td>
-<td width="20%"><img src="site/img/wetter-gewitter.webp" alt="Ruhezustand bei Gewitter mit Regen"></td>
-<td width="20%"><img src="site/img/wetter-schnee.webp" alt="Ruhezustand bei Schnee, der Garten ist weiß"></td>
-<td width="20%"><img src="site/img/wetter-nebel.webp" alt="Ruhezustand bei Nebel"></td>
+<td width="20%"><img src="site/img/wetter-klar.webp" alt="Idle mode in clear weather"></td>
+<td width="20%"><img src="site/img/wetter-regen.webp" alt="Idle mode in rain with a wet lawn"></td>
+<td width="20%"><img src="site/img/wetter-gewitter.webp" alt="Idle mode during a thunderstorm with rain"></td>
+<td width="20%"><img src="site/img/wetter-schnee.webp" alt="Idle mode in snow, the garden is white"></td>
+<td width="20%"><img src="site/img/wetter-nebel.webp" alt="Idle mode in fog"></td>
 </tr>
 <tr>
-<td align="center">Klar</td><td align="center">Regen</td><td align="center">Gewitter</td><td align="center">Schnee</td><td align="center">Nebel</td>
+<td align="center">Clear</td><td align="center">Rain</td><td align="center">Thunderstorm</td><td align="center">Snow</td><td align="center">Fog</td>
 </tr>
 </table>
 
-Mit der **Lage des Hauses** (*Planen → ⋯*: Adresse, Postleitzahl oder Koordinaten, Nordrichtung per Kompass) zeigt das
-Wandterminal das Haus so, wie es draußen aussieht – ohne Konto und ohne API-Schlüssel:
+With the **house location** (*Plan → ⋯*: address, postal code or coordinates, north direction via compass) the wall
+terminal shows the house as it looks outside – no account and no API key needed:
 
-- **Sonne wie draußen:** Sonnenstand aus Ort und Uhrzeit; Himmel und Licht laufen jede Minute mit – Tag, Dämmerung,
-  Nacht mit eingeschalteten Lampen und Mondlicht. Der Grundriss zeigt einen Nordpfeil.
-- **Wolken** nach echter Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im fotorealistischen Bild.
-- **Regen und Niesel** als dezente Animation nach echter Regenrate (mm/h), der Rasen wird nass; **Nebel und Dunst**
-  nach Sichtweite; Temperatur und Regenmenge in der Kopfzeile.
-- **Schnee** wächst als Fleck: erst auf und vor der Terrasse, ab ~10 cm der ganze Garten; das Dach wird angezuckert bis weiß.
-- **Gewitter in Echtzeit:** jeder Blitzeinschlag im Umkreis kommt sofort an ([Blitzortung.org](https://www.blitzortung.org),
-  per Server-Sent Events). Nahe Blitze (≤ 30 km) lassen den Bildschirm aufblitzen, ab 20 km warnt die Kopfzeile, im
-  Ruhezustand stehen der letzte Blitz (Entfernung, Richtung, Alter) und eine **Blitzkarte** (10/25/50 km).
-- **Testwetter** zum Ausprobieren: Terminal-Adresse mit `?testwetter=schnee` öffnen (auch `schnee-hauch`, `schneesturm`,
-  `niesel`, `regen`, `wolkenbruch`, `gewitter`, `nebel`, `wolkig`, `klar`) – die Bilder oben sind so entstanden.
+- **Sun as outside:** sun position from location and time; sky and light follow every minute – day, dusk, night with
+  lamps switched on and moonlight. The floor plan shows a north arrow.
+- **Clouds** according to real cloud cover, colored by time of day, drifting with the wind – in the photorealistic image too.
+- **Rain and drizzle** as a subtle animation based on the real rain rate (mm/h), the lawn gets wet; **fog and haze**
+  based on visibility; temperature and precipitation in the header.
+- **Snow** grows as a patch: first on and in front of the terrace, from ~10 cm the whole garden; the roof goes from
+  dusted to white.
+- **Thunderstorms in real time:** every lightning strike nearby arrives instantly ([Blitzortung.org](https://www.blitzortung.org),
+  via server-sent events). Close strikes (≤ 30 km) make the screen flash, from 20 km the header shows a warning, and
+  idle mode shows the last strike (distance, direction, age) and a **lightning map** (10/25/50 km).
+- **Test weather** to try it out: open the terminal address with `?testwetter=schnee` (snow; also `schnee-hauch`
+  light snow, `schneesturm` blizzard, `niesel` drizzle, `regen` rain, `wolkenbruch` downpour, `gewitter` thunderstorm,
+  `nebel` fog, `wolkig` cloudy, `klar` clear) – that is how the images above were made.
 
-Daten: Ort über [OpenStreetMap](https://www.openstreetmap.org), Wetter über [Open-Meteo](https://open-meteo.com) (alle 15 Minuten).
+Data: location via [OpenStreetMap](https://www.openstreetmap.org), weather via [Open-Meteo](https://open-meteo.com) (every 15 minutes).
 
-<a id="ki-assistent"></a>
+<a id="ai-assistant"></a>
 
-### 🤖 KI-Assistent und MCP-Server
+### 🤖 AI assistant and MCP server
 
-- **Assistent in der App** per Text, Sprache oder Foto: *„3 Dosen Tomaten auf Keller B2, haltbar bis 05/2027“* –
-  bucht selbst, jede Buchung mit „rückgängig“. Jede OpenAI-kompatible Schnittstelle (z. B. OpenRouter).
-- **MCP-Server** für KI-Assistenten wie Claude: suchen, ein-/ausbuchen, umlagern, Einkaufsliste – angemeldet per API-Schlüssel
+- **Assistant in the app** by text, voice or photo: *"3 cans of tomatoes to basement B2, best before 05/2027"* –
+  books by itself, every transaction with "undo". Works with any OpenAI-compatible API (e.g. OpenRouter).
+- **MCP server** for AI assistants like Claude: search, check in/take out, move, shopping list – authenticated with an API key
 
-## Ein echtes Haus
+## A real house
 
-homemgmt-ng ist für ein echtes Einfamilienhaus entstanden – mit Keller, Erdgeschoss, Obergeschoss, Dachboden und
-Außenbereich. Diese Bilder zeigen den Plan dieses Hauses (Stand einer früheren Version der Oberfläche).
+homemgmt-ng was built for a real single-family house – with basement, ground floor, upper floor, attic and outdoor
+area. These images show the plan of that house (taken with an earlier version of the interface).
 
 <table>
 <tr>
-<td width="50%"><img src="site/img/praxis-aussen.webp" alt="Das Haus von außen in 3D: Satteldach, große Fenster, Carport und Terrasse"></td>
-<td width="50%"><img src="site/img/praxis-eg-3d.webp" alt="Das Erdgeschoss als 3D-Schnitt mit Küche, Treppe und Wohnbereich"></td>
+<td width="50%"><img src="site/img/praxis-aussen.webp" alt="The house from outside in 3D: gable roof, large windows, carport and terrace"></td>
+<td width="50%"><img src="site/img/praxis-eg-3d.webp" alt="The ground floor as a 3D cutaway with kitchen, stairs and living area"></td>
 </tr>
 <tr>
-<td><b>Außen:</b> Satteldach, Fenster, Carport und Terrasse – alle Etagen übereinander.</td>
-<td><b>Erdgeschoss:</b> Küchenzeile mit Hochschränken, Kochinsel, Treppe und Wohnbereich.</td>
+<td><b>Outside:</b> gable roof, windows, carport and terrace – all floors stacked.</td>
+<td><b>Ground floor:</b> kitchen run with tall cabinets, cooking island, stairs and living area.</td>
 </tr>
 <tr>
-<td><img src="site/img/praxis-og-3d.webp" alt="Das Obergeschoss als 3D-Schnitt über dem Erdgeschoss mit Bad, Galerie und Schlafzimmer"></td>
-<td><img src="site/img/praxis-kueche.webp" alt="Blick in die Küche: grifflose Hochschränke, dunkle Arbeitsplatte mit Unterbauspüle, Holzboden"></td>
+<td><img src="site/img/praxis-og-3d.webp" alt="The upper floor as a 3D cutaway above the ground floor with bathroom, gallery and bedroom"></td>
+<td><img src="site/img/praxis-kueche.webp" alt="View into the kitchen: handleless tall cabinets, dark worktop with undermount sink, wooden floor"></td>
 </tr>
 <tr>
-<td><b>Obergeschoss:</b> „Bis hier“ zeigt die Etage samt allem darunter.</td>
-<td><b>Küche:</b> grifflose Fronten, Durchgang in Schrankoptik, Steinarbeitsplatte.</td>
+<td><b>Upper floor:</b> "Up to here" shows the floor with everything below it.</td>
+<td><b>Kitchen:</b> handleless fronts, a passage disguised as a cabinet, stone worktop.</td>
 </tr>
 <tr>
-<td><img src="site/img/praxis-grundriss.webp" alt="Grundriss des Erdgeschosses, nachgezeichnet über dem Bauplan, daneben die 3D-Ansicht"></td>
-<td><img src="site/img/praxis-keller-lager.webp" alt="Keller mit Abstellraum und Regalen, in 3D nach Füllstand eingefärbt"></td>
+<td><img src="site/img/praxis-grundriss.webp" alt="Floor plan of the ground floor, traced over the building plan, with the 3D view next to it"></td>
+<td><img src="site/img/praxis-keller-lager.webp" alt="Basement with storeroom and shelf units, colored by fill level in 3D"></td>
 </tr>
 <tr>
-<td><b>Grundriss:</b> über dem eingescannten Bauplan nachgezeichnet, Räume als Lager.</td>
-<td><b>Keller:</b> Regale im Abstellraum als Lagerplätze, nach Füllstand eingefärbt.</td>
+<td><b>Floor plan:</b> traced over the scanned building plan, rooms as storage areas.</td>
+<td><b>Basement:</b> shelf units in the storeroom as locations, colored by fill level.</td>
 </tr>
 </table>
 
 ## Installation
 
-### Mit Docker (empfohlen)
+### With Docker (recommended)
 
 ```bash
 git clone https://github.com/mupf-dev/Homemgmt.git
@@ -223,13 +232,13 @@ cd Homemgmt
 docker compose up -d --build
 ```
 
-Danach läuft die App unter **http://localhost:3000** (MCP-Server: Port 3100). Die Daten liegen im Volume `zuhause-data`
-(`/data` im Container: `zuhause.db`, `backups/`, `library/`). Einstellungen nimmst du in der
-[`docker-compose.yml`](docker-compose.yml) vor – die wichtigsten stehen dort schon auskommentiert.
+The app then runs at **http://localhost:3000** (MCP server: port 3100). The data lives in the volume `zuhause-data`
+(`/data` in the container: `zuhause.db`, `backups/`, `library/`). Settings go into
+[`docker-compose.yml`](docker-compose.yml) – the most important ones are already there, commented out.
 
-### Ohne Docker
+### Without Docker
 
-Benötigt **Node.js ≥ 22.18** (eingebautes `node:sqlite`, TypeScript läuft auf dem Server ohne Build).
+Requires **Node.js ≥ 22.18** (built-in `node:sqlite`; TypeScript runs on the server without a build step).
 
 ```bash
 git clone https://github.com/mupf-dev/Homemgmt.git
@@ -238,121 +247,127 @@ npm install
 npm run build && npm start     # → http://localhost:3000
 ```
 
-### Erster Start
+### First start
 
-Bei leerer Datenbank zeigt die App die **Ersteinrichtung**: „Neue Person“ antippen, Name und Passwort vergeben – diese
-Person wird **Admin**. Danach meldet man sich per Kachel + Passwort/PIN oder mit E-Mail an. Weitere Personen legst du
-unter *Mehr → Verwaltung → Personen* an; Selbst-Registrierung ist standardmäßig aus.
+With an empty database the app shows the **initial setup**: tap "New person", choose a name and password – this person
+becomes **admin**. After that you sign in with a tile + password/PIN or with your email. Add more people under
+*More → Administration → People*; self-registration is off by default.
 
 > [!TIP]
-> Für den **Kamera-Scan** auf dem Handy braucht der Browser HTTPS. Im Heimnetz genügt `npm run cert` (selbst signiertes
-> Zertifikat, App dann unter `https://<rechner>:3443`), dauerhaft ist ein [Reverse Proxy](#hinter-einem-reverse-proxy) besser.
+> For the **camera scan** on the phone the browser needs HTTPS. On your home network `npm run cert` is enough
+> (self-signed certificate, the app is then at `https://<computer>:3443`); for permanent use a
+> [reverse proxy](#behind-a-reverse-proxy) is better.
 
-## Anleitung
+## Guide
 
-### 1. Haus anlegen
+### 1. Set up your house
 
-1. **Haus** öffnen → **Planen** (nur am PC). Oben die Etagen-Reiter, **+** legt Obergeschoss, Keller, Dachgeschoss
-   oder Außenbereich an.
-2. **Wände** zeichnen – oder unter *Etage → Grundriss-Vorlage* einen Scan/ein Foto des Grundrisses hochladen, Maßstab
-   kalibrieren und nachzeichnen. Für einfache Räume: *Wände aus Maßen*.
-3. **Raum festlegen** und in eine umschlossene Fläche klicken. Jeder Raum wird ein **Lager** mit Kürzel.
-4. **Möbel** aus dem Katalog setzen; Schränke docken an Wände und Nachbarn an (`R` dreht, `Alt` platziert frei).
-   Jedes Möbel mit Fächern bekommt einen **Buchstaben**, jedes Fach einen **Lagerplatz**: `KU-B2`.
-5. **Fertig** – der Plan wird automatisch gespeichert und mit allen geteilt.
+1. Open **House** → **Plan** (PC only). The floor tabs are at the top; **+** adds an upper floor, basement, attic or
+   outdoor area.
+2. Draw **walls** – or upload a scan/photo of the floor plan under *Floor → Floor plan template*, calibrate the scale
+   and trace it. For simple rooms: *Walls from dimensions*.
+3. Choose **Define room** and click into an enclosed area. Every room becomes a **storage area** with a code.
+4. Place **furniture** from the catalog; cabinets snap to walls and neighbors (`R` rotates, `Alt` places freely).
+   Every piece of furniture with compartments gets a **letter**, every compartment a **location**: `KU-B2`
+   (kitchen, furniture B, compartment 2).
+5. **Done** – the plan is saved automatically and shared with everyone.
 
-### 2. Dinge einlagern und finden
+### 2. Store and find things
 
-- **Ansehen** ist der Normalfall: Möbel antippen → Fächer, Fach antippen → Inhalt, **Einbuchen** oder **− 1** zum Entnehmen.
-- In 3D färbt **Lager** die Fächer nach Füllstand: blau leer, grün belegt, orange läuft ab, rot abgelaufen.
-- **„Wo liegt …?“** oben durchsucht alle Lager; Treffer leuchten im Grundriss und in 3D, Etagen mit Treffern bekommen einen Punkt.
-- Am Handy: **Scannen** in der Mitte der Leiste. Erst den Fach-Code, dann den Gegenstand scannen = einbuchen;
-  denselben Gegenstand zweimal = ausbuchen. Unbekannte, vorgedruckte Etiketten legen einen neuen Gegenstand an.
+- **View** is the normal mode: tap a piece of furniture → compartments, tap a compartment → contents, **Check in** or
+  **− 1** to take one out.
+- In 3D, **Inventory** colors compartments by fill level: blue empty, green occupied, orange expiring, red expired.
+- **"Where is …?"** at the top searches all storage areas; matches light up in the floor plan and in 3D, floors with
+  matches get a dot.
+- On the phone: **Scan** in the middle of the bar. Scan the compartment code first, then the item = check in;
+  the same item twice = take out. Unknown pre-printed labels create a new item.
 
-### 3. Etiketten drucken
+### 3. Print labels
 
-*Mehr → Etiketten & QR-Schilder*: Etiketten für Fächer, Gegenstände oder **leere Etiketten** zum Vorab-Aufkleben (groß
-7 × 3,6 cm oder klein 5 × 2,5 cm). In der Platz- und Objektansicht erzeugt **3D-Druck** ein QR-Schild als STL oder
-mehrfarbiges 3MF – komplett im Browser.
+*More → Labels & QR signs*: labels for compartments, items or **blank labels** to stick on in advance (large
+7 × 3.6 cm or small 5 × 2.5 cm). In the location and item views, **3D print** creates a QR sign as STL or multicolor
+3MF – entirely in the browser.
 
-### 4. Einkaufsliste und Haltbarkeit
+### 4. Shopping list and expiry
 
-Gegenstände als **Verbrauchsmaterial** markieren – beim Ausbuchen landen sie auf der **Einkaufsliste**. Dort
-abhaken – oder gekauft und gleich wieder an den bisherigen Platz einbuchen. Mit **Haltbarkeitsdatum** erscheinen sie rechtzeitig unter *Läuft bald ab*.
+Mark items as **consumables** – when taken out they land on the **shopping list**. Tick them off there – or mark them
+as bought and check them straight back into their previous location. With a **best-before date** they show up in time
+under *Expiring soon*.
 
-### 5. Wandterminal einrichten
+### 5. Set up a wall terminal
 
-*Verwaltung → Wandterminals → Wandterminal anlegen*: Hoch- oder Querformat wählen, dann den **Einrichtungslink** (oder seinen QR-Code) am Tablet öffnen. Das
-Terminal braucht keine persönliche Anmeldung; beim Buchen fragt es **„Wer bucht?“**. Ohne Bedienung wechselt es in den
-Ruhezustand – mit **Lage des Hauses** (*Planen → ⋯*) samt Sonne, Himmel und Wetter wie draußen. Blitzt es in der
-Nähe, zeigt das Terminal eine Warnung und eine Blitzkarte. Zum Ausprobieren: Adresse mit `?testwetter=schnee`
-(oder `regen`, `gewitter`, `nebel` …) öffnen.
+*Administration → Wall terminals → Create wall terminal*: choose portrait or landscape, then open the **setup link** (or
+its QR code) on the tablet. The terminal needs no personal sign-in; when booking it asks **"Who is booking?"**. When
+not in use it switches to idle mode – with the **house location** (*Plan → ⋯*) including sun, sky and weather as
+outside. If there is lightning nearby, the terminal shows a warning and a lightning map. To try it out: open the
+address with `?testwetter=schnee` (or `regen`, `gewitter`, `nebel` …).
 
-### 6. KI-Assistent und MCP-Server
+### 6. AI assistant and MCP server
 
-**Assistent:** *Verwaltung → Assistent* – Adresse einer OpenAI-kompatiblen Schnittstelle (Standard
-`https://openrouter.ai/api/v1`), Modell (mit Tool Calling, für Fotos mit Bildern) und API-Schlüssel eintragen,
-*Verbindung testen*. Der Schlüssel bleibt auf dem Server. Die Preisrecherche braucht eine Websuche: OpenRouter bringt
-sie mit, bei einem Gateway wie LiteLLM dessen Such-Tool unter „Such-Tool im Gateway“ eintragen.
+**Assistant:** *Administration → Assistant* – enter the address of an OpenAI-compatible API (default
+`https://openrouter.ai/api/v1`), a model (with tool calling; with image input for photos) and an API key, then
+*Test connection*. The key stays on the server. Price research needs a web search: OpenRouter includes one; with a
+gateway like LiteLLM, enter its search tool under "Search tool in gateway".
 
-**MCP:** *Verwaltung → API-Schlüssel* einen Schlüssel anlegen („Lesen und buchen“ oder „Nur lesen“), dann z. B. in
-Claude Code:
+**MCP:** create a key under *Administration → API keys* ("Read and book" or "Read only"), then e.g. in Claude Code:
 
 ```bash
 claude mcp add --transport http zuhause http://localhost:3100/mcp --header "Authorization: Bearer hlk_…"
 ```
 
-Das vollständige Handbuch für alle Lagerfunktionen steht in **[docs/LAGER.md](docs/LAGER.md)**, der Planer in
-[docs/KUECHE.md](docs/KUECHE.md), Hintergründe in [ARCHITEKTUR.md](ARCHITEKTUR.md) und Neuerungen im [CHANGELOG](CHANGELOG.md).
+The complete manual for all inventory features is in **[docs/INVENTORY.md](docs/INVENTORY.md)**, the planner in
+[docs/KITCHEN.md](docs/KITCHEN.md), background in [ARCHITECTURE.md](ARCHITECTURE.md) and what's new in the
+[CHANGELOG](CHANGELOG.md).
 
-## Betrieb
+## Operation
 
-### Umgebungsvariablen
+### Environment variables
 
-| Variable | Standard | Bedeutung |
-|----------|----------|-----------|
-| `PORT` | `3000` | HTTP-Port |
-| `HTTPS_PORT` | `3443` | HTTPS (nur mit Zertifikat in `CERT_DIR`, `npm run cert`), `0` = aus |
-| `DB_PATH` | `data/zuhause.db` | Datenbank; Backups und Texturen liegen daneben |
-| `MCP_PORT` / `MCP_HOST` / `MCP_PUBLIC_URL` | `3100` / `0.0.0.0` / – | MCP-Server (`MCP_PORT=0` = aus) |
-| `TRUST_PROXY` | – | `1` hinter einem Reverse Proxy (Secure-Cookie, echte Client-IP) |
-| `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatische Backups |
-| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | KI-Assistent (sonst unter *Verwaltung → Assistent*) |
-| `AI_SEARCH_TOOL` | – | Such-Tool eines Gateways (z. B. LiteLLM) für die Preisrecherche ohne OpenRouter |
-| `LIGHTNING` | – | `0` schaltet die Live-Blitze (Blitzortung.org) für Wandterminals ab |
-| `OBJECT_CATALOG_URL` | `https://mupf-dev.github.io/homemgmt-object-library/` | Community-Katalog der Objektbibliothek (eigener Fork oder lokaler Spiegel) |
+| Variable | Default | Meaning |
+|----------|---------|---------|
+| `PORT` | `3000` | HTTP port |
+| `HTTPS_PORT` | `3443` | HTTPS (only with a certificate in `CERT_DIR`, `npm run cert`), `0` = off |
+| `DB_PATH` | `data/zuhause.db` | Database; backups and textures are stored next to it |
+| `MCP_PORT` / `MCP_HOST` / `MCP_PUBLIC_URL` | `3100` / `0.0.0.0` / – | MCP server (`MCP_PORT=0` = off) |
+| `TRUST_PROXY` | – | `1` behind a reverse proxy (secure cookie, real client IP) |
+| `BACKUP_INTERVAL_HOURS` / `BACKUP_KEEP` | `24` / `14` | automatic backups |
+| `AI_API_KEY` / `AI_BASE_URL` / `AI_MODEL` | – | AI assistant (otherwise under *Administration → Assistant*) |
+| `AI_SEARCH_TOOL` | – | Search tool of a gateway (e.g. LiteLLM) for price research without OpenRouter |
+| `LIGHTNING` | – | `0` turns off live lightning (Blitzortung.org) for wall terminals |
+| `OBJECT_CATALOG_URL` | `https://mupf-dev.github.io/homemgmt-object-library/` | Community catalog of the object library (your own fork or a local mirror) |
 
-Weitere Variablen (z. B. `MCP_ALLOWED_ORIGINS`, `PUBLIC_URL`) stehen in [docs/LAGER.md](docs/LAGER.md).
+More variables (e.g. `MCP_ALLOWED_ORIGINS`, `PUBLIC_URL`) are listed in [docs/INVENTORY.md](docs/INVENTORY.md).
 
-### Hinter einem Reverse Proxy
+### Behind a reverse proxy
 
-Für den dauerhaften Betrieb mit HTTPS (Caddy, nginx, Traefik …) die App auf Port 3000 weiterleiten und `TRUST_PROXY=1`
-setzen. Den MCP-Server nur bei Bedarf veröffentlichen und dort das Puffern ausschalten (Caddy `flush_interval -1`,
-nginx `proxy_buffering off`). Details: [docs/LAGER.md](docs/LAGER.md#hinter-einem-reverse-proxy-empfohlen).
+For permanent operation with HTTPS (Caddy, nginx, Traefik …) forward to the app on port 3000 and set `TRUST_PROXY=1`.
+Only expose the MCP server if you need it, and turn off buffering there (Caddy `flush_interval -1`,
+nginx `proxy_buffering off`). Details: [docs/INVENTORY.md](docs/INVENTORY.md#behind-a-reverse-proxy-recommended).
 
-### Backups und Passwort vergessen
+### Backups and forgotten passwords
 
-Backups entstehen automatisch (Standard alle 24 h, 14 werden behalten) und lassen sich unter *Verwaltung → Backups*
-anlegen, herunterladen und wiederherstellen. Passwort zurücksetzen:
+Backups are created automatically (every 24 h by default, 14 are kept) and can be created, downloaded and restored
+under *Administration → Backups*. To reset a password:
 
 ```bash
-npm run reset-password -- anna                                             # ohne Docker
-docker compose exec zuhause node scripts/reset-password.cjs anna           # mit Docker
+npm run reset-password -- anna                                             # without Docker
+docker compose exec zuhause node scripts/reset-password.cjs anna           # with Docker
 ```
 
-### Bestehende Daten übernehmen
+### Importing existing data
 
-Aus den Vorgängerprojekten **Heimlager** und **Küchenplaner** (die Quellen werden nur gelesen):
+From the predecessor projects **Heimlager** and **Küchenplaner** (the sources are only read):
 
 ```bash
 npm run migrate -- --lager ../inventory/data/lager.db --kueche ../küchenplaner/data/kuechenplaner.db
 ```
 
-Konten mit gleicher E-Mail oder gleichem Namen werden zu einer Person (sonst `--map mail@example.de=Name`). In der App
-holt das Kontomenü **„Gespeicherte Planungen übernehmen“** eine Küchenplanung als Etage ins Haus. Für den Hausgrundriss
-eines laufenden Heimlagers gibt es `npm run import-prod` (siehe Kopf von [`scripts/import-prod.ts`](scripts/import-prod.ts)).
+Accounts with the same email or the same name are merged into one person (otherwise `--map mail@example.de=Name`). In
+the app, the account menu entry **"Import saved plans"** brings a kitchen plan into the house as a floor. For the
+house floor plan of a running Heimlager instance there is `npm run import-prod` (see the header of
+[`scripts/import-prod.ts`](scripts/import-prod.ts)).
 
-Eine migrierte Datenbank in den Docker-Container kopieren:
+Copy a migrated database into the Docker container:
 
 ```bash
 docker compose create
@@ -362,60 +377,60 @@ docker compose run --rm -u root --entrypoint chown zuhause -R node:node /data
 docker compose up -d
 ```
 
-## Entwicklung
+## Development
 
 ```bash
-npm run dev          # ein Prozess, App mit Vite-HMR → http://localhost:3000
-npm test             # API-Tests, jeder mit eigenem Server und frischer Datenbank
-npm run typecheck    # App und Server
-npm run test:e2e     # Klicktest im Browser (einmalig: npm install --no-save playwright-core)
+npm run dev          # one process, app with Vite HMR → http://localhost:3000
+npm test             # API tests, each with its own server and a fresh database
+npm run typecheck    # app and server
+npm run test:e2e     # click-through test in the browser (once: npm install --no-save playwright-core)
 ```
 
-### Aufbau
+### Structure
 
 ```
-server/index.ts            Einstieg: Express, Module, HTTPS, MCP
-server/lager/              Lager: Konto, Lager, Buchungen, Assistent, MCP, Backups
-server/haus/               Haus: Hausplan speichern, Abgleich mit dem Lager
-server/kueche/             Planungen, Benutzerverwaltung, Materialbibliothek
-web/app/src/model/         Hausmodell für App und Server: Typen, Katalog, Geometrie, Räume, Fächer
-web/app/src/               App: Editor (plan2d), 3D (scene3d, models, materials), Zustand, Konto
+server/index.ts            Entry point: Express, modules, HTTPS, MCP
+server/lager/              Inventory: account, storage areas, transactions, assistant, MCP, backups
+server/haus/               House: saving the house plan, sync with the inventory
+server/kueche/             Plans, user management, material library
+web/app/src/model/         House model for app and server: types, catalog, geometry, rooms, compartments
+web/app/src/               App: editor (plan2d), 3D (scene3d, models, materials), state, account
 scripts/                   migrate, reset-password, make-cert, make-icons, import-prod
-test/                      node:test, e2e/ Klicktest im Browser
-docs/                      Handbücher und Changelogs der Ursprungsprojekte
-site/                      Projekt-Website (GitHub Pages) und Screenshots
+test/                      node:test, e2e/ click-through test in the browser
+docs/                      Manuals and changelogs of the original projects
+site/                      Project website (GitHub Pages) and screenshots
 ```
 
-**Technik:** Express 5, eingebautes `node:sqlite`, TypeScript (Server per Type Stripping ohne Build), Vite, three.js,
+**Tech:** Express 5, built-in `node:sqlite`, TypeScript (server via type stripping without a build), Vite, three.js,
 three-gpu-pathtracer.
 
-### API (Haus)
+### API (house)
 
-| Methode | Pfad | Zweck |
-|---------|------|-------|
-| GET | `/api/house` | Hausplan `{house, version, can_edit, reserved}` |
-| PUT | `/api/house` | Speichern `{house, base_version}` → normalisierter Plan, Abgleich mit dem Lager; 409 bei veraltetem Stand |
-| GET | `/api/house/storage` | Alle Plan-Plätze mit Adresse und Inhalt |
-| GET | `/api/objects` | Objektbibliothek: installierte Möbelarten (`zuhause-objekt/1`) |
-| PUT / PATCH / DELETE | `/api/objects/:id` | Möbelart speichern, aus-/einblenden, löschen (Recht „Haus planen“) |
-| POST | `/api/objects/import` | Möbelart aus Datei übernehmen (`{object, replace?}`) |
-| GET / POST | `/api/objects/community`, `/api/objects/community/install` | Community-Katalog lesen, Möbelart installieren/aktualisieren |
+| Method | Path | Purpose |
+|--------|------|---------|
+| GET | `/api/house` | House plan `{house, version, can_edit, reserved}` |
+| PUT | `/api/house` | Save `{house, base_version}` → normalized plan, sync with the inventory; 409 if the version is outdated |
+| GET | `/api/house/storage` | All plan locations with code and contents |
+| GET | `/api/objects` | Object library: installed furniture types (`zuhause-objekt/1`) |
+| PUT / PATCH / DELETE | `/api/objects/:id` | Save, hide/show or delete a furniture type ("Plan the house" permission) |
+| POST | `/api/objects/import` | Import a furniture type from a file (`{object, replace?}`) |
+| GET / POST | `/api/objects/community`, `/api/objects/community/install` | Read the community catalog, install/update a furniture type |
 
-Die übrigen Endpunkte (Lager, Buchungen, Konto, Assistent, Backups) stehen in
-[docs/LAGER.md](docs/LAGER.md#api-für-eigene-erweiterungen). API-Schlüssel (`Authorization: Bearer hlk_…`) funktionieren
-auch für die REST-API.
+The remaining endpoints (storage areas, transactions, account, assistant, backups) are documented in
+[docs/INVENTORY.md](docs/INVENTORY.md#api-for-custom-extensions). API keys (`Authorization: Bearer hlk_…`) work for
+the REST API as well.
 
-## Lizenz
+## License
 
-[GNU Affero General Public License v3.0](LICENSE). Du darfst homemgmt-ng nutzen, verändern und weitergeben. Wer eine
-veränderte Fassung weitergibt oder als Online-Dienst anbietet, muss den Quellcode unter derselben Lizenz offenlegen.
+[GNU Affero General Public License v3.0](LICENSE). You may use, modify and share homemgmt-ng. Anyone who distributes a
+modified version or offers it as an online service must publish the source code under the same license.
 
-Der Hausplaner ist aus dem [Küchenplaner 3D](https://github.com/mupf-dev/kitchen-planner-3d) hervorgegangen
-([Live-Demo](https://kuechenplaner.miefda.org/)).
+The house planner grew out of [Küchenplaner 3D](https://github.com/mupf-dev/kitchen-planner-3d) (kitchen planner,
+[live demo](https://kuechenplaner.miefda.org/)).
 
-## Danksagung
+## Acknowledgements
 
-Bodentexturen und 3D-Modelle von [Poly Haven](https://polyhaven.com) (CC0) ·
+Floor textures and 3D models from [Poly Haven](https://polyhaven.com) (CC0) ·
 [three.js](https://threejs.org) · [three-gpu-pathtracer](https://github.com/gkjohnson/three-gpu-pathtracer) ·
 [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT) · [jsQR](https://github.com/cozmo/jsQR) (Apache-2.0) ·
-Ort und Wetter über [OpenStreetMap](https://www.openstreetmap.org) und [Open-Meteo](https://open-meteo.com)
+location and weather via [OpenStreetMap](https://www.openstreetmap.org) and [Open-Meteo](https://open-meteo.com)

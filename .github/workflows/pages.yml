@@ -1,4 +1,4 @@
-# Veröffentlicht die Projekt-Website aus site/ auf GitHub Pages (https://mupf-dev.github.io/Homemgmt/)
+# Publishes the project website from site/ to GitHub Pages (https://mupf-dev.github.io/Homemgmt/)
 name: Website
 
 on:

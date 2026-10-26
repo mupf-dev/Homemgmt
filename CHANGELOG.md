@@ -1,260 +1,273 @@
 # Changelog
 
-## Unveröffentlicht
+## Unreleased
 
-**Neuer Name: homemgmt-ng** – App, Website und Handbuch heißen jetzt homemgmt-ng (vorher „Zuhause“). Technische
-Namen (Container, Datenbankdatei, Ordner) bleiben gleich, ein Update braucht keine Anpassung.
+**German and English**: the whole app – overview, house planner, 3D, wall terminal, guide, server messages and the
+assistant's answers – is available in German and English. The language follows the browser and can be set per person
+under More → Settings → Language. Stored names (floors, rooms, compartments) and import/export column names stay as
+entered. Documentation and website are now in English.
 
-**Assistent schneller erreichen**: Startseite „Assistent“ in den Einstellungen (die installierte App startet jetzt mit
-`/`, damit die gewählte Startseite auch dort gilt) und Kurzbefehl „Assistent“ am App-Symbol (Android).
-**Sprechen am Wandterminal**: neuer Knopf „Sprechen“ in der Leiste – erst „Wer bucht?“, dann zuhören; die Antwort wird
-vorgelesen. Am Terminal darf der Assistent nur lesen, buchen, die Einkaufsliste pflegen und Preise suchen (nie
-Admin-Werkzeuge, kein Bearbeiten oder Löschen); das Gespräch wird im Ruhezustand gelöscht.
+**New name: homemgmt-ng** – the app, website and manual are now called homemgmt-ng (formerly "Zuhause"). Technical
+names (container, database file, folders) stay the same; an update needs no changes.
 
-**Wandterminal**: Einträge der Einkaufsliste lassen sich wieder löschen (der Server las bei `DELETE` die gewählte
-Person nicht). Aufgaben lassen sich am Terminal jetzt auch anlegen, ändern und löschen – mit „Wer bucht?“.
+**Reach the assistant faster**: "Assistant" as a home page option in the settings (the installed app now starts with
+`/` so the chosen home page applies there too) and an "Assistant" shortcut on the app icon (Android).
+**Speak to the wall terminal**: new "Speak" button in the bar – first "Who is booking?", then it listens; the answer
+is read aloud. On the terminal the assistant may only read, book, maintain the shopping list and search for prices
+(never admin tools, no editing or deleting); the conversation is cleared in idle mode.
 
-**Preisrecherche ohne OpenRouter**: Bei einem Gateway wie LiteLLM nutzt die Preisrecherche dessen Such-Tool
-(Verwaltung → Assistent → „Such-Tool im Gateway“, z. B. `foundry-web`, oder `AI_SEARCH_TOOL`). Je Produkt recherchiert
-ein kleiner Agent: höchstens 3 Websuchen über `POST {Adresse}/search/{Such-Tool}` und 3 Seiten, die der Server selbst
-lädt (nur öffentliche Adressen). „Bestätigt“ ist ein Preis dort nur, wenn er auf einer gelesenen Seite steht.
-Außerdem: Vergleichs- und Prospektportale (idealo, kaufDA …) gelten nicht mehr als Händler, Hinweise werden am Satzende
-gekürzt.
+**Wall terminal**: shopping list entries can be deleted again (the server didn't read the selected person on
+`DELETE`). Tasks can now also be created, changed and deleted on the terminal – with "Who is booking?".
 
-**Aufgaben** (Mehr → Aufgaben, Karte auf der Übersicht): einmalig oder **wiederkehrend** (täglich, wöchentlich, alle
-3 Monate, jährlich oder eigener Rhythmus – nach festem Plan oder ab Erledigung), einer **Person** zugeordnet und optional
-an einem **Fach** („Filter Dunstabzug tauschen“ → im Haus zeigen). Abhaken mit „Rückgängig“; zuletzt erledigt mit wer und
-wann. Am **Wandterminal** in der Navigation, abhaken mit „Wer bucht?“; der Ruhezustand zeigt, was heute fällig ist.
+**Price research without OpenRouter**: with a gateway like LiteLLM, price research uses its search tool
+(Administration → Assistant → "Search tool in gateway", e.g. `foundry-web`, or `AI_SEARCH_TOOL`). A small agent
+researches each product: at most 3 web searches via `POST {address}/search/{search tool}` and 3 pages that the server
+fetches itself (public addresses only). There a price only counts as "confirmed" if it appears on a page that was read.
+Also: comparison and flyer portals (idealo, kaufDA …) no longer count as retailers, notes are trimmed at the end of a
+sentence.
 
-**Arbeitsplatte für Möbelarten** (Objektbibliothek): Korpus-Möbelarten können oben eine Arbeitsplatte tragen – z. B.
-Waschmaschine unter Arbeitsplatte, Hauswirtschaftszeile, Kochinsel. Stärke, Überstand vorne und Material im Editor
-einstellbar; mit „mit Küchenzeile verbinden“ wird sie Teil der Küchenzeile, die Maserung läuft über angrenzende
-Unterschränke weiter. Die Platte ist kein Fach, die Höhe bleibt die Gesamthöhe. Das Format bleibt `zuhause-objekt/1`
-(neues optionales Feld `build.countertop`); bestehende Möbelarten und ihre Lageradressen bleiben unverändert.
+**Tasks** (More → Tasks, card on the overview): one-off or **recurring** (daily, weekly, every 3 months, yearly or a
+custom interval – on a fixed schedule or from completion), assigned to a **person** and optionally attached to a
+**compartment** ("replace cooker hood filter" → show in house). Tick off with "Undo"; last completed with who and when.
+On the **wall terminal** in the navigation, tick off with "Who is booking?"; idle mode shows what is due today.
 
-**Waschmaschine und Trockner als Element** (`washer`, `dryer`): realistische Gerätefront statt Schrankfront – Bedienblende
-mit Schublade, Display und Drehknopf, Bullauge mit Türring und Trommel, Serviceklappe, beim Trockner Lüftungsgitter; in
-Gerätefarben, unabhängig von Fronten und grifflos. Unter Arbeitsplatte, auf Podest oder als Säule. Jedes Gerät ergibt
-zwei Lagerplätze: Waschmittelfach bzw. Kondenswasserbehälter und die Trommel.
+**Worktop for furniture types** (object library): carcass furniture types can carry a worktop on top – e.g. a washing
+machine under a worktop, a utility room run, a cooking island. Thickness, front overhang and material can be set in the
+editor; with "connect to kitchen run" it becomes part of the kitchen run, and the grain continues across adjacent base
+cabinets. The worktop is not a compartment, the height stays the total height. The format stays `zuhause-objekt/1`
+(new optional field `build.countertop`); existing furniture types and their location codes stay unchanged.
 
-**Gerätefarbe** (Material-Bereich `appliance`): Waschmaschine und Trockner lassen sich einfärben – in der Möbelart
-(Editor: „Gerätefarbe“) und je Möbel im Hausplan. Auf dunklen und metallischen Fronten wird die Bedienblende zu
-Schwarzglas und der Türring zu Chrom. Ohne Angabe bleibt die Front weiß wie bisher. Die Editor-Vorschau spiegelt jetzt
-eine Umgebung, Metall und Chrom sehen dort echt aus.
+**Washing machine and dryer as elements** (`washer`, `dryer`): realistic appliance front instead of a cabinet front –
+control panel with detergent drawer, display and rotary knob, porthole with door ring and drum, service flap, ventilation
+grille on the dryer; in appliance colors, independent of fronts and handleless. Under a worktop, on a pedestal or as a
+stack. Each appliance yields two locations: detergent drawer or condensate container, and the drum.
 
-**Community-Möbel im Planer:** Die Online-Bibliothek unter „Möbel“ hat als erste Quelle die Möbelarten aus dem
-Community-Katalog – neben Poly Haven und FurniMesh, mit Suche, Gruppen, Vorschaubild, Maßen und Fächerzahl. Auswählen
-installiert die Möbelart (bzw. bringt sie auf die neue Version) und startet direkt das Platzieren.
+**Appliance color** (material area `appliance`): washing machine and dryer can be colored – in the furniture type
+(editor: "Appliance color") and per piece of furniture in the house plan. On dark and metallic fronts the control panel
+becomes black glass and the door ring chrome. Without a setting the front stays white as before. The editor preview now
+reflects an environment, so metal and chrome look real there.
+
+**Community furniture in the planner:** the online library under "Furniture" has the furniture types from the
+community catalog as its first source – alongside Poly Haven and FurniMesh, with search, groups, preview image,
+dimensions and number of compartments. Selecting one installs the furniture type (or updates it to the new version)
+and starts placing it right away.
 
 ## 0.7.0 – 2026-10-04
 
-**Objektbibliothek** (Mehr → Objektbibliothek): Möbelarten wie Küchenschränke und Lagerregale als Daten statt im Code.
-**Editor** mit 3D-Vorschau: Maße, Sockel, Plattenstärke, Spalten mit Schubladen, Türen mit Böden, offenen Fächern,
-Klappen, Kühl- und Gefrierfächern – oder ein eigenes 3D-Modell (.glb) mit eingetragenen Fächern. Die Vorschau zeigt jedes
-Fach als Rahmen; **jedes Fach wird ein Lagerplatz**. Vorlagen (Regal, Vorratsschrank, Kommode, Unterschrank,
-Kleiderschrank, Oberschrank) als Ausgangspunkt.
+**Object library** (More → Object library): furniture types like kitchen cabinets and storage shelves as data instead of
+code. **Editor** with 3D preview: dimensions, plinth, panel thickness, columns with drawers, doors with shelves, open
+compartments, flaps, fridge and freezer compartments – or your own 3D model (.glb) with defined compartments. The
+preview shows each compartment as a frame; **every compartment becomes a location**. Templates (shelf unit, pantry
+cabinet, chest of drawers, base cabinet, wardrobe, wall cabinet) as a starting point.
 
-**Community-Katalog** im eigenen Repo [homemgmt-object-library](https://github.com/mupf-dev/homemgmt-object-library) mit
-Galerie auf GitHub Pages: Möbelarten installieren und aktualisieren, eigene exportieren (`.zuhause-objekt.json`) und per
-Pull Request beisteuern – automatisch geprüft, ohne Server und ohne Schlüssel. Start mit Würfelregal 4×4,
-Schuhschrank, Apothekerschrank, Werkzeugwagen und Bad-Hängeschrank.
+**Community catalog** in its own repo [homemgmt-object-library](https://github.com/mupf-dev/homemgmt-object-library)
+with a gallery on GitHub Pages: install and update furniture types, export your own (`.zuhause-objekt.json`) and
+contribute them via pull request – validated automatically, without a server and without a key. Starting with cube
+shelf 4×4, shoe cabinet, pull-out pantry, tool trolley and bathroom wall cabinet.
 
-Installierte Möbelarten stehen beim Planen unter „Möbel“. Das Haus behält eine **Kopie** jeder verwendeten Möbelart –
-Änderungen in der Bibliothek verschieben keine Adressen; neuere Versionen übernimmt man am Möbel („Version …
-übernehmen“, mit Warnung bei geänderter Fächerzahl). Bearbeiten und installieren darf, wer „Haus planen“ darf.
+Installed furniture types are listed under "Furniture" when planning. The house keeps a **copy** of every furniture type
+it uses – changes in the library don't shift any codes; newer versions are applied on the furniture ("Apply version …",
+with a warning if the number of compartments changed). Anyone with the "Plan house" permission may edit and install.
 
 ## 0.6.0 – 2026-10-04
 
-**Eine App für den ganzen Haushalt:** dieselbe Navigation auf jeder Seite – Übersicht, Haus, Suchen, Einkauf, Mehr. Am
-Handy liegt sie unten, **Scannen** in der Mitte. Neue **Übersicht** als Startseite: Schnellaktionen, Einkaufsliste zum
-Abhaken, was bald abläuft, Füllstand je Etage, zuletzt bewegt. Seiten **Mehr** und **Einstellungen**.
+**One app for the whole household:** the same navigation on every page – Overview, House, Search, Shopping, More. On
+the phone it sits at the bottom, with **Scan** in the middle. New **Overview** as the home page: quick actions,
+shopping list to tick off, what expires soon, fill level per floor, recently moved. **More** and **Settings** pages.
 
-**Haus: Ansehen und Planen getrennt.** Ansehen ist der Normalfall: keine Werkzeuge, keine Maße; Möbel antippen zeigt die
-Fächer, ein Fach seinen Inhalt – in der Seitenleiste (Plan bleibt sichtbar) bzw. am Handy als Blatt von unten. Möbel im
-Grundriss nach Füllstand gefärbt, Suchtreffer leuchten auch im Grundriss, Etagen mit Treffern bekommen einen Punkt.
-**Planen** per Knopf (nur am PC): Werkzeuge in einer Leiste, „Möbel“, „Materialien“ und „Etage“ als ausklappbare Leiste,
-Seltenes im Menü ⋯, „Etage löschen“ nicht mehr ganz oben, Hinweise nur für das aktive Werkzeug.
+**House: View and Plan separated.** View is the normal mode: no tools, no dimensions; tapping a piece of furniture shows
+its compartments, a compartment its contents – in the sidebar (the plan stays visible) or on the phone as a bottom
+sheet. Furniture in the floor plan colored by fill level, search matches light up in the floor plan too, floors with
+matches get a dot. **Plan** via a button (PC only): tools in a toolbar, "Furniture", "Materials" and "Floor" as a
+collapsible sidebar, rarely used items in the ⋯ menu, "Delete floor" no longer at the very top, hints only for the
+active tool.
 
-**Recht „Haus planen“ pro Person** (Verwaltung → Personen); Admins dürfen immer. Auch der Server lehnt Änderungen am
-Hausplan ohne das Recht ab.
+**"Plan house" permission per person** (Administration → People); admins always may. The server also rejects changes
+to the house plan without the permission.
 
-**Einstellungen pro Person:** Startseite (Übersicht oder Haus), Haus zuerst in 2D oder 3D, Hell/Dunkel, Schriftgröße.
+**Settings per person:** home page (Overview or House), house in 2D or 3D first, light/dark, font size.
 
-**Schlechtes WLAN:** Ein- und Ausbuchen ohne Verbindung wird vorgemerkt und automatisch nachgebucht („n Buchungen
-warten“); der Server erkennt Wiederholungen und bucht nicht doppelt. Scannen von Fächern und Gegenständen klappt auch
-ohne Netz.
+**Poor Wi-Fi:** check-ins and take-outs without a connection are queued and synced automatically ("n transactions
+waiting"); the server detects repeats and doesn't book twice. Scanning compartments and items works without a network
+too.
 
-**Wandterminals** (Verwaltung → Wandterminals): Tablet an der Wand ohne persönliche Anmeldung, eingerichtet per Link
-oder QR-Code. Navigation am linken Rand, große Touch-Flächen, **Hoch- oder Querformat** je Gerät. Ein- und Ausbuchen mit
-**„Wer bucht?“**-Kacheln. Ohne Bedienung zurück zum Haus und **Ruhezustand**: das Haus gedimmt und fotorealistisch, Licht
-nach Tageszeit und Wetter am Ort (Postleitzahl; OpenStreetMap + Open-Meteo, ohne Schlüssel), Uhr, Einkaufsliste,
-Ablaufendes.
+**Wall terminals** (Administration → Wall terminals): a tablet on the wall without personal sign-in, set up via link or
+QR code. Navigation on the left edge, large touch targets, **portrait or landscape** per device. Check in and take out
+with **"Who is booking?"** tiles. When not in use, back to the house and **idle mode**: the house dimmed and
+photorealistic, light by time of day and local weather (postal code; OpenStreetMap + Open-Meteo, without a key), clock,
+shopping list, expiring items.
 
-**Lage des Hauses** (Planen → ⋯): Adresse oder Postleitzahl suchen oder Koordinaten eingeben, Nordrichtung per Kompass;
-der Grundriss zeigt einen Nordpfeil. Am Wandterminal steht damit die **Sonne wie draußen** (Sonnenstand aus Ort und
-Uhrzeit), **Himmel und Licht laufen live mit** (Tag, Bewölkung, Regen, Dämmerung, Nacht mit Lampen und Mondlicht,
-jede Minute neu), das Wetter steht in der Kopfzeile, und ums Haus liegt **Rasen**. Beim Ansehen wechselt die Etagenwahl
-von „Haus“ auf „Bis hier“, das gewählte Möbel bleibt sichtbar, alles andere wird durchsichtig (am Terminal ohne Rahmen).
+**House location** (Plan → ⋯): search for an address or postal code or enter coordinates, north direction via compass;
+the floor plan shows a north arrow. On the wall terminal the **sun is where it is outside** (sun position from location
+and time), **sky and light follow live** (day, clouds, rain, dusk, night with lamps and moonlight, updated every
+minute), the weather is shown in the header, and the house is surrounded by **lawn**. In view mode the floor selection
+switches from "House" to "Up to here", the selected furniture stays visible, everything else becomes transparent
+(without a frame on the terminal).
 
-**Wetter am Wandterminal:** Wolken am Himmel (Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im
-fotorealistischen Bild, da der Himmel die Szene beleuchtet), Regen, Niesel und Schnee als dezente Animation über dem Bild
-– Stärke nach echter Regenrate (mm/h) bzw. Schneefall, Regenmenge in der Kopfzeile –, Nebel und Dunst, nasser Rasen
-(abgestuft nach Regenstärke). **Schnee** als wachsender Fleck auf und vor der Terrasse und auf den Dachflächen: bei einem
-Hauch etwa Terrassengröße, ab ~10 cm der ganze Garten; das Haus selbst bleibt frei. Rasen und Schnee sparen die
-Hausfläche aus (kein Rasen im Treppenloch). **Gewitter mit Blitzen in Echtzeit** (Blitzortung.org, die Daten hinter
-lightningmaps.org – ohne Konto, für private Nutzung): jeder Einschlag im Umkreis kommt per Server-Sent Events sofort an;
-nahe Blitze (≤ 30 km) lassen den Bildschirm aufblitzen. Warnung in der Kopfzeile ab 20 km, im Ruhezustand Hinweis mit
-dem letzten Blitz (Entfernung, Richtung, Alter), Anzahl und eine Blitzkarte (10/25/50 km, Punkte nach Alter) – nur,
-solange es bis 50 km blitzt. **Testwetter** zum Ausprobieren: `?testwetter=schnee` (auch `schnee-hauch`,
-`schnee-leicht`, `schneesturm`, `niesel`, `regen`, `wolkenbruch`, `gewitter`, `nebel`, `wolkig`, `klar`).
-**Ruhezustand sparsamer:** Detailgrad je Terminal (Entwurf/Normal/Hoch), geringere Rechenauflösung, Mindestqualität fürs
-fotorealistische Bild (sonst sauberes 3D-Bild), nur bei geänderter Sonne/Wetter neu, Pause bei verdecktem Bildschirm,
-letztes Bild gemerkt, Fortschrittsanzeige, flacher Blickwinkel.
+**Weather on the wall terminal:** clouds in the sky (cover, color by time of day, drifting with the wind – in the
+photorealistic image too, since the sky lights the scene), rain, drizzle and snow as a subtle animation over the image
+– intensity by real rain rate (mm/h) or snowfall, precipitation in the header –, fog and haze, wet lawn (graded by rain
+intensity). **Snow** as a growing patch on and in front of the terrace and on the roof surfaces: with a dusting about
+the size of the terrace, from ~10 cm the whole garden; the house itself stays clear. Lawn and snow leave out the house
+footprint (no lawn in the stairwell). **Thunderstorms with real-time lightning** (Blitzortung.org, the data behind
+lightningmaps.org – without an account, for private use): every strike nearby arrives instantly via server-sent
+events; close strikes (≤ 30 km) make the screen flash. Warning in the header from 20 km, in idle mode a notice with the
+last strike (distance, direction, age), count and a lightning map (10/25/50 km, dots by age) – only while there is
+lightning within 50 km. **Test weather** to try it out: `?testwetter=schnee` (also `schnee-hauch`, `schnee-leicht`,
+`schneesturm`, `niesel`, `regen`, `wolkenbruch`, `gewitter`, `nebel`, `wolkig`, `klar`).
+**More economical idle mode:** level of detail per terminal (draft/normal/high), lower render resolution, minimum
+quality for the photorealistic image (otherwise a clean 3D image), re-rendered only when sun/weather change, paused when
+the screen is hidden, last image remembered, progress indicator, flat viewing angle.
 
-**Ansehen verfeinert:** Seitenleiste mit Ebene „Haus“ (alle Etagen mit Füllstand) über Etage → Raum → Möbel → Fach; die
-App startet im Erdgeschoss statt im Keller.
+**View mode refined:** sidebar with a "House" level (all floors with fill level) above floor → room → furniture →
+compartment; the app starts on the ground floor instead of the basement.
 
-**Kleinigkeiten:** ein Icon-Satz statt Emoji, Datum als TT.MM.JJJJ mit Schnellwahl (1 Woche … 1 Jahr), Vorschläge aus
-vorhandenen Gegenständen beim Einbuchen ins Fach, Farben für den Dunkelmodus, Knöpfe statt blauer Links, Anleitung
-aktualisiert.
+**Small things:** one icon set instead of emoji, dates as DD.MM.YYYY with quick picks (1 week … 1 year), suggestions
+from existing items when checking into a compartment, colors for dark mode, buttons instead of blue links, guide
+updated.
 
-**Intern:** `shell.ts`, `prefs.ts`, `icons.ts`, `terminal.ts`, `lager/home.ts`, `lager/outbox.ts`; Spalten
-`persons.can_plan`, `persons.prefs`, Tabelle `terminals`; `GET /api/movements/recent`, `PATCH /api/auth/me/prefs`,
-`/api/terminals…`, `/api/weather` (Koordinaten oder Postleitzahl), `/api/geocode`, `/api/lightning`, `/api/lightning/stream` (SSE);
-`sun.ts` (Sonnenstand), `weatherfx.ts` (Regen, Schnee, Dunst, Blitze), `server/lager/lightning.cjs`. Tests:
-`test/lightning.test.cjs`. `LIGHTNING=0` schaltet die Blitzverbindung ab (Tests). Tests: `test/prefs.test.cjs`, `test/terminal.test.cjs`, Klicktest erweitert
-(Ansehen/Planen, Einstellungen, Rechte, Handy, offline, Terminal).
+**Internal:** `shell.ts`, `prefs.ts`, `icons.ts`, `terminal.ts`, `lager/home.ts`, `lager/outbox.ts`; columns
+`persons.can_plan`, `persons.prefs`, table `terminals`; `GET /api/movements/recent`, `PATCH /api/auth/me/prefs`,
+`/api/terminals…`, `/api/weather` (coordinates or postal code), `/api/geocode`, `/api/lightning`, `/api/lightning/stream` (SSE);
+`sun.ts` (sun position), `weatherfx.ts` (rain, snow, haze, lightning), `server/lager/lightning.cjs`. Tests:
+`test/lightning.test.cjs`. `LIGHTNING=0` turns off the lightning connection (tests). Tests: `test/prefs.test.cjs`,
+`test/terminal.test.cjs`, click-through test extended (view/plan, settings, permissions, phone, offline, terminal).
 
 ## 0.5.0 – 2026-10-03
 
-**Begehen wie im Spiel:** durch das ganze Haus laufen – Wände und Möbel bremsen, Türen und Durchgänge sind offen,
-Schwellen bis ~30 cm werden überstiegen, **Treppen führen hinauf und hinunter in die anderen Etagen**. Anzeige von
-Etage und Raum, der Grundriss und die Etagenreiter laufen mit; beim Beenden kehrt die vorherige Ansicht zurück
+**Walk-through like in a game:** walk through the whole house – walls and furniture block you, doors and passages are
+open, thresholds up to ~30 cm are stepped over, **stairs lead up and down to the other floors**. Floor and room are
+displayed, the floor plan and the floor tabs follow along; when you exit, the previous view returns
 (`web/app/src/walker.ts`).
 
-**Möbel- und Einrichtungsbibliothek:** 3D-Modelle (glTF, CC0) von Poly Haven suchen und nach Kategorien filtern
-(Sitzen, Tische, Betten, Schränke, Leuchten, Pflanzen, Deko …), mit einem Klick ins Haus setzen, maßstäblich skalieren;
-eigene `.glb`-Dateien hochladen (`/api/library/models…`). Schalter **„Ohne Filter“** zeigt alle 521 Modelle (sonst 242
-Einrichtungsmodelle), neue Kategorien Werkzeug, Garten & Natur, Sonstiges; Suche auch mit deutschen Begriffen (Stuhl, Lampe …).
-Zweite Quelle **FurniMesh** (ohne Konto/API-Schlüssel): Tausende realistische, KI-erzeugte Möbel (Sofas, Sitzmöbel,
-Tische, Betten, Schränke, Leuchten, Bad) aus den öffentlichen Bibliotheksseiten; beim Übernehmen wird das GLB einmal
-geladen, von ~20 MB auf ~2–3 MB verkleinert (Texturen 1024 px JPEG, Geometrie ausgedünnt; `@gltf-transform`, `sharp`,
-`meshoptimizer`) und auf typische Maße der Kategorie skaliert. Keine ausdrückliche Lizenz – Quelle und Link stehen am Modell.
+**Furniture and furnishing library:** search 3D models (glTF, CC0) from Poly Haven and filter by category (seating,
+tables, beds, cabinets, lights, plants, decor …), place them in the house with one click, scaled to size; upload your
+own `.glb` files (`/api/library/models…`). The **"No filter"** switch shows all 521 models (otherwise 242 furnishing
+models), new categories tools, garden & nature, other; search also works with German terms (Stuhl, Lampe …).
+Second source **FurniMesh** (no account/API key): thousands of realistic, AI-generated pieces of furniture (sofas,
+seating, tables, beds, cabinets, lights, bathroom) from the public library pages; when adopted, the GLB is loaded once,
+shrunk from ~20 MB to ~2–3 MB (textures 1024 px JPEG, geometry simplified; `@gltf-transform`, `sharp`,
+`meshoptimizer`) and scaled to typical dimensions for its category. No explicit license – source and link are shown on
+the model.
 
-**Haus-Ansicht:** keine Lücken mehr zwischen den Etagen, Treppen enden genau an der Etage darüber und schneiden ein
-Treppenloch in die Decke (Lochgröße = Grundfläche der Treppe), Dachboden-Wände bleiben unter dem Dach.
+**House view:** no more gaps between floors, stairs end exactly at the floor above and cut a stairwell into the ceiling
+(hole size = footprint of the stairs), attic walls stay under the roof.
 
-**Planer:** Möbel können ein **Durchgang** sein (Front ohne Korpus, Öffnung in der Wand dahinter, keine Fächer) – so
-ist der Hochschrank in der Küche jetzt der Durchgang unter der Treppe. Treppen behalten beim Andocken per Drag & Drop
-ihre Drehung und rücken nur bündig an die Wand.
+**Planner:** furniture can be a **passage** (front without carcass, opening in the wall behind it, no compartments) – so
+the tall cabinet in the kitchen is now the passage under the stairs. Stairs keep their rotation when snapped via drag &
+drop and only move flush to the wall.
 
-**Objekte sperren (2D-Editor):** Wände, Fenster/Türen, Möbel und Räume per „Sperren“ oder Taste `L` festsetzen – nicht
-mehr auswählbar, verschiebbar oder löschbar (auch nicht über 3D-Klick oder die Raumliste), Ecken an gesperrten Wänden
-bleiben fest, Türen/Fenster lassen sich nicht in gesperrte Wände setzen. Schloss-Symbol im Grundriss; unter „Etage“ →
-„Gesperrt“ einzeln/alle entsperren und „Alle Wände sperren“. Rückgängig machbar, wird mit dem Haus gespeichert.
+**Lock objects (2D editor):** fix walls, windows/doors, furniture and rooms with "Lock" or the `L` key – they can no
+longer be selected, moved or deleted (not via a 3D click or the room list either), corners on locked walls stay fixed,
+doors/windows can't be placed into locked walls. Lock icon in the floor plan; under "Floor" → "Locked" unlock
+individually/all and "Lock all walls". Can be undone, saved with the house.
 
-**Lager:** Behälter beim Scannen befüllen und Gegenstände in Behälter legen, Preisrecherche in der Einkaufsliste,
-Anleitung in der App (`?`). Die alte Oberfläche (`/alt/`) ist entfernt. `npm run import-prod-items` übernimmt die
-produktiven Gegenstände samt Fach-Zuordnungen in den Hausplan (nur lesend, mit Sicherung).
+**Inventory:** fill containers while scanning and put items into containers, price research in the shopping list,
+guide in the app (`?`). The old UI (`/alt/`) has been removed. `npm run import-prod-items` imports the production items
+including their compartment assignments into the house plan (read-only, with backup).
 
 ## 0.4.0 – 2026-10-03
 
-**Die App ist die Startseite** (`/`); die bisherige Lager-Oberfläche liegt unter `/alt/`, `/app/` und `/kueche/` leiten
-weiter, QR-Etiketten öffnen die App. Der frühere Service-Worker meldet sich ab. Eigenes App-Manifest (installierbar,
-Schnellzugriffe Scannen, Einbuchen, Suchen, Einkaufsliste, Haus).
+**The app is the home page** (`/`); the previous inventory UI lives under `/alt/`, `/app/` and `/kueche/` redirect,
+QR labels open the app. The former service worker unregisters itself. Own app manifest (installable, shortcuts Scan,
+Check in, Search, Shopping list, House).
 
-**Restliche Lagerfunktionen in der App**
-- Anmeldung per **Kachel + Passwort/PIN** und **Ersteinrichtung** direkt in der App (zusätzlich E-Mail)
-- **Assistent:** Text, Sprache, Foto (QR-Etiketten werden erkannt), Rückfrage ab 4 Buchungen, Rückgängig je Buchung,
-  Vorlesen, Kontext aus Gegenstand/Fach; genannte Plätze mit „Im Haus zeigen“
-- Assistent/MCP finden **Fächer beim Namen**: „Küche Kühlschrank oben“, „Vorratsregal Boden 2“ (wortweise über Fach,
-  Möbel, Raum und Lager); Anleitung fürs Modell kennt das Hausplan-Schema
-- **Auswertung** (Kennzahlen, meistgenutzt, wer bucht, lange nicht angefasst, ausverkauft) und **Heatmap im Haus**:
-  Füllstand, Bewegung (90 Tage), lange unberührt (`GET /api/house/stats`)
-- **Etiketten & QR-Schilder:** Fächer nach Etage/Raum/Möbel (auch direkt aus dem Planer), Gegenstände, leere Etiketten;
-  Druck oder 3D-Schilder als 3MF auf Druckplatten verteilt
-- **Verwaltung:** Personen (Rollen, Passwörter, Archiv, Zusammenführen, E-Mail-Freigaben, Registrierung), Lager
-  (Hausplan-Lager nur ansehen), API-Schlüssel, Backups (anlegen, herunterladen, wiederherstellen, hochladen),
-  Assistent-Einstellungen, Export/Import (Excel/CSV mit Vorschau)
+**Remaining inventory features in the app**
+- Sign-in with **tile + password/PIN** and **initial setup** directly in the app (plus email)
+- **Assistant:** text, voice, photo (QR labels are recognized), confirmation from 4 transactions, undo per transaction,
+  read aloud, context from item/compartment; mentioned locations with "Show in house"
+- Assistant/MCP find **compartments by name**: "kitchen fridge top", "pantry shelf level 2" (word by word across
+  compartment, furniture, room and storage area); the model's instructions know the house plan scheme
+- **Insights** (key figures, most used, who books, not touched for a long time, out of stock) and a **heatmap in the
+  house**: fill level, activity (90 days), long untouched (`GET /api/house/stats`)
+- **Labels & QR signs:** compartments by floor/room/furniture (also directly from the planner), items, blank labels;
+  print or 3D signs as 3MF distributed across build plates
+- **Administration:** people (roles, passwords, archive, merge, email approvals, registration), storage areas
+  (house plan storage areas view only), API keys, backups (create, download, restore, upload), assistant settings,
+  export/import (Excel/CSV with preview)
 
-**Tests:** Fach-Namenssuche per MCP; Klicktest um Kachel-Anmeldung, Assistent (simuliertes Modell), Auswertung/Heatmap,
-Etiketten/3MF-Download und Verwaltung erweitert
+**Tests:** compartment name search via MCP; click-through test extended with tile sign-in, assistant (simulated model),
+insights/heatmap, labels/3MF download and administration
 
 ## 0.3.0 – 2026-10-03
 
-**Lager in der App** (`/app/#/lager`, auch auf dem Handy – kleine Bildschirme starten direkt dort)
-- Start mit Hinweis auf Ablaufendes, Suchen, Gegenstand (Foto aufnehmen, Verlauf, Rückgängig, Entnehmen, Einbuchen,
-  Umlagern, Bearbeiten, Löschen, auf die Einkaufsliste), Einbuchen, Ausbuchen, Platz, Einkaufsliste (abhaken, Menge,
-  gekauft + einbuchen/einlagern, teilen), Haltbarkeit, Scannen mit der Kamera (Fach + Gegenstand = einbuchen,
-  Gegenstand 2× = ausbuchen, unbekanntes Etikett = neu anlegen)
-- Orte werden überall über den Hausplan beschrieben („Abstellraum · Regal offen · Boden 3“) und gewählt (Fach-Auswahl:
-  Etage → Raum → Möbel → Fach mit Belegung, alternativ Platzadresse wie H-B12)
-- „Im Haus zeigen“ aus Suche, Gegenstand, Platz und Haltbarkeit: Planer springt auf die Etage, lässt die Fächer
-  leuchten und fährt zum Möbel; Buchungen mit „Rückgängig“ im Hinweis
-- QR-Etiketten (`/q/…`) öffnen die App
-- Assistent, Auswertung, Etiketten und Verwaltung öffnen vorerst die bisherige Lager-Oberfläche
+**Inventory in the app** (`/app/#/lager`, also on the phone – small screens start there directly)
+- Start with a notice about expiring items, search, item (take photo, history, undo, take out, check in, move, edit,
+  delete, add to shopping list), check in, take out, location, shopping list (tick off, quantity, bought + check
+  in/store, share), expiry, scanning with the camera (compartment + item = check in, item 2× = take out, unknown label =
+  create new)
+- Places are described and chosen everywhere via the house plan ("Storeroom · Open shelf unit · Shelf 3"; compartment
+  picker: floor → room → furniture → compartment with occupancy, alternatively a location code like H-B12)
+- "Show in house" from search, item, location and expiry: the planner jumps to the floor, lights up the compartments
+  and moves to the furniture; transactions with "Undo" in the notification
+- QR labels (`/q/…`) open the app
+- Assistant, insights, labels and administration open the previous inventory UI for now
 
-**Haus aus dem bisherigen Lager übernehmen**
-- `model/fromSite.ts`: Etagen, Räume, Öffnungen und Einbauten aus „Haus einrichten“ → Hausplan; Wände werden aus den
-  Raumgrenzen abgeleitet (gegenüberliegende Kanten im Abstand 4–65 cm), offen verbundene Räume bleiben ohne Wand
-- `npm run import-prod`: Lager-Haus (GET /api/site) + Küchenplanung (Exportdatei) zu einem Hausplan zusammensetzen
-  und mit Lager-Abgleich speichern (vorher Sicherung), fehlende Bibliotheks-Texturen werden nachgeladen
-- Räume mit festem Umriss (offene Grundrisse, Außenflächen) neben aus Wänden erkannten Räumen
-- 3D: Treppe, Durchgang (Öffnung ohne Türblatt), Satteldach mit Kniestock und Giebeln (Haus-Ansicht), Außenflächen
-  (Terrasse, Stellplatz, Carport mit Dach)
+**Import the house from the previous inventory**
+- `model/fromSite.ts`: floors, rooms, openings and fixtures from "Set up house" → house plan; walls are derived from
+  the room boundaries (opposite edges 4–65 cm apart), openly connected rooms stay without a wall
+- `npm run import-prod`: combine the inventory house (GET /api/site) + kitchen plan (export file) into one house plan
+  and save it with inventory sync (backup first); missing library textures are downloaded
+- Rooms with a fixed outline (open floor plans, outdoor areas) alongside rooms detected from walls
+- 3D: stairs, passage (opening without door leaf), gable roof with knee wall and gables (house view), outdoor areas
+  (terrace, parking space, carport with roof)
 
-**Intern**
-- Speichern des Hausplans als wiederverwendbare Funktion (`saveHouse`) für API und Import
-- Tests: Übernahme aus dem Lager-Modell (`test/fromsite.test.cjs`), Klicktest um Lager-Seiten erweitert
+**Internal**
+- Saving the house plan as a reusable function (`saveHouse`) for API and import
+- Tests: import from the inventory model (`test/fromsite.test.cjs`), click-through test extended with inventory pages
 
 ## 0.2.0 – 2026-10-03
 
-**Vollintegration: der Küchenplaner wird zum Hausplaner, das Lager lebt im Plan**
-- Hausmodell mit Etagen (Keller, Etage, Dachgeschoss, Außen), Höhenlage und Raumhöhe; Materialien und Licht hausweit
-- Etagen-Reiter, Etage anlegen (auf Wunsch mit den Außenwänden der aktuellen Etage), Etage darunter als Durchpause im Plan
-- Räume aus Wänden erkennen („Raum festlegen“): kleinste geschlossene Fläche um den Klickpunkt, folgt beim Verschieben
-  von Wänden; Name, Lager-Kürzel, Fläche, eigener Bodenbelag
-- Fächer je Möbel aus der Frontaufteilung der 3D-Modelle (Schubladen, Böden, Kühl-/Gefrierfächer, offene Böden)
-- Neue Möbel: Regal offen, Schwerlastregal, Vorratsschrank, Kleiderschrank, Sideboard, Kommode, Werkbank (Böden bzw.
-  Schubladen einstellbar), eigener Name je Möbel
-- 3D: Etage / bis hier / ganzes Haus mit Geschossdecken; Kamera passt das Haus ins Bild
-- **Lager im Plan:** Raum = Lager, Möbel = Spalte, Fach = Platz (z. B. KU-B2); Fächer farbig nach Füllstand, Fach
-  anklicken → Inhalt, einbuchen, entnehmen, umlagern; „Wo liegt …?“ lässt Treffer im Haus leuchten
-- Server: Hausplan als gemeinsames Dokument (`GET/PUT /api/house`, Version gegen Überschreiben), Abgleich mit dem Lager
-  in einer Transaktion – Plätze und Gegenstände wandern mit, Fächer mit Inhalt bleiben erhalten; `GET /api/house/storage`
-- App unter `/app/` (frühere Adressen `/kueche/` und `/textures/` werden umgeleitet), automatisches Speichern,
-  Konfliktdialog, gespeicherte Küchenplanungen als Etage übernehmen
-- Lager-App: „Haus planen“ führt zur App
-- Entfernt: Übernahme „Küche ins Haus“ aus 0.1.0 (ersetzt durch den Hausplan)
-- Tests: Abgleich Hausplan ↔ Lager (`test/haus.test.cjs`), Klicktest im Browser (`npm run test:e2e`)
+**Full integration: the kitchen planner becomes the house planner, the inventory lives in the plan**
+- House model with floors (basement, floor, attic, outdoors), elevation and room height; materials and light house-wide
+- Floor tabs, add a floor (optionally with the exterior walls of the current floor), floor below as a tracing layer in the plan
+- Detect rooms from walls ("Define room"): smallest closed area around the click point, follows when walls are moved;
+  name, storage area code, area, custom flooring
+- Compartments per piece of furniture from the front layout of the 3D models (drawers, shelves, fridge/freezer
+  compartments, open shelves)
+- New furniture: open shelf unit, heavy-duty shelving, pantry cabinet, wardrobe, sideboard, chest of drawers, workbench
+  (shelves or drawers adjustable), custom name per piece of furniture
+- 3D: floor / up to here / whole house with floor slabs; the camera fits the house into view
+- **Inventory in the plan:** room = storage area, furniture = column, compartment = location (e.g. `KU-B2` = kitchen,
+  furniture B, compartment 2); compartments colored by fill level, click a compartment → contents, check in, take out,
+  move; "Where is …?" lights up matches in the house
+- Server: house plan as a shared document (`GET/PUT /api/house`, version against overwriting), sync with the inventory
+  in one transaction – locations and items move along, compartments with contents are kept; `GET /api/house/storage`
+- App under `/app/` (former addresses `/kueche/` and `/textures/` are redirected), automatic saving, conflict dialog,
+  import saved kitchen plans as a floor
+- Inventory app: "Plan house" leads to the app
+- Removed: "Kitchen into house" import from 0.1.0 (replaced by the house plan)
+- Tests: house plan ↔ inventory sync (`test/haus.test.cjs`), click-through test in the browser (`npm run test:e2e`)
 
 ## 0.1.0 – 2026-10-03
 
-Erste Fassung von **Zuhause**: Heimlager 1.8.1 (inkl. Haus in 3D aus `inventory-3d`) und Küchenplaner 1.0.0 in einer
-Anwendung. Frühere Versionen: [docs/CHANGELOG-LAGER.md](docs/CHANGELOG-LAGER.md), [docs/CHANGELOG-KUECHE.md](docs/CHANGELOG-KUECHE.md).
+First version of **Zuhause**: Heimlager 1.8.1 (incl. house in 3D from `inventory-3d`) and Küchenplaner 1.0.0 in one
+application. Earlier versions: [docs/CHANGELOG-INVENTORY.md](docs/CHANGELOG-INVENTORY.md), [docs/CHANGELOG-KITCHEN.md](docs/CHANGELOG-KITCHEN.md).
 
-**Ein Server, eine Datenbank**
-- Express-Server (`server/index.ts`, TypeScript ohne Build): Lager unter `/`, Küchenplaner unter `/kueche/`, MCP auf eigenem Port
-- Gemeinsame Datenbank `zuhause.db`; Küchenplanungen in `kitchen_projects` – damit auch in jedem Backup
-- `npm run dev` startet alles in einem Prozess (Vite als Middleware mit HMR)
+**One server, one database**
+- Express server (`server/index.ts`, TypeScript without a build): inventory under `/`, kitchen planner under `/kueche/`,
+  MCP on its own port
+- Shared database `zuhause.db`; kitchen plans in `kitchen_projects` – so they are in every backup too
+- `npm run dev` starts everything in one process (Vite as middleware with HMR)
 
-**Ein Konto**
-- Personen des Lagers sind die Konten; neu mit optionaler E-Mail und Status (wartet auf Freigabe)
-- Anmeldung per Kachel oder E-Mail, eine Sitzung für beide Oberflächen; `GET /api/auth/me`, `POST /api/auth/register`
-- Registrierung standardmäßig aus; Freigabepflicht, Rollen und Sperren in der Benutzerverwaltung des Küchenplaners
-- Personen zusammenführen nimmt Küchenplanungen mit
+**One account**
+- The inventory's people are the accounts; new: optional email and status (awaiting approval)
+- Sign-in with a tile or email, one session for both UIs; `GET /api/auth/me`, `POST /api/auth/register`
+- Registration off by default; approval requirement, roles and locking in the kitchen planner's user management
+- Merging people takes kitchen plans along
 
-**Küche ins Haus**
-- Küchenplaner → Meine Planungen → „Ins Haus“: Schränke werden Einbauten auf einer Etage (an einem Raum ausgerichtet,
-  verschiebbar, drehbar); erneutes Übernehmen ersetzt sie und behält die Fach-Zuordnungen
-- `POST /api/projects/:id/house`; Einbauten merken ihre Herkunft (`fixtures.source`)
+**Kitchen into house**
+- Kitchen planner → My plans → "Into house": cabinets become fixtures on a floor (aligned to a room, movable,
+  rotatable); importing again replaces them and keeps the compartment assignments
+- `POST /api/projects/:id/house`; fixtures remember their origin (`fixtures.source`)
 
-**Oberflächen**
-- Lager: Kachel „Küchenplaner“; Küchenplaner: ⌂-Link zurück, Texturen unter `/kueche/textures/` (alte Pfade werden umgeleitet)
+**User interfaces**
+- Inventory: "Kitchen planner" tile; kitchen planner: ⌂ link back, textures under `/kueche/textures/` (old paths are
+  redirected)
 
-**Übernahme bestehender Daten**
-- `npm run migrate`: Lager-Datenbank als Basis, Küchen-Konten werden Personen (gleiche E-Mail/gleicher Name), Planungen,
-  Einstellungen und importierte Texturen
+**Importing existing data**
+- `npm run migrate`: inventory database as the base, kitchen accounts become people (same email/same name), plans,
+  settings and imported textures
 
-**Betrieb**
-- Ein Dockerfile (Build-Stufe für den Küchenplaner), ein Compose-Service `zuhause`
+**Operation**
+- One Dockerfile (build stage for the kitchen planner), one Compose service `zuhause`

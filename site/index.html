@@ -1,12 +1,12 @@
 <!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>homemgmt-ng – Haus planen, Dinge finden</title>
-<meta name="description" content="Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz. Selbst gehosteter Hausplaner mit Heimlager, QR-Scan, Einkaufsliste, Wandterminal und KI-Assistent.">
-<meta property="og:title" content="homemgmt-ng – Haus planen, Dinge finden">
-<meta property="og:description" content="Das ganze Haus in 3D planen – und jedes Fach jedes Möbels ist ein Lagerplatz.">
+<title>homemgmt-ng – Plan your house, find your things</title>
+<meta name="description" content="Plan your whole house in 3D – and every compartment of every piece of furniture becomes a storage location. Self-hosted house planner with home inventory, QR scan, shopping list, wall terminal and AI assistant.">
+<meta property="og:title" content="homemgmt-ng – Plan your house, find your things">
+<meta property="og:description" content="Plan your whole house in 3D – and every compartment of every piece of furniture becomes a storage location.">
 <meta property="og:image" content="img/haus-3d.webp">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23E0662D' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M3 10.5 12 3l9 7.5'/><path d='M5 9.5V21h14V9.5'/><path d='M10 21v-6h4v6'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -44,7 +44,7 @@ code, pre { font-family: "JetBrains Mono", ui-monospace, monospace; font-size: .
 .wrap { max-width: 1120px; margin: 0 auto; padding: 0 16px; }
 @media (min-width: 720px) { .wrap { padding: 0 32px; } }
 
-/* Kopf */
+/* Header */
 header.top { position: sticky; top: 0; z-index: 10; background: color-mix(in srgb, var(--bg) 85%, transparent); backdrop-filter: blur(10px); border-bottom: 1px solid var(--line); }
 header.top .wrap { display: flex; align-items: center; gap: 24px; height: 60px; }
 .brand { display: flex; align-items: center; gap: 8px; font-weight: 700; font-size: 18px; color: var(--text); text-decoration: none; }
@@ -71,14 +71,14 @@ h1 em { font-style: normal; color: var(--accent); }
 .shot .bar { display: flex; gap: 6px; padding: 10px 14px; border-bottom: 1px solid var(--line); }
 .shot .bar i { width: 10px; height: 10px; border-radius: 50%; background: var(--line); }
 
-/* Abschnitte */
+/* Sections */
 section { padding: 72px 0; }
 section.alt { background: var(--bg-alt); border-block: 1px solid var(--line); }
 h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -.02em; line-height: 1.2; margin: 0 0 12px; font-weight: 750; }
 .sub { color: var(--muted); font-size: 17px; max-width: 640px; margin: 0 0 40px; }
 .center { text-align: center; } .center .sub { margin-inline: auto; }
 
-/* So funktioniert's */
+/* How it works */
 .flow { display: grid; gap: 16px; grid-template-columns: 1fr; counter-reset: s; }
 @media (min-width: 760px) { .flow { grid-template-columns: repeat(4, 1fr); } }
 .flow div { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; counter-increment: s; }
@@ -88,7 +88,7 @@ h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -.02em; line-height: 1
 .addr { margin-top: 28px; display: flex; justify-content: center; flex-wrap: wrap; gap: 6px 10px; align-items: center; font-size: 15px; color: var(--muted); }
 .addr code { font-size: 17px; padding: .2em .55em; }
 
-/* Funktions-Zeilen */
+/* Feature rows */
 .feature { display: grid; gap: 28px; align-items: center; grid-template-columns: 1fr; margin-bottom: 72px; }
 .feature:last-child { margin-bottom: 0; }
 @media (min-width: 900px) { .feature { grid-template-columns: 5fr 7fr; gap: 56px; } .feature.flip > :first-child { order: 2; } }
@@ -101,7 +101,7 @@ h2 { font-size: clamp(26px, 3.6vw, 36px); letter-spacing: -.02em; line-height: 1
 .phones { display: flex; gap: 14px; justify-content: center; }
 .phones figure { flex: 1 1 0; max-width: 230px; border-radius: 22px; }
 
-/* Kacheln */
+/* Tiles */
 .grid { display: grid; gap: 16px; grid-template-columns: 1fr; }
 @media (min-width: 640px) { .grid { grid-template-columns: repeat(2, 1fr); } }
 @media (min-width: 980px) { .grid { grid-template-columns: repeat(3, 1fr); } }
@@ -160,7 +160,7 @@ footer a { color: var(--muted); }
 .term-shots figcaption b { color: var(--text); }
 .small { font-size: 14px; color: var(--muted); margin-top: 20px; }
 
-/* KI-Assistent */
+/* AI assistant */
 .ai { display: grid; gap: 40px; grid-template-columns: 1fr; align-items: start; }
 @media (min-width: 960px) { .ai { grid-template-columns: 6fr 5fr; gap: 56px; } }
 .ai-caps { display: grid; gap: 14px; grid-template-columns: 1fr; }
@@ -196,11 +196,11 @@ footer a { color: var(--muted); }
   <div class="wrap">
     <a class="brand" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 10.5 12 3l9 7.5"/><path d="M5 9.5V21h14V9.5"/><path d="M10 21v-6h4v6"/></svg>homemgmt-ng</a>
     <nav class="links">
-      <a href="#assistent">KI-Assistent</a>
-      <a href="#funktionen">Funktionen</a>
-      <a href="#wandterminal">Wandterminal</a>
-      <a href="#live-wetter">Live-Wetter</a>
-      <a href="#echtes-haus">Ein echtes Haus</a>
+      <a href="#assistant">AI assistant</a>
+      <a href="#features">Features</a>
+      <a href="#wall-terminal">Wall terminal</a>
+      <a href="#live-weather">Live weather</a>
+      <a href="#real-house">A real house</a>
       <a href="#installation">Installation</a>
     </nav>
     <a class="gh" href="https://github.com/mupf-dev/Homemgmt"><svg viewBox="0 0 16 16" fill="currentColor"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"/></svg>GitHub</a>
@@ -210,39 +210,39 @@ footer a { color: var(--muted); }
 <main>
   <div class="hero">
     <div class="wrap">
-      <span class="eyebrow">Selbst gehostet · Open Source · ohne Cloud</span>
-      <h1>Das ganze Haus planen. <em>Alles darin finden.</em></h1>
-      <p class="lead">Zeichne dein Haus in 2D und 3D – jedes Fach jedes Möbels wird automatisch ein Lagerplatz. Einbuchen per Klick, QR-Scan oder einfach mit dem <b>KI-Assistenten</b>: Regal fotografieren, fertig inventarisiert.</p>
+      <span class="eyebrow">Self-hosted · Open source · No cloud</span>
+      <h1>Plan your whole house. <em>Find everything in it.</em></h1>
+      <p class="lead">Draw your house in 2D and 3D – every compartment of every piece of furniture automatically becomes a storage location. Check items in with a click, a QR scan or simply with the <b>AI assistant</b>: photograph a shelf and it's inventoried.</p>
       <div class="cta">
-        <a class="btn primary" href="#installation">Installieren</a>
-        <a class="btn ghost" href="#assistent">KI-Assistent ansehen</a>
-        <a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt">Quellcode ansehen</a>
+        <a class="btn primary" href="#installation">Install</a>
+        <a class="btn ghost" href="#assistant">See the AI assistant</a>
+        <a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt">View source code</a>
       </div>
       <div class="shot">
         <div class="bar"><i></i><i></i><i></i></div>
-        <img src="img/haus-3d.webp" width="1500" height="900" alt="Das Erdgeschoss in 3D mit Küche; Möbel sind nach Füllstand eingefärbt, rechts die Raumliste">
+        <img src="img/haus-3d.webp" width="1500" height="900" alt="The ground floor in 3D with kitchen; furniture is colored by fill level, the room list on the right">
       </div>
     </div>
   </div>
 
-  <section id="assistent" class="alt">
+  <section id="assistant" class="alt">
     <div class="wrap">
-      <h2>Der KI-Assistent räumt mit auf</h2>
-      <p class="sub">Sag, schreib oder fotografiere, was passiert ist – der Assistent bucht es ins richtige Fach. Er kennt dein Haus, deine Fächer beim Namen und alles, was darin liegt.</p>
+      <h2>The AI assistant helps you tidy up</h2>
+      <p class="sub">Say, type or photograph what happened – the assistant books it into the right compartment. It knows your house, your compartments by name and everything in them.</p>
       <div class="ai">
         <div class="ai-caps">
-          <div class="wide"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg>Regal fotografieren = inventarisiert</h4><p>Foto vom Regal oder der Schublade machen, am besten mit dem QR-Etikett des Fachs im Bild: Der Assistent erkennt <b>alle Gegenstände auf dem Foto</b>, legt neue an, erhöht vorhandene und bucht alles <b>in einem Schritt</b> in dieses Fach. Ab vier Buchungen zeigt er die Liste erst zur Bestätigung. Das Foto kann er gleich am Gegenstand speichern.</p></div>
-          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Einfach sagen</h4><p><span class="q">„3 Dosen Tomaten in den Vorratsschrank, haltbar bis 05/2027“</span> – per Mikrofon oder Text. Fächer versteht er beim Namen: <span class="q">„Küche Kühlschrank oben“</span>.</p></div>
-          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Fragen und finden</h4><p><span class="q">„Wo ist der Akkuschrauber?“</span>, <span class="q">„Was läuft diese Woche ab?“</span> – die Antwort nennt das Fach, <b>„Im Haus zeigen“</b> lässt es im Plan aufleuchten.</p></div>
-          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4l2 4-2.5 1.5a11 11 0 0 0 5 5L14 12l4 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2"/></svg>QR-Etiketten auf Fotos</h4><p>Fach- und Gegenstands-Etiketten liest die App selbst aus dem Bild – <span class="q">„das kommt hierhin“</span> genügt.</p></div>
-          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Einkauf und Preise</h4><p>Auf die Liste setzen, abhaken, und <span class="q">„Wo gibt's Butter gerade am günstigsten?“</span> – <b>Preisrecherche</b> mit Händler, nächster Filiale und Quelle.</p></div>
-          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>Am Wandterminal sprechen</h4><p>Knopf <b>„Sprechen“</b>, Kachel antippen, loslegen – die Antwort wird vorgelesen. Dort nur Suchen, Buchen und Einkauf, nie Verwaltung.</p></div>
-          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Sicher bedienbar</h4><p>Jede Buchung mit <b>Rückgängig</b>, handelt mit den Rechten der Person. Jeder OpenAI-kompatible Anbieter (OpenRouter, LiteLLM …), dazu ein <b>MCP-Server</b> für Claude &amp; Co.</p></div>
+          <div class="wide"><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h3l2-3h6l2 3h3v13H4z"/><circle cx="12" cy="13" r="4"/></svg>Photograph a shelf = inventory done</h4><p>Take a photo of the shelf or drawer, ideally with the compartment's QR label in the picture: the assistant recognizes <b>all items in the photo</b>, creates new ones, increases existing ones and checks everything into that compartment <b>in one step</b>. From four transactions on, it shows the list for confirmation first. It can also store the photo with the item right away.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Just say it</h4><p><span class="q">"3 cans of tomatoes into the pantry cabinet, best before 05/2027"</span> – by microphone or text. It understands compartments by name: <span class="q">"kitchen fridge top"</span>.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>Ask and find</h4><p><span class="q">"Where is the cordless drill?"</span>, <span class="q">"What expires this week?"</span> – the answer names the compartment, <b>"Show in house"</b> lights it up in the plan.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h4l2 4-2.5 1.5a11 11 0 0 0 5 5L14 12l4 2v4a2 2 0 0 1-2 2A16 16 0 0 1 2 6a2 2 0 0 1 2-2"/></svg>QR labels in photos</h4><p>The app reads compartment and item labels from the picture itself – <span class="q">"this goes here"</span> is enough.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Shopping and prices</h4><p>Add to the list, tick off, and <span class="q">"Where is butter cheapest right now?"</span> – <b>price research</b> with retailer, nearest store and source.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>Talk to the wall terminal</h4><p>Press <b>"Speak"</b>, tap your tile, go – the answer is read aloud. Limited to search, transactions and shopping there, never administration.</p></div>
+          <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h11a5 5 0 0 1 0 10h-3"/></svg>Safe to use</h4><p>Every transaction with <b>Undo</b>, acts with the person's permissions. Any OpenAI-compatible provider (OpenRouter, LiteLLM …), plus an <b>MCP server</b> for Claude &amp; co.</p></div>
         </div>
-        <div class="chat" aria-label="Beispiel-Unterhaltung mit dem Assistenten">
-          <div class="head">Assistent <small>Beispiel</small></div>
+        <div class="chat" aria-label="Example conversation with the assistant">
+          <div class="head">Assistant <small>Example</small></div>
           <div class="me">
-            <div class="photo"><svg viewBox="0 0 220 150" role="img" aria-label="Foto eines Kellerregals mit Dosen, Gläsern, Batterien und QR-Etikett">
+            <div class="photo"><svg viewBox="0 0 220 150" role="img" aria-label="Photo of a basement shelf with cans, jars, batteries and a QR label">
               <rect width="220" height="150" fill="#d9cfc2"/><rect x="14" y="10" width="192" height="132" fill="#b88a5a"/><rect x="20" y="16" width="180" height="56" fill="#efe7dc"/><rect x="20" y="78" width="180" height="58" fill="#efe7dc"/>
               <rect x="20" y="70" width="180" height="8" fill="#9c7246"/>
               <g fill="#c0392b"><rect x="28" y="38" width="16" height="32" rx="2"/><rect x="47" y="38" width="16" height="32" rx="2"/><rect x="66" y="38" width="16" height="32" rx="2"/></g>
@@ -253,218 +253,218 @@ footer a { color: var(--muted); }
               <g fill="#27ae60"><rect x="128" y="104" width="44" height="30" rx="3"/></g>
               <rect x="150" y="34" width="38" height="30" fill="#fff" stroke="#333" stroke-width="1"/><g fill="#111"><rect x="154" y="38" width="7" height="7"/><rect x="177" y="38" width="7" height="7"/><rect x="154" y="53" width="7" height="7"/><rect x="164" y="44" width="4" height="4"/><rect x="170" y="50" width="5" height="5"/><rect x="166" y="56" width="4" height="4"/></g>
             </svg></div>
-            <div class="bubble">Das ist alles im Kellerregal – bitte einbuchen.</div>
+            <div class="bubble">This is all on the basement shelf – please check it in.</div>
           </div>
           <div class="bot">
-            <div class="bubble">Ich sehe 5 verschiedene Dinge und habe das Etikett <b>KE-B2</b> (Kellerregal, Boden 2) gelesen. Soll ich alles dort einbuchen?</div>
+            <div class="bubble">I see 5 different things and read the label <b>KE-B2</b> (basement shelf unit, shelf 2). Shall I check everything in there?</div>
             <ul class="book">
-              <li><span>3× Dosentomaten</span><span>neu</span></li>
-              <li><span>2× Gurken im Glas</span><span>neu</span></li>
-              <li><span>1× Batterien AA (8er)</span><span>+1</span></li>
-              <li><span>1× Werkzeugkoffer</span><span>vorhanden</span></li>
-              <li><span>1× Pflanzerde 10 l</span><span>neu</span></li>
+              <li><span>3× canned tomatoes</span><span>new</span></li>
+              <li><span>2× jarred pickles</span><span>new</span></li>
+              <li><span>1× AA batteries (8-pack)</span><span>+1</span></li>
+              <li><span>1× toolbox</span><span>existing</span></li>
+              <li><span>1× potting soil 10 l</span><span>new</span></li>
             </ul>
-            <div class="confirm"><span class="go">Ausführen</span><span>Abbrechen</span></div>
+            <div class="confirm"><span class="go">Execute</span><span>Cancel</span></div>
           </div>
-          <div class="me"><div class="bubble">Wo sind die AA-Batterien jetzt?</div></div>
-          <div class="bot"><div class="bubble">Im Keller, <b>KE-B2</b> – 2 Packungen. <u>Im Haus zeigen</u></div></div>
-          <p class="note-line">Nachgestellte Unterhaltung · Bilderkennung und Sprache über deinen KI-Anbieter</p>
+          <div class="me"><div class="bubble">Where are the AA batteries now?</div></div>
+          <div class="bot"><div class="bubble">In the basement, <b>KE-B2</b> – 2 packs. <u>Show in house</u></div></div>
+          <p class="note-line">Re-enacted conversation · image recognition and speech via your AI provider</p>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="so-gehts">
+  <section id="how-it-works">
     <div class="wrap center">
-      <h2>Vom Grundriss zur Schublade</h2>
-      <p class="sub">homemgmt-ng verbindet einen Hausplaner mit einer Lagerverwaltung. Der Plan ist das Lager.</p>
+      <h2>From floor plan to drawer</h2>
+      <p class="sub">homemgmt-ng combines a house planner with inventory management. The plan is the inventory.</p>
       <div class="flow" style="text-align:left">
-        <div><b>Etagen & Wände</b><span>Zeichnen oder einen Grundriss hochladen und nachzeichnen.</span></div>
-        <div><b>Räume</b><span>Ein Klick in die Fläche – jeder Raum wird ein Lager mit Kürzel.</span></div>
-        <div><b>Möbel</b><span>Aus dem Katalog setzen. Jedes Fach bekommt eine Adresse.</span></div>
-        <div><b>Einlagern</b><span>Fach antippen, einbuchen – oder Fach-Code und Gegenstand scannen.</span></div>
+        <div><b>Floors & walls</b><span>Draw them, or upload a floor plan and trace it.</span></div>
+        <div><b>Rooms</b><span>One click into the area – every room becomes a storage area with a code.</span></div>
+        <div><b>Furniture</b><span>Place it from the catalog. Every compartment gets a location code.</span></div>
+        <div><b>Store</b><span>Tap a compartment and check in – or scan the compartment code and the item.</span></div>
       </div>
-      <p class="addr"><code>KU-C2</code> = <span>Küche</span> · <span>Möbel C</span> · <span>Fach 2</span></p>
+      <p class="addr"><code>KU-C2</code> = <span>Kitchen</span> · <span>Furniture C</span> · <span>Compartment 2</span></p>
     </div>
   </section>
 
-  <section id="funktionen" style="border-top: 1px solid var(--line)">
+  <section id="features" style="border-top: 1px solid var(--line)">
     <div class="wrap">
       <div class="feature">
         <div>
-          <h3>Das Lager lebt im Plan</h3>
-          <p>Kein Abtippen von Regalnummern: Möbel antippen zeigt die Fächer, ein Fach zeigt seinen Inhalt – direkt neben dem Grundriss.</p>
+          <h3>The inventory lives in the plan</h3>
+          <p>No typing in shelf numbers: tap a piece of furniture to see its compartments, a compartment to see its contents – right next to the floor plan.</p>
           <ul>
-            <li>Einbuchen, entnehmen, umlagern, rückgängig</li>
-            <li>Haltbarkeit mit Schnellwahl und Warnung</li>
-            <li>Zieht ein Möbel um, wandert der Inhalt mit</li>
+            <li>Check in, take out, move, undo</li>
+            <li>Expiry with quick picks and warnings</li>
+            <li>When furniture moves, its contents move along</li>
           </ul>
         </div>
-        <figure><img src="img/plan-fach.webp" width="1500" height="900" alt="Grundriss der Küche, Fach KU-C1 ist ausgewählt und zeigt eine Testgabel mit Haltbarkeitsdatum"></figure>
+        <figure><img src="img/plan-fach.webp" width="1500" height="900" alt="Floor plan of the kitchen, compartment KU-C1 is selected and shows a test fork with a best-before date"></figure>
       </div>
 
       <div class="feature flip">
         <div>
-          <h3>Wo liegt …?</h3>
-          <p>Eine Suche über alle Räume und Lager. Die Treffer leuchten im Grundriss und in 3D auf, Etagen mit Treffern bekommen einen Punkt.</p>
+          <h3>Where is …?</h3>
+          <p>One search across all rooms and storage areas. Matches light up in the floor plan and in 3D, floors with matches get a dot.</p>
           <ul>
-            <li>Suche nach Name, Code, Fach oder Kategorie</li>
-            <li>Heatmap: was wird oft bewegt, was liegt nur herum?</li>
-            <li>Färbung nach Füllstand und Haltbarkeit</li>
+            <li>Search by name, code, compartment or category</li>
+            <li>Heatmap: what gets moved often, what just sits around?</li>
+            <li>Coloring by fill level and expiry</li>
           </ul>
         </div>
-        <figure><img src="img/fach-3d.webp" width="1500" height="900" alt="3D-Ansicht der Küche, eine Schublade ist hervorgehoben, der Rest halbtransparent"></figure>
+        <figure><img src="img/fach-3d.webp" width="1500" height="900" alt="3D view of the kitchen, a drawer is highlighted, the rest semi-transparent"></figure>
       </div>
 
       <div class="feature">
         <div>
-          <h3>Ein echter Hausplaner</h3>
-          <p>Hervorgegangen aus einem Küchenplaner: Wände mit Fang und Maßen, prozedurale Schrankmodelle, PBR-Materialien und fotorealistisches Pathtracing.</p>
+          <h3>A real house planner</h3>
+          <p>Grown out of a kitchen planner: walls with snapping and dimensions, procedural cabinet models, PBR materials and photorealistic path tracing.</p>
           <ul>
-            <li>Keller bis Dachgeschoss, Außenbereich, Treppen</li>
-            <li>Objektbibliothek: eigene Möbelarten bauen, Community-Katalog</li>
-            <li>3D-Möbel von Poly Haven und FurniMesh, eigene .glb</li>
-            <li>Begehen wie im Spiel – auch die Treppe hinauf</li>
+            <li>Basement to attic, outdoor area, stairs</li>
+            <li>Object library: build your own furniture types, community catalog</li>
+            <li>3D furniture from Poly Haven and FurniMesh, your own .glb</li>
+            <li>Walk through like in a game – up the stairs too</li>
           </ul>
         </div>
-        <figure><img src="img/planen-bibliothek.webp" width="1500" height="900" alt="Planungsmodus: Möbelkatalog links, Grundriss in der Mitte, 3D-Vorschau der Küche rechts"></figure>
+        <figure><img src="img/planen-bibliothek.webp" width="1500" height="900" alt="Planning mode: furniture catalog on the left, floor plan in the middle, 3D preview of the kitchen on the right"></figure>
       </div>
 
       <div class="feature flip">
         <div>
-          <h3>Am Handy</h3>
-          <p>Als App installierbar, mit derselben Navigation wie am PC – am Handy unten, Scannen in der Mitte. Die Übersicht zeigt, was heute zählt.</p>
+          <h3>On your phone</h3>
+          <p>Installable as an app, with the same navigation as on the PC – at the bottom on the phone, with Scan in the middle. The overview shows what matters today.</p>
           <ul>
-            <li>Übersicht: Schnellaktionen, Einkaufsliste zum Abhaken, was bald abläuft, Füllstand je Etage, zuletzt bewegt</li>
-            <li>Fächer öffnen sich als Blatt von unten, der Plan bleibt sichtbar</li>
-            <li>Schlechtes WLAN: Buchungen werden vorgemerkt und automatisch nachgebucht – nie doppelt</li>
+            <li>Overview: quick actions, shopping list to tick off, what expires soon, fill level per floor, recently moved</li>
+            <li>Compartments open as a bottom sheet, the plan stays visible</li>
+            <li>Poor Wi-Fi: transactions are queued and synced automatically – never twice</li>
           </ul>
         </div>
         <div class="phones">
-          <figure><img src="img/handy-uebersicht.webp" width="390" height="844" alt="Startseite auf dem Handy mit Schnellaktionen, Einkaufsliste und Ablaufendem"></figure>
-          <figure><img src="img/handy-blatt.webp" width="390" height="844" alt="Ein Fach auf dem Handy als Blatt von unten mit Inhalt und Einbuchen"></figure>
+          <figure><img src="img/handy-uebersicht.webp" width="390" height="844" alt="Home screen on the phone with quick actions, shopping list and expiring items"></figure>
+          <figure><img src="img/handy-blatt.webp" width="390" height="844" alt="A compartment on the phone as a bottom sheet with contents and check-in"></figure>
         </div>
       </div>
       </div>
     </div>
   </section>
 
-  <section id="wandterminal" class="alt">
+  <section id="wall-terminal" class="alt">
     <div class="wrap">
-      <h2>Wandterminal</h2>
-      <p class="sub">Ein altes Tablet an der Wand wird zur Schaltzentrale für alle im Haus – ohne persönliche Anmeldung, mit großen Touch-Flächen und einem Ruhezustand, der das Haus wie draußen zeigt.</p>
+      <h2>Wall terminal</h2>
+      <p class="sub">An old tablet on the wall becomes the control center for everyone in the house – without personal sign-in, with large touch targets and an idle mode that shows the house as it looks outside.</p>
       <div class="term-shots">
-        <figure><img src="img/terminal-quer.webp" width="1366" height="1024" alt="Wandterminal im Querformat: Navigation links, Grundriss der Küche, Wetter und Uhr in der Kopfzeile"><figcaption><b>Querformat</b> · Navigation am linken Rand, Wetter und Uhr oben</figcaption></figure>
-        <figure><img src="img/terminal-wer-bucht.webp" width="744" height="1133" alt="Wandterminal im Hochformat: Auswahl „Wer bucht?“ mit Kacheln für Anna und Ben"><figcaption><b>„Wer bucht?“</b> · ein Tipp auf die eigene Kachel</figcaption></figure>
-        <figure><img src="img/terminal-ruhe.webp" width="744" height="1133" alt="Wandterminal im Ruhezustand: Haus auf Rasen, große Uhr, Einkaufsliste"><figcaption><b>Ruhezustand</b> · Haus, Uhr, Wetter, Einkaufsliste</figcaption></figure>
+        <figure><img src="img/terminal-quer.webp" width="1366" height="1024" alt="Wall terminal in landscape: navigation on the left, floor plan of the kitchen, weather and clock in the header"><figcaption><b>Landscape</b> · navigation on the left edge, weather and clock at the top</figcaption></figure>
+        <figure><img src="img/terminal-wer-bucht.webp" width="744" height="1133" alt="Wall terminal in portrait: the &quot;Who is booking?&quot; picker with tiles for Anna and Ben"><figcaption><b>"Who is booking?"</b> · one tap on your own tile</figcaption></figure>
+        <figure><img src="img/terminal-ruhe.webp" width="744" height="1133" alt="Wall terminal in idle mode: house on a lawn, large clock, shopping list"><figcaption><b>Idle mode</b> · house, clock, weather, shopping list</figcaption></figure>
       </div>
       <div class="cols">
         <div>
-          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>Einrichten in einer Minute</h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="2" width="16" height="20" rx="2"/><path d="M11 18h2"/></svg>Set up in a minute</h4>
           <ul>
-            <li><b>Verwaltung → Wandterminals</b> → anlegen und nach dem Ort benennen („Diele“)</li>
-            <li>Den <b>Einrichtungslink</b> oder seinen <b>QR-Code</b> am Tablet öffnen – fertig, kein Passwort am Gerät</li>
-            <li>Je Gerät: <b>Hoch- oder Querformat</b>, Haus als Grundriss oder 3D, hell/dunkel, Schriftgröße bis „sehr groß“</li>
-            <li>Wartezeit bis zurück zum Haus, Ruhezustand an/aus, <b>Detailgrad</b> (Entwurf 15 s, Normal 30 s, Hoch 90 s) und Postleitzahl fürs Wetter</li>
-            <li>Nur die passenden Seiten: Haus, Suchen, Einkauf, Aufgaben, Haltbarkeit und <b>Sprechen</b> mit dem Assistenten – <b>Planen ist am Terminal gesperrt</b>; Link jederzeit neu erzeugen oder Terminal entfernen</li>
+            <li><b>Administration → Wall terminals</b> → add one and name it after its place ("Hallway")</li>
+            <li>Open the <b>setup link</b> or its <b>QR code</b> on the tablet – done, no password on the device</li>
+            <li>Per device: <b>portrait or landscape</b>, house as floor plan or 3D, light/dark, font size up to "very large"</li>
+            <li>Delay before returning to the house, idle mode on/off, <b>level of detail</b> (draft 15 s, normal 30 s, high 90 s) and postal code for the weather</li>
+            <li>Only the relevant pages: house, search, shopping, tasks, expiry and <b>speaking</b> with the assistant – <b>planning is locked on the terminal</b>; regenerate the link or remove the terminal at any time</li>
           </ul>
         </div>
         <div>
-          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Buchen für alle</h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Booking for everyone</h4>
           <ul>
-            <li>Fach antippen, Inhalt sehen, <b>einbuchen</b> oder <b>− 1</b> entnehmen</li>
-            <li><b>„Wer bucht?“</b>-Kacheln mit allen Personen – der Verlauf zeigt, wer was genommen hat</li>
-            <li>Die gewählte Person bleibt <b>90 Sekunden</b> gemerkt, für mehrere Buchungen hintereinander</li>
-            <li>Große Touch-Flächen, Suche „Wo liegt …?“ mit Treffern im Haus</li>
-            <li>Ohne Bedienung springt das Terminal zurück zum Haus</li>
+            <li>Tap a compartment, see its contents, <b>check in</b> or take one out with <b>− 1</b></li>
+            <li><b>"Who is booking?"</b> tiles with everyone – the history shows who took what</li>
+            <li>The selected person is remembered for <b>90 seconds</b>, for several transactions in a row</li>
+            <li>Large touch targets, search "Where is …?" with matches in the house</li>
+            <li>When not in use, the terminal jumps back to the house</li>
           </ul>
         </div>
         <div>
-          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>Ruhezustand</h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 13A9 9 0 1 1 11 3a7 7 0 0 0 10 10z"/></svg>Idle mode</h4>
           <ul>
-            <li>Das Haus <b>gedimmt und fotorealistisch</b>, mit flachem Blickwinkel und Rasen drumherum</li>
-            <li><b>Große Uhr</b>, Datum, Wetter, Einkaufsliste und was bald abläuft</li>
-            <li><b>Sonne, Himmel und Wetter wie draußen</b> – siehe Live-Wetter</li>
-            <li><b>Sparsam:</b> rechnet nur neu, wenn sich Sonne oder Wetter ändern; Pause bei verdecktem Bildschirm, letztes Bild gemerkt</li>
-            <li>Antippen weckt das Terminal sofort</li>
+            <li>The house <b>dimmed and photorealistic</b>, with a flat viewing angle and lawn around it</li>
+            <li><b>Large clock</b>, date, weather, shopping list and what expires soon</li>
+            <li><b>Sun, sky and weather as outside</b> – see live weather</li>
+            <li><b>Economical:</b> re-renders only when the sun or weather changes; pauses when the screen is hidden, last image remembered</li>
+            <li>A tap wakes the terminal instantly</li>
           </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <section id="live-wetter">
+  <section id="live-weather">
     <div class="wrap">
-      <h2>Live-Wetter am Haus</h2>
-      <p class="sub">Trag die Lage deines Hauses ein – dann stehen am Wandterminal Sonne, Himmel und Wetter so, wie du es durchs Fenster siehst. Ohne Konto und ohne API-Schlüssel.</p>
+      <h2>Live weather at the house</h2>
+      <p class="sub">Enter your house's location – and the wall terminal shows sun, sky and weather just as you see them through the window. No account and no API key needed.</p>
       <div class="wx-strip">
-        <figure><img src="img/wetter-klar.webp" width="560" height="806" alt="Ruhezustand bei klarem Wetter: grüner Rasen, Schatten der Sonne"><figcaption>Klar</figcaption></figure>
-        <figure><img src="img/wetter-regen.webp" width="560" height="806" alt="Ruhezustand bei Regen: dunkler, nasser Rasen und grauer Himmel"><figcaption>Regen</figcaption></figure>
-        <figure><img src="img/wetter-gewitter.webp" width="560" height="806" alt="Ruhezustand bei Gewitter: Regenschlieren über dem Haus"><figcaption>Gewitter</figcaption></figure>
-        <figure><img src="img/wetter-schnee.webp" width="560" height="806" alt="Ruhezustand bei Schnee: der Garten ist weiß"><figcaption>Schnee</figcaption></figure>
-        <figure><img src="img/wetter-nebel.webp" width="560" height="806" alt="Ruhezustand bei Nebel: das Haus verschwimmt im Dunst"><figcaption>Nebel</figcaption></figure>
+        <figure><img src="img/wetter-klar.webp" width="560" height="806" alt="Idle mode in clear weather: green lawn, shadows from the sun"><figcaption>Clear</figcaption></figure>
+        <figure><img src="img/wetter-regen.webp" width="560" height="806" alt="Idle mode in rain: dark, wet lawn and gray sky"><figcaption>Rain</figcaption></figure>
+        <figure><img src="img/wetter-gewitter.webp" width="560" height="806" alt="Idle mode during a thunderstorm: rain streaks over the house"><figcaption>Thunderstorm</figcaption></figure>
+        <figure><img src="img/wetter-schnee.webp" width="560" height="806" alt="Idle mode in snow: the garden is white"><figcaption>Snow</figcaption></figure>
+        <figure><img src="img/wetter-nebel.webp" width="560" height="806" alt="Idle mode in fog: the house blurs in the haze"><figcaption>Fog</figcaption></figure>
       </div>
       <div class="cols">
         <div>
-          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Sonne und Himmel</h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>Sun and sky</h4>
           <ul>
-            <li><b>Lage des Hauses</b> (Planen → ⋯): Adresse oder Postleitzahl suchen oder Koordinaten eingeben, Nordrichtung per Kompass – der Grundriss zeigt einen Nordpfeil</li>
-            <li><b>Sonnenstand</b> aus Ort und Uhrzeit: Die Schatten fallen wie draußen</li>
-            <li>Himmel und Licht laufen <b>jede Minute</b> mit: Tag, Dämmerung, Nacht mit eingeschalteten Lampen und Mondlicht</li>
+            <li><b>House location</b> (Plan → ⋯): search for an address or postal code or enter coordinates, north direction via compass – the floor plan shows a north arrow</li>
+            <li><b>Sun position</b> from location and time: shadows fall as they do outside</li>
+            <li>Sky and light follow <b>every minute</b>: day, dusk, night with lamps switched on and moonlight</li>
           </ul>
         </div>
         <div>
-          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 17.5"/><path d="M8 21l1-2M12 21l1-2M16 21l1-2" /></svg>Wolken, Regen, Schnee</h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.5 19a4.5 4.5 0 1 0-1.4-8.8A6 6 0 1 0 6 17.5"/><path d="M8 21l1-2M12 21l1-2M16 21l1-2" /></svg>Clouds, rain, snow</h4>
           <ul>
-            <li><b>Wolken</b> nach echter Bedeckung, Farbe nach Tageszeit, ziehen mit dem Wind – auch im fotorealistischen Bild</li>
-            <li><b>Regen und Niesel</b> als dezente Animation, Stärke nach echter Regenrate (mm/h); der Rasen wird nass</li>
-            <li><b>Schnee</b> wächst als Fleck: erst auf und vor der Terrasse, ab ~10 cm der ganze Garten; das Dach wird angezuckert bis weiß</li>
-            <li><b>Nebel und Dunst</b> nach Sichtweite; Temperatur und Regenmenge in der Kopfzeile</li>
+            <li><b>Clouds</b> according to real cloud cover, colored by time of day, drifting with the wind – in the photorealistic image too</li>
+            <li><b>Rain and drizzle</b> as a subtle animation, intensity based on the real rain rate (mm/h); the lawn gets wet</li>
+            <li><b>Snow</b> grows as a patch: first on and in front of the terrace, from ~10 cm the whole garden; the roof goes from dusted to white</li>
+            <li><b>Fog and haze</b> based on visibility; temperature and precipitation in the header</li>
           </ul>
         </div>
         <div>
-          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Gewitter in Echtzeit</h4>
+          <h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Thunderstorms in real time</h4>
           <ul>
-            <li>Jeder <b>Blitzeinschlag</b> in der Umgebung kommt sofort an (Blitzortung.org, per Server-Sent Events)</li>
-            <li>Nahe Blitze (≤ 30 km) lassen den <b>Bildschirm aufblitzen</b></li>
-            <li><b>Warnung</b> in der Kopfzeile ab 20 km Entfernung</li>
-            <li>Im Ruhezustand: letzter Blitz mit Entfernung, Richtung und Alter, Anzahl und eine <b>Blitzkarte</b> (10/25/50 km)</li>
+            <li>Every <b>lightning strike</b> nearby arrives instantly (Blitzortung.org, via server-sent events)</li>
+            <li>Close strikes (≤ 30 km) make the <b>screen flash</b></li>
+            <li><b>Warning</b> in the header from 20 km away</li>
+            <li>In idle mode: last strike with distance, direction and age, count and a <b>lightning map</b> (10/25/50 km)</li>
           </ul>
         </div>
       </div>
-      <p class="small">Daten: Ort über <a href="https://www.openstreetmap.org">OpenStreetMap</a>, Wetter über <a href="https://open-meteo.com">Open-Meteo</a> (alle 15 Minuten), Blitze über <a href="https://www.blitzortung.org">Blitzortung.org</a> – ohne Konto, für private Nutzung. Zum Ausprobieren gibt es Testwetter: Terminal-Adresse mit <code>?testwetter=schnee</code> öffnen (auch <code>regen</code>, <code>gewitter</code>, <code>nebel</code>, <code>schneesturm</code>, <code>wolkenbruch</code> …). Die Bilder oben sind damit entstanden.</p>
+      <p class="small">Data: location via <a href="https://www.openstreetmap.org">OpenStreetMap</a>, weather via <a href="https://open-meteo.com">Open-Meteo</a> (every 15 minutes), lightning via <a href="https://www.blitzortung.org">Blitzortung.org</a> – no account, for private use. To try it out there is test weather: open the terminal address with <code>?testwetter=schnee</code> (snow; also <code>regen</code> rain, <code>gewitter</code> thunderstorm, <code>nebel</code> fog, <code>schneesturm</code> blizzard, <code>wolkenbruch</code> downpour …). The images above were made that way.</p>
     </div>
   </section>
 
-  <section id="echtes-haus" class="alt">
+  <section id="real-house" class="alt">
     <div class="wrap">
-      <h2>Ein echtes Haus</h2>
-      <p class="sub">homemgmt-ng ist für ein echtes Einfamilienhaus entstanden – Keller, zwei Wohnetagen, Dachboden und Außenbereich. So sieht dessen Plan aus.</p>
+      <h2>A real house</h2>
+      <p class="sub">homemgmt-ng was built for a real single-family house – basement, two living floors, attic and outdoor area. This is what its plan looks like.</p>
       <div class="gallery">
-        <figure><img src="img/praxis-aussen.webp" alt="Das Haus von außen in 3D mit Satteldach, Carport und Terrasse"><figcaption><b>Außen</b> · Satteldach, Carport und Terrasse</figcaption></figure>
-        <figure><img src="img/praxis-eg-3d.webp" alt="Das Erdgeschoss als 3D-Schnitt mit Küche, Treppe und Wohnbereich"><figcaption><b>Erdgeschoss</b> · Küche, Treppe und Wohnbereich</figcaption></figure>
-        <figure><img src="img/praxis-og-3d.webp" alt="Das Obergeschoss als 3D-Schnitt über dem Erdgeschoss"><figcaption><b>Obergeschoss</b> · „Bis hier“ zeigt alles darunter mit</figcaption></figure>
-        <figure><img src="img/praxis-kueche.webp" alt="Blick in die Küche mit grifflosen Hochschränken und Steinarbeitsplatte"><figcaption><b>Küche</b> · grifflos, Durchgang in Schrankoptik</figcaption></figure>
-        <figure><img src="img/praxis-grundriss.webp" alt="Grundriss des Erdgeschosses über dem Bauplan, daneben 3D"><figcaption><b>Grundriss</b> · über dem Bauplan nachgezeichnet</figcaption></figure>
-        <figure><img src="img/praxis-keller-lager.webp" alt="Keller mit Regalen, nach Füllstand eingefärbt"><figcaption><b>Keller</b> · Regale als Lagerplätze</figcaption></figure>
+        <figure><img src="img/praxis-aussen.webp" alt="The house from outside in 3D with gable roof, carport and terrace"><figcaption><b>Outside</b> · gable roof, carport and terrace</figcaption></figure>
+        <figure><img src="img/praxis-eg-3d.webp" alt="The ground floor as a 3D cutaway with kitchen, stairs and living area"><figcaption><b>Ground floor</b> · kitchen, stairs and living area</figcaption></figure>
+        <figure><img src="img/praxis-og-3d.webp" alt="The upper floor as a 3D cutaway above the ground floor"><figcaption><b>Upper floor</b> · "Up to here" includes everything below</figcaption></figure>
+        <figure><img src="img/praxis-kueche.webp" alt="View into the kitchen with handleless tall cabinets and a stone worktop"><figcaption><b>Kitchen</b> · handleless, a passage disguised as a cabinet</figcaption></figure>
+        <figure><img src="img/praxis-grundriss.webp" alt="Floor plan of the ground floor over the building plan, with 3D next to it"><figcaption><b>Floor plan</b> · traced over the building plan</figcaption></figure>
+        <figure><img src="img/praxis-keller-lager.webp" alt="Basement with shelf units, colored by fill level"><figcaption><b>Basement</b> · shelf units as locations</figcaption></figure>
       </div>
     </div>
   </section>
 
-  <section id="alle-funktionen">
+  <section id="all-features">
     <div class="wrap">
-      <h2>Alle Funktionen im Detail</h2>
-      <p class="sub">Was homemgmt-ng sonst noch kann – vom Grundriss bis zur Datensicherung.</p>
+      <h2>All features in detail</h2>
+      <p class="sub">What else homemgmt-ng can do – from floor plan to backup.</p>
       <div class="detail">
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>Hausplaner</h4><ul><li><b>Etagen</b>: Keller, Wohnetagen, Dachgeschoss mit Satteldach und Kniestock, Außenbereich – mit Höhenlage und Raumhöhe</li><li><b>Wände</b> mit Fang und Maßen oder <b>Grundriss-Scan</b> als Vorlage mit Maßstab; die Etage darunter als Durchpause</li><li><b>Räume</b> per Klick erkennen – folgen beim Verschieben der Wände; eigener Bodenbelag</li><li>Türen, Fenster, <b>Treppen</b> mit Treppenloch, Durchgänge in Schrankoptik, Terrasse, Stellplatz, Carport</li><li>Objekte <b>sperren</b> (Taste <code>L</code>), Rückgängig/Wiederholen, automatisches Speichern mit Konfliktschutz</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg>3D und Möbel</h4><ul><li><b>Möbelkatalog</b>: Küchenschränke, Regale, Schwerlastregal, Vorrats- und Kleiderschrank, Sideboard, Kommode, Werkbank</li><li><b>Objektbibliothek</b>: eigene Möbelarten im Editor mit 3D-Vorschau bauen – Spalten, Schubladen, Türen mit Böden, offene Fächer oder ein eigenes Modell; jedes Fach wird ein Lagerplatz. Fertige Möbelarten aus dem <a href="https://mupf-dev.github.io/homemgmt-object-library/"><b>Community-Katalog</b></a>, eigene per Pull Request beisteuern</li><li><b>3D-Bibliothek</b>: über 500 Modelle von Poly Haven (CC0) und Tausende von FurniMesh, auch deutsch durchsuchbar; eigene <code>.glb</code></li><li>Ansicht <b>Etage, „Bis hier“ oder ganzes Haus</b>; gewähltes Möbel hervorgehoben, Rest durchsichtig</li><li><b>Fotorealistisch</b> per GPU-Pathtracing, Tageslicht nach Uhrzeit, Lichtregler, Bild speichern</li><li><b>Begehen</b> wie im Spiel: Wände bremsen, Schwellen werden überstiegen, Treppen führen in andere Etagen</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Lager im Plan</h4><ul><li>Raum = Lager, Möbel = Spalte, <b>Fach = Lagerplatz</b> (<code>KU-B2</code>) – automatisch aus der Frontaufteilung</li><li><b>Einbuchen, entnehmen, umlagern</b>, jede Buchung mit Rückgängig und Verlauf je Gegenstand</li><li><b>Behälter</b>: Kiste in der Werkzeugkiste – wird sie umgelagert, wandert der Inhalt mit</li><li>Gegenstände mit <b>Foto</b>, Vorschläge beim Einbuchen, mehrere Lager (Garage, Keller …)</li><li><b>Auswertung</b> und Heatmap im Haus: Füllstand, Bewegung (90 Tage), lange unberührt</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 20h1v1"/></svg>Scannen und Etiketten</h4><ul><li><b>Kamera-Scan</b>: Fach-Code, dann Gegenstand = einbuchen; Gegenstand zweimal = ausbuchen</li><li>Unbekanntes, vorgedrucktes Etikett = neuer Gegenstand; <b>Behälter befüllen</b> per Scan</li><li>Auch Handscanner und Eingabe von Hand; QR-Links öffnen direkt Fach oder Gegenstand</li><li><b>Etiketten</b> für Fächer (nach Etage/Raum/Möbel), Gegenstände und leere Vorrats-Etiketten</li><li><b>3D-gedruckte QR-Schilder</b> als STL oder mehrfarbiges 3MF, auf Druckplatten verteilt</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Einkauf und Haltbarkeit</h4><ul><li><b>Verbrauchsmaterial</b> landet beim Ausbuchen automatisch auf der Einkaufsliste</li><li>Abhaken, <b>gekauft und gleich wieder einbuchen</b>, freie Einträge („Milch“)</li><li><b>Teilen</b> per WhatsApp, Teilen-Menü, Kopieren oder als Text; <b>Preisrecherche</b> für den Wohnort</li><li><b>Haltbarkeitsdatum</b> mit Schnellwahl (1 Woche … 1 Jahr), Warnungen vor und nach Ablauf</li><li>Liste „Läuft bald ab“: abgelaufen, 7 Tage, 30 Tage, 3 Monate, 1 Jahr</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>Personen und Rechte</h4><ul><li>Anmeldung per <b>Kachel + PIN/Passwort</b> oder E-Mail; Ersteinrichtung direkt in der App</li><li>Rollen, Archiv, Personen zusammenführen, Registrierung mit Freigabe</li><li>Recht <b>„Haus planen“</b> pro Person – auch der Server prüft es</li><li><b>Einstellungen pro Person</b>: Startseite, Haus in 2D oder 3D, hell/dunkel, Schriftgröße</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Handy und Offline</h4><ul><li><b>Als App installierbar</b> mit Schnellzugriffen (Assistent, Scannen, Einbuchen, Suchen, Einkauf, Haus)</li><li>Navigation unten, <b>Scannen in der Mitte</b>, Fächer als Blatt von unten</li><li><b>Schlechtes WLAN</b>: Buchungen werden vorgemerkt („2 Buchungen warten“) und nachgebucht – nie doppelt</li><li>Scannen von Fächern und Gegenständen klappt auch ohne Netz</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/></svg>KI-Assistent und MCP</h4><ul><li><b>Assistent</b> per Text, Sprache oder Foto: „3 Dosen Tomaten in den Keller, haltbar bis 05/2027“</li><li><b>Regal-Inventur per Foto</b>: erkennt alle Gegenstände im Bild und bucht sie in einem Schritt ins Fach</li><li><b>Sprechen am Wandterminal</b>, als Startseite oder Kurzbefehl am App-Symbol</li><li>Kennt <b>Fächer beim Namen</b> („Küche Kühlschrank oben“), liest QR-Etiketten auf Fotos, liest Antworten vor</li><li>Bucht selbst mit Rückgängig, fragt ab 4 Buchungen nach; jeder OpenAI-kompatible Anbieter</li><li><b>MCP-Server</b>: Claude und andere suchen, buchen und lesen die Einkaufsliste – mit API-Schlüssel, lesend oder schreibend</li></ul></div>
-        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Betrieb und Daten</h4><ul><li><b>Ein Prozess, eine SQLite-Datei</b> – Docker oder Node.js, auch auf NAS oder Raspberry Pi</li><li><b>Automatische Backups</b>, anlegen, herunterladen, hochladen und wiederherstellen per Klick</li><li><b>Export/Import</b> als Excel oder CSV mit Vorschau</li><li>REST-API und API-Schlüssel für eigene Erweiterungen; HTTPS direkt oder per Reverse Proxy</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-5 7 5v13"/><path d="M9 21v-6h6v6"/></svg>House planner</h4><ul><li><b>Floors</b>: basement, living floors, attic with gable roof and knee wall, outdoor area – with elevation and room height</li><li><b>Walls</b> with snapping and dimensions, or a <b>floor plan scan</b> as a template with scale; the floor below as a tracing layer</li><li><b>Rooms</b> detected with a click – they follow when walls are moved; custom flooring</li><li>Doors, windows, <b>stairs</b> with stairwell, passages disguised as cabinets, terrace, parking space, carport</li><li><b>Lock</b> objects (key <code>L</code>), undo/redo, automatic saving with conflict protection</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2 3 7v10l9 5 9-5V7z"/><path d="M3 7l9 5 9-5M12 12v10"/></svg>3D and furniture</h4><ul><li><b>Furniture catalog</b>: kitchen cabinets, shelf units, heavy-duty shelving, pantry and wardrobe, sideboard, chest of drawers, workbench</li><li><b>Object library</b>: build your own furniture types in the editor with a 3D preview – columns, drawers, doors with shelves, open compartments or your own model; every compartment becomes a location. Ready-made furniture types from the <a href="https://mupf-dev.github.io/homemgmt-object-library/"><b>community catalog</b></a>, contribute your own via pull request</li><li><b>3D library</b>: over 500 models from Poly Haven (CC0) and thousands from FurniMesh, searchable in German too; your own <code>.glb</code></li><li>View <b>floor, "Up to here" or whole house</b>; selected furniture highlighted, the rest transparent</li><li><b>Photorealistic</b> via GPU path tracing, daylight by time of day, light controls, save image</li><li><b>Walk-through</b> like in a game: walls block you, thresholds are stepped over, stairs lead to other floors</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 8v13H3V8"/><path d="M1 3h22v5H1z"/><path d="M10 12h4"/></svg>Inventory in the plan</h4><ul><li>Room = storage area, furniture = column, <b>compartment = location</b> (<code>KU-B2</code> = kitchen, furniture B, compartment 2) – automatically from the front layout</li><li><b>Check in, take out, move</b>, every transaction with undo and a history per item</li><li><b>Containers</b>: a box inside the toolbox – when it is moved, its contents move along</li><li>Items with <b>photos</b>, suggestions when checking in, multiple storage areas (garage, basement …)</li><li><b>Insights</b> and a heatmap in the house: fill level, activity (90 days), long untouched</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3zM20 20h1v1"/></svg>Scanning and labels</h4><ul><li><b>Camera scan</b>: compartment code, then item = check in; the same item twice = take out</li><li>Unknown pre-printed label = new item; <b>fill containers</b> by scanning</li><li>Handheld scanners and manual input too; QR links open the compartment or item directly</li><li><b>Labels</b> for compartments (by floor/room/furniture), items and blank labels kept in stock</li><li><b>3D-printed QR signs</b> as STL or multicolor 3MF, distributed across build plates</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="20" r="1.5"/><circle cx="18" cy="20" r="1.5"/><path d="M2 3h3l2.7 12.4a2 2 0 0 0 2 1.6h7.8a2 2 0 0 0 2-1.5L21 8H6"/></svg>Shopping and expiry</h4><ul><li><b>Consumables</b> land on the shopping list automatically when taken out</li><li>Tick off, <b>mark as bought and check straight back in</b>, free entries ("milk")</li><li><b>Share</b> via WhatsApp, the share menu, copy or as text; <b>price research</b> for your area</li><li><b>Best-before date</b> with quick picks (1 week … 1 year), warnings before and after expiry</li><li>"Expiring soon" list: expired, 7 days, 30 days, 3 months, 1 year</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20a6.5 6.5 0 0 1 13 0"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20a6.5 6.5 0 0 0-4-6"/></svg>People and permissions</h4><ul><li>Sign-in with <b>tile + PIN/password</b> or email; initial setup directly in the app</li><li>Roles, archive, merge people, registration with approval</li><li><b>"Plan the house"</b> permission per person – the server checks it too</li><li><b>Settings per person</b>: home page, house in 2D or 3D, light/dark, font size, language (German or English)</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"/><path d="M11 18h2"/></svg>Phone and offline</h4><ul><li><b>Installable as an app</b> with shortcuts (Assistant, Scan, Check in, Search, Shopping, House)</li><li>Navigation at the bottom, <b>Scan in the middle</b>, compartments as a bottom sheet</li><li><b>Poor Wi-Fi</b>: transactions are queued ("2 transactions waiting") and synced – never twice</li><li>Scanning compartments and items works without a network too</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a4 4 0 0 0-4 4v1H7a3 3 0 0 0 0 6h1v1a4 4 0 0 0 8 0v-1h1a3 3 0 0 0 0-6h-1V7a4 4 0 0 0-4-4z"/></svg>AI assistant and MCP</h4><ul><li><b>Assistant</b> by text, voice or photo: "3 cans of tomatoes into the basement, best before 05/2027"</li><li><b>Shelf inventory by photo</b>: recognizes all items in the picture and checks them into the compartment in one step</li><li><b>Speak to the wall terminal</b>, as home page or as a shortcut on the app icon</li><li>Knows <b>compartments by name</b> ("kitchen fridge top"), reads QR labels in photos, reads answers aloud</li><li>Books by itself with undo, asks for confirmation from 4 transactions; any OpenAI-compatible provider</li><li><b>MCP server</b>: Claude and others search, book and read the shopping list – with an API key, read-only or read-write</li></ul></div>
+        <div><h4><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-3-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Operation and data</h4><ul><li><b>One process, one SQLite file</b> – Docker or Node.js, also on a NAS or Raspberry Pi</li><li><b>Automatic backups</b>; create, download, upload and restore with a click</li><li><b>Export/import</b> as Excel or CSV with preview</li><li>REST API and API keys for your own extensions; HTTPS directly or via a reverse proxy</li></ul></div>
       </div>
     </div>
   </section>
@@ -472,22 +472,22 @@ footer a { color: var(--muted); }
   <section id="installation" class="alt">
     <div class="wrap">
       <h2>Installation</h2>
-      <p class="sub">Ein Node-Prozess, eine SQLite-Datei. Läuft auf dem NAS, einem Raspberry Pi oder dem Heimserver.</p>
+      <p class="sub">One Node process, one SQLite file. Runs on a NAS, a Raspberry Pi or your home server.</p>
       <div class="install">
         <div>
           <div class="tabs" role="tablist">
             <button role="tab" aria-selected="true" data-tab="docker">Docker</button>
             <button role="tab" aria-selected="false" data-tab="node">Node.js</button>
-            <button role="tab" aria-selected="false" data-tab="dev">Entwicklung</button>
+            <button role="tab" aria-selected="false" data-tab="dev">Development</button>
           </div>
           <div class="panel" data-panel="docker">
-<pre><button class="copy">Kopieren</button><code>git clone https://github.com/mupf-dev/Homemgmt.git
+<pre><button class="copy">Copy</button><code>git clone https://github.com/mupf-dev/Homemgmt.git
 cd Homemgmt
 docker compose up -d --build
 <span class="c"># App: http://localhost:3000 · MCP: Port 3100</span></code></pre>
           </div>
           <div class="panel" data-panel="node" hidden>
-<pre><button class="copy">Kopieren</button><code><span class="c"># benötigt Node.js ≥ 22.18</span>
+<pre><button class="copy">Copy</button><code><span class="c"># requires Node.js ≥ 22.18</span>
 git clone https://github.com/mupf-dev/Homemgmt.git
 cd Homemgmt
 npm install
@@ -495,44 +495,44 @@ npm run build &amp;&amp; npm start
 <span class="c"># → http://localhost:3000</span></code></pre>
           </div>
           <div class="panel" data-panel="dev" hidden>
-<pre><button class="copy">Kopieren</button><code>npm install
+<pre><button class="copy">Copy</button><code>npm install
 npm run dev         <span class="c"># Vite-HMR → http://localhost:3000</span>
-npm test            <span class="c"># API-Tests</span>
+npm test            <span class="c"># API tests</span>
 npm run typecheck
-npm run test:e2e    <span class="c"># Klicktest im Browser</span></code></pre>
+npm run test:e2e    <span class="c"># click-through test in the browser</span></code></pre>
           </div>
-          <div class="note"><b>Kamera-Scan braucht HTTPS.</b> Im Heimnetz reicht <code>npm run cert</code> (App dann unter Port 3443), dauerhaft ein Reverse Proxy mit <code>TRUST_PROXY=1</code>.</div>
+          <div class="note"><b>Camera scan needs HTTPS.</b> On your home network <code>npm run cert</code> is enough (the app is then on port 3443); for permanent use, a reverse proxy with <code>TRUST_PROXY=1</code>.</div>
         </div>
         <ol class="steps">
-          <li><b>Ersteinrichtung</b>Beim ersten Start „Neue Person“ antippen und ein Passwort vergeben – diese Person wird Admin.</li>
-          <li><b>Personen einladen</b>Unter Verwaltung → Personen weitere Mitbewohner anlegen, optional mit dem Recht „Haus planen“.</li>
-          <li><b>Backups</b>Laufen automatisch alle 24 Stunden, 14 werden behalten – einstellbar per Umgebungsvariable.</li>
+          <li><b>Initial setup</b>On first start, tap "New person" and choose a password – this person becomes admin.</li>
+          <li><b>Invite people</b>Add more household members under Administration → People, optionally with the "Plan the house" permission.</li>
+          <li><b>Backups</b>Run automatically every 24 hours, 14 are kept – configurable via environment variables.</li>
         </ol>
       </div>
     </div>
   </section>
 
-  <section id="anleitung">
+  <section id="guide">
     <div class="wrap">
-      <h2>Anleitung</h2>
-      <p class="sub">Die wichtigsten Abläufe in Kürze. Das vollständige Handbuch steht im Repository.</p>
+      <h2>Guide</h2>
+      <p class="sub">The most important workflows in brief. The complete manual is in the repository. The app is available in German and English – the language follows your browser and can be switched under My account.</p>
       <div class="grid">
-        <div class="tile"><h4>1 · Haus anlegen</h4><p>Haus → <b>Planen</b>. Mit <b>+</b> Etagen anlegen, Wände zeichnen oder einen Grundriss hochladen und nachzeichnen.</p></div>
-        <div class="tile"><h4>2 · Räume festlegen</h4><p><b>Raum festlegen</b> und in eine umschlossene Fläche klicken. Name und Kürzel vergeben – fertig ist das Lager.</p></div>
-        <div class="tile"><h4>3 · Möbel stellen</h4><p>Schränke aus dem Katalog docken an Wände an. <code>R</code> dreht, <code>Alt</code> platziert frei. Jedes Möbel bekommt einen Buchstaben.</p></div>
-        <div class="tile"><h4>4 · Einbuchen</h4><p>Fach antippen, „Was kommt hinein?“ eintippen, <b>Einbuchen</b>. Am Handy geht's schneller per Scan.</p></div>
-        <div class="tile"><h4>5 · Etiketten kleben</h4><p>Mehr → <b>Etiketten &amp; QR-Schilder</b>: Fach-Etiketten drucken und anbringen, leere Etiketten für neue Dinge vorhalten.</p></div>
-        <div class="tile"><h4>6 · Wandterminal</h4><p>Verwaltung → <b>Wandterminals</b> → anlegen, den Einrichtungslink am Tablet öffnen. Fertig.</p></div>
+        <div class="tile"><h4>1 · Set up your house</h4><p>House → <b>Plan</b>. Add floors with <b>+</b>, draw walls or upload a floor plan and trace it.</p></div>
+        <div class="tile"><h4>2 · Define rooms</h4><p>Choose <b>Define room</b> and click into an enclosed area. Give it a name and code – and the storage area is ready.</p></div>
+        <div class="tile"><h4>3 · Place furniture</h4><p>Cabinets from the catalog snap to walls. <code>R</code> rotates, <code>Alt</code> places freely. Every piece of furniture gets a letter.</p></div>
+        <div class="tile"><h4>4 · Check in</h4><p>Tap a compartment, type "What goes in?", <b>Check in</b>. On the phone, scanning is faster.</p></div>
+        <div class="tile"><h4>5 · Stick on labels</h4><p>More → <b>Labels &amp; QR signs</b>: print and attach compartment labels, keep blank labels ready for new things.</p></div>
+        <div class="tile"><h4>6 · Wall terminal</h4><p>Administration → <b>Wall terminals</b> → add one, open the setup link on the tablet. Done.</p></div>
       </div>
-      <p style="margin-top:28px"><a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt/blob/main/docs/LAGER.md">Vollständiges Handbuch →</a></p>
+      <p style="margin-top:28px"><a class="btn ghost" href="https://github.com/mupf-dev/Homemgmt/blob/main/docs/INVENTORY.md">Complete manual →</a></p>
     </div>
   </section>
 </main>
 
 <footer>
   <div class="wrap">
-    <span>homemgmt-ng · <a href="https://github.com/mupf-dev/Homemgmt">GitHub</a> · Lizenz <a href="https://github.com/mupf-dev/Homemgmt/blob/main/LICENSE">AGPL-3.0</a> · Hervorgegangen aus dem <a href="https://mupf-dev.github.io/kitchen-planner-3d/">Küchenplaner 3D</a></span>
-    <span>Texturen &amp; Modelle: <a href="https://polyhaven.com">Poly Haven</a> (CC0) · 3D: <a href="https://threejs.org">three.js</a> · Wetter: <a href="https://open-meteo.com">Open-Meteo</a></span>
+    <span>homemgmt-ng · <a href="https://github.com/mupf-dev/Homemgmt">GitHub</a> · License <a href="https://github.com/mupf-dev/Homemgmt/blob/main/LICENSE">AGPL-3.0</a> · Grown out of <a href="https://mupf-dev.github.io/kitchen-planner-3d/">Küchenplaner 3D</a></span>
+    <span>Textures &amp; models: <a href="https://polyhaven.com">Poly Haven</a> (CC0) · 3D: <a href="https://threejs.org">three.js</a> · Weather: <a href="https://open-meteo.com">Open-Meteo</a></span>
   </div>
 </footer>
 
@@ -547,7 +547,7 @@ document.querySelectorAll('.copy').forEach(function (b) {
   b.addEventListener('click', function () {
     var code = b.parentElement.querySelector('code').innerText.split('\n').filter(function (l) { return !/^\s*#/.test(l); })
       .map(function (l) { return l.replace(/\s+#.*$/, ''); }).join('\n').trim();
-    navigator.clipboard && navigator.clipboard.writeText(code).then(function () { b.textContent = 'Kopiert ✓'; setTimeout(function () { b.textContent = 'Kopieren'; }, 1600); });
+    navigator.clipboard && navigator.clipboard.writeText(code).then(function () { b.textContent = 'Copied ✓'; setTimeout(function () { b.textContent = 'Copy'; }, 1600); });
   });
 });
 </script>
