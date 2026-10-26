@@ -3,7 +3,7 @@
 
 import { ic, type IconName } from '../icons';
 import { prefs, savePrefs, type Prefs } from '../prefs';
-import { tr } from '../i18n';
+import { shown, tr } from '../i18n';
 import { compartments } from '../model/storage.ts';
 import { api, esc, expiryTag, relDate, type ApiItem, type LagerCtx } from './core';
 import type { View } from './views';
@@ -88,7 +88,7 @@ export const viewHome: View = async (el, ctx) => {
   const house = () => {
     const ff = floorFill(ctx).filter((x) => x.all);
     rows('ov-house').innerHTML = ff.length
-      ? ff.map(({ f, all, used }) => `<a class="ov-floor" href="#/haus?etage=${encodeURIComponent(f.id)}"><span>${esc(f.name)}</span><span class="bar"><i style="width:${Math.round((used / all) * 100)}%"></i></span><small>${tr('{used} von {all} Fächern', { used, all })}</small></a>`).join('')
+      ? ff.map(({ f, all, used }) => `<a class="ov-floor" href="#/haus?etage=${encodeURIComponent(f.id)}"><span>${esc(shown(f.name))}</span><span class="bar"><i style="width:${Math.round((used / all) * 100)}%"></i></span><small>${tr('{used} von {all} Fächern', { used, all })}</small></a>`).join('')
       : `<p class="hint">${tr('Noch keine Fächer im Hausplan.')}</p>`;
   };
   house();

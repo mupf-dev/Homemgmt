@@ -1,5 +1,19 @@
 # Changelog
 
+## Unreleased
+
+**Stored names in your language**: floors, rooms, compartments, storage areas and furniture groups that match a
+built-in default ("Erdgeschoss", "Küche", "Schublade 1 (oben)" …) are shown in the selected language – in both
+directions, so a room created in English appears in German for German users. Your own names and input fields stay
+as entered.
+
+**Furniture types in English**: furniture types can carry an English name and description (optional `en` block,
+also in the editor under "English (optional)"). All furniture types in the community catalog now have one; the app
+shows them when set to English, including in location names.
+
+**Security updates** for dependencies (body-parser, vite). The manual for the inventory now uses the current menu
+names.
+
 ## 0.8.0 – 2026-10-26
 
 **German and English**: the whole app – overview, house planner, 3D, wall terminal, guide, server messages and the

@@ -1,16 +1,17 @@
-> **Note:** Manual from the standalone Heimlager (as of 1.8.1). Usage and API apply unchanged to the inventory module
-> of homemgmt-ng; startup, ports, paths and Docker are now described in the [README](../README.md).
+> **Note:** This manual started out as the manual of the standalone Heimlager (1.8.1) and has been updated for the
+> inventory part of homemgmt-ng. Installation, ports, paths and Docker are described in full in the
+> [README](../README.md); the app itself has a short **Guide** under More → Guide.
 
-# Heimlager
+# Inventory
 
-A small home inventory system as a web application. Runs without external dependencies and only needs
-**Node.js 22.13 or later** (uses the built-in SQLite database).
+The inventory part of homemgmt-ng: a small home inventory system as a web application. It needs no external database,
+only **Node.js 22.18 or later** (uses the built-in SQLite database).
 
 ## Getting started
 
 ```bash
-npm start
-# or: node server.js
+npm install
+npm run build && npm start
 ```
 
 Then open in the browser: <http://localhost:3000>
@@ -30,45 +31,31 @@ docker compose logs -f          # check startup
 Web app: `http://<server>:3000`, MCP: `http://<server>:3100/mcp`. On the first start with an empty database the
 initial setup (first admin) appears – so open it yourself right after starting.
 
-**Bring existing data along** (stop the local server with Ctrl+C first so everything is written to `lager.db`):
-
-```bash
-docker compose create
-docker compose cp ./lager.db heimlager:/data/lager.db
-docker compose run --rm -u root --entrypoint chown heimlager -R node:node /data
-docker compose up -d
-```
+**Bring existing data along** (from a standalone Heimlager): see "Importing existing data" in the
+[README](../README.md#importing-existing-data).
 
 **Without Git/build on the server:** build the image locally and transfer it:
 
 ```bash
-docker build -t heimlager:latest .
-docker save heimlager:latest | ssh user@server docker load
+docker build -t zuhause:latest .
+docker save zuhause:latest | ssh user@server docker load
 # on the server: copy docker-compose.yml over, then docker compose up -d
 ```
 
 **Backup while running** (in addition to the automatic backups in `/data/backups`):
 
 ```bash
-docker compose exec heimlager node --no-warnings -e "new (require('node:sqlite').DatabaseSync)('/data/lager.db').exec(\"VACUUM INTO '/data/backup.db'\")"
-docker compose cp heimlager:/data/backup.db ./lager-backup-$(date +%F).db
-docker compose exec heimlager rm /data/backup.db
+docker compose exec zuhause node --no-warnings -e "new (require('node:sqlite').DatabaseSync)('/data/zuhause.db').exec(\"VACUUM INTO '/data/backup.db'\")"
+docker compose cp zuhause:/data/backup.db ./zuhause-backup-$(date +%F).db
+docker compose exec zuhause rm /data/backup.db
 ```
 
 **Update:** pull the new version, then `docker compose up -d --build`. The database is migrated automatically on startup.
 
-### Development with Docker
+### Development
 
-`docker-compose.dev.yml` mounts the project folder and restarts the server automatically when `server.js`/`mcp.js`
-change (`node --watch`); changes in `public/` show up after reloading the browser.
-The database lives in `./data` (the same one as with `npm start` – don't run both at the same time),
-HTTPS runs with the certificate from `./certs` on port 3443.
-
-```bash
-docker compose -f docker-compose.dev.yml up -d --build
-docker compose -f docker-compose.dev.yml logs -f
-docker compose -f docker-compose.dev.yml down
-```
+`npm run dev` starts a single process with the server and the app (with hot reload) at <http://localhost:3000>;
+see [Development](../README.md#development) in the README.
 
 ### Tests
 
@@ -125,7 +112,7 @@ everything works except the camera; codes can then be entered by hand or with a 
 
 ```powershell
 netsh interface portproxy add v4tov4 listenport=3443 listenaddress=0.0.0.0 connectport=3443 connectaddress=<WSL-IP>
-netsh advfirewall firewall add rule name="Heimlager" dir=in action=allow protocol=TCP localport=3443
+netsh advfirewall firewall add rule name="homemgmt-ng" dir=in action=allow protocol=TCP localport=3443
 ```
 
 Alternatively enable `networkingMode=mirrored` in `.wslconfig`.
@@ -136,63 +123,64 @@ Options via environment variables:
 |--------------|-------------------|----------------------------------------|
 | `PORT`       | `3000`            | HTTP port                              |
 | `HTTPS_PORT` | `3443`            | HTTPS port (only active with a certificate) |
-| `DB_PATH`    | `./data/lager.db` | Location of the SQLite database        |
+| `DB_PATH`    | `./data/zuhause.db` | Location of the SQLite database      |
 | `CERT_DIR`   | `./certs`         | Folder containing `key.pem` and `cert.pem` |
 
 ## Sign-in
 
-The app can only be used after signing in. On the **first start** "Welcome to Heimlager" appears: tap an existing
+The app can only be used after signing in. On the **first start** "Welcome to homemgmt-ng" appears: tap an existing
 person (or "New person") and enter a password twice – that person is then **admin**. After that you sign in by
-tapping your tile and entering your password (a PIN of 4 or more characters works too). The sign-in is kept on the
-device for 30 days.
+tapping your tile and entering your password (a PIN of 4 or more characters works too), or via "sign in with e-mail"
+below the tiles. The sign-in is kept on the device for 30 days.
 
-- **Admins** assign passwords and roles (user/admin) under "Manage people" and manage storage areas and API keys.
-  People without a password don't appear on the sign-in page.
-- **My account** (menu or click on your own name at the top): change your own password, sign out.
+- **Admins** assign passwords and roles (user/admin) under **More → Administration → People** and manage storage
+  areas and API keys under More → Administration. People without a password don't appear on the sign-in page.
+- **Account menu** (click on your own name at the top): "Settings", "Change password", "Sign out".
 - Transactions are always attributed to the signed-in person.
 
-**Forgot your password?** An admin resets it under "Manage people". If the (only) admin has forgotten their
-password, on the server:
+**Forgot your password?** An admin sets a new one under More → Administration → People ("Edit" → "New password
+(empty = unchanged)"). If the (only) admin has forgotten their password, on the server:
 
 ```bash
 npm run reset-password                          # list people
 npm run reset-password -- anna                # generate and print a random new password
 npm run reset-password -- anna neuesPW --admin   # set a given password, also grant admin rights
 # in the Docker container:
-docker compose exec heimlager node scripts/reset-password.js anna
+docker compose exec zuhause node scripts/reset-password.cjs anna
 ```
 
 ## Photos
 
-Items can get a photo – when creating them (optional) or in the detail view by tapping the photo field (camera or
-gallery). The phone shrinks the image before uploading (about 1280 px, plus a square thumbnail); thumbnails appear in
+Items can get a photo – in the detail view by tapping the photo field (camera or gallery), or from a photo in the
+assistant chat. The phone shrinks the image before uploading (about 1280 px, plus a square thumbnail); thumbnails appear in
 all lists and in scan mode for confirmation. Photos are stored in the database and are therefore automatically
 included in every backup.
 
 ## Install as an app
 
-Heimlager is an installable web app (PWA): open it over HTTPS (port 3443 or a reverse proxy), then choose "Install
-app" in the browser, or on the iPhone "Share → Add to Home Screen" (instructions also under "My account").
-Long-pressing the app icon jumps straight to **Scan, Check in, Take out, Search, Shopping list**.
+homemgmt-ng is an installable web app (PWA): open it over HTTPS (port 3443 or a reverse proxy), then choose "Install
+app" in the browser, or on the iPhone "Share → Add to Home Screen".
+Long-pressing the app icon jumps straight to **Assistant, Scan, Check in, Search, Shopping list, House**.
 The UI is cached and therefore starts quickly; data always comes fresh from the server.
-The icons are generated by `npm run icons` (script `scripts/make-icons.js`).
+The icons are generated by `npm run icons` (script `scripts/make-icons.cjs`).
 
 ## Insights
 
-Menu → "Insights": key figures (items, pieces, occupied locations, transactions, shopping list, out of stock), the
-most used items (90 days), who books how much (30 days), items **not touched for a long time** (6 months / 1 year /
-2 years – candidates for decluttering), out-of-stock items and empty locations.
-With several storage areas you can filter by one storage area.
+More → "Insights": key figures (items, pieces, locations in use, transactions in the last 30 days, on the shopping
+list, expired/expiring), the most used items (90 days), who books how much (30 days), items **not touched for a long
+time** (6 months / 1 year / 2 years – candidates for decluttering) and out-of-stock items.
+"Fill level in house", "Activity in house" and "Long untouched in house" show this as heatmaps in the house.
 
 ## Export & import
 
-Administration → "Export & import" (admins only):
+More → Administration → "Export & import" (admins only):
 
-- **Export** as Excel (.xlsx) or CSV (semicolon-separated, opens directly in German Excel), all or one storage area.
+- **Export** of all items as Excel (.xlsx) or CSV (semicolon-separated, opens directly in German Excel).
   Columns (German headers): `Code`, `Name`, `Beschreibung` (description), `Lager` (storage area), `Platz` (location),
   `Menge` (quantity), `Verbrauchsmaterial` (consumable), `Haltbar bis` (best before), `Platzname` (location name),
-  `Kategorie` (category), `Zuletzt gebucht` (last transaction), `Von` (by).
-- **Import** of the same columns from Excel or CSV (template available for download). Name and location are required
+  `Kategorie` (category), `Zuletzt gebucht` (last transaction), `Von` (by). For compartments of the house plan the
+  location name is "furniture · compartment" and the category is the room.
+- **Import** of the same columns from Excel or CSV ("Choose file …"). Name and location are required
   (`B12` + the storage area column, or `K-B12`). Rows with a known **code** update the item, an unknown valid code is
   adopted (for pre-printed labels), rows without a code create a new item.
   Before importing, a **preview** shows every row (new / changed / unchanged / error); error rows are skipped.
@@ -213,13 +201,13 @@ removes it again.
 ## Backups
 
 The server creates a backup automatically (default: every 24 hours, the last 14 are kept) in the `backups/` folder
-next to the database (`data/backups`, in the Docker container `/data/backups`). Under
-**Administration → Backups** admins can:
+next to the database (`data/backups`, in the Docker container `/data/backups`). Backups contain the inventory, the
+house plan, accounts and plans. Under **More → Administration → Backups** admins can:
 
-- create a backup immediately, download or delete backups,
-- **restore** an earlier state – while running; the current state is backed up automatically first ("before
-  restore") and can be brought back the same way,
-- upload a backup file (just store it or restore it right away). The file is validated first.
+- create a backup immediately ("Back up now"), download or delete backups,
+- **restore** an earlier state ("Restore") – while running; the current state is backed up automatically first
+  ("before restore") and can be brought back the same way,
+- upload a backup file ("Upload backup …"; just store it or restore it right away). The file is validated first.
 
 Manual backups and backups made before a restore are never deleted automatically.
 Important: also keep backups somewhere else (download, NAS, cloud) – on the same disk they won't help if the disk fails.
@@ -232,29 +220,31 @@ Important: also keep backups somewhere else (download, NAS, cloud) – on the sa
 
 ## AI assistant in the app
 
-Under **Assistant** (menu, and as a purple button in the detail and location views) an AI assistant takes requests by
-**text, voice or photo** and books by itself: "3 cans of tomatoes to basement B2, best before 05/2027", "Put the drill
-in the toolbox", a photo of the item + shelf label "this goes here", "What expires this week?".
+Under **More → Assistant** (and via the "Assistant" button in an item's detail view) an AI assistant takes requests by
+**text, voice or photo** and books by itself: "3 tins of tomatoes into the pantry cabinet, best before 05/2027", "Put
+the drill in the toolbox", a photo of the item + compartment label "this goes here", "What expires this week?".
 
-- **Setup** (Administration → Assistant): address of an OpenAI-compatible API (default
+- **Setup** (More → Administration → Assistant): address of an OpenAI-compatible API (default
   `https://openrouter.ai/api/v1`), model and API key, then "Test connection". The model must support tools (tool
   calling) and, for photos, images. The key stays on the server and is never displayed.
 - **Tools:** the same as the MCP server, plus `foto_zuordnen` (a photo from the chat becomes the item's picture).
   The assistant acts as the signed-in person with their permissions; the history shows "via assistant".
 - **Transactions** are executed immediately – each appears in the chat with "undo". If there are **4 or more at
   once**, it shows them for confirmation first ("Execute" / "Cancel").
-- **Photos:** the app shrinks them and reads QR labels (location, item) itself; the assistant recognizes the rest.
+- **Photos:** the app shrinks them and reads QR labels (location, item) itself; the assistant recognises the rest.
 - **Voice:** 🎤 uses the browser's speech recognition (good in Chrome/Android, limited in Safari/iOS, HTTPS only);
-  the message is sent automatically after speaking. "🔊 Read aloud" reads the answers aloud.
-- **Context:** when opened from the detail or location view, the assistant knows what "this" or "here" refers to.
-- **Location names:** it understands named locations (Locations → Edit, e.g. "Fridge") directly: "into the fridge".
+  the message is sent automatically after speaking. "Read aloud" reads the answers aloud.
+- **Context:** when opened from an item's detail view, the assistant knows what "this" refers to.
+- **Location names:** it understands compartments by their name from the house plan directly: "into the cutlery
+  drawer", "kitchen fridge top".
 - **History:** only the latest messages are sent along (at most 20, or about 8000 characters). "Forget that" or
   "New conversation" clears the history, as does the "New conversation" button; after a 30-minute pause a new
   conversation starts automatically (older messages stay visible but are no longer sent).
-- **Price research** (shopping list, tool `preise_recherchieren`): one web search per product, the model names the
-  cheapest offers with their source; offers whose source is not among the search results count as unconfirmed.
+- **Price research** ("Check prices" on the shopping list, tool `preise_recherchieren`): one web search per product,
+  the model names the cheapest offers with their source; offers whose source is not among the search results count as
+  unconfirmed. Can be switched off with "Price search active" in the assistant settings.
   With **OpenRouter** the web search comes from the web plugin. With a **gateway like LiteLLM** (setting "Search tool in
-  gateway", e.g. `foundry-web`) a small agent researches with the tools `websuche` (`POST {address}/search/{search tool}`,
+  the gateway", e.g. `foundry-web`) a small agent researches with the tools `websuche` (`POST {address}/search/{search tool}`,
   at most 3) and `seite_lesen` (the server fetches the page, public addresses only, at most 3); a price then only
   counts as confirmed if it appears on a page that was read. Pages that load their prices via JavaScript return no
   text – flyer portals like kaufDA work well. Without a web plugin or search tool, price research is not available.
@@ -272,25 +262,27 @@ in the toolbox", a photo of the item + shelf label "this goes here", "What expir
 
 ## House in 3D
 
-Under Administration → "Set up house" you can model the whole house including the outdoor area: floors (basement,
-living floors, attic with gable roof, outdoors) with elevation, room height, outer outline and rooms as polygons; the
-walls result automatically from "outline minus rooms". Plus doors, windows, carport/terrace/parking space and fixtures
-(shelf unit, cabinet, wall cabinet, fridge, floor space, stairs). Every location – from any storage area – can be
-assigned to a shelf of a fixture. The storage plan shows the house in the "3D" tab (three.js under
-`public/vendor/three/`, loaded only when opened). Dimensions are stored in mm and shown in cm in the editor.
+The house is planned in the app itself: **House → "Plan"** (on a PC, for people with the "Plan the house" permission –
+admins always may). There you add floors (basement, upper floors, attic, outdoor area), draw walls, doors and windows,
+define rooms ("Define room") and place furniture from the catalogue. Every room is a storage area, every compartment of
+a piece of furniture (drawer, shelf, fridge compartment) a location; "Done" saves and returns to viewing. When viewing,
+tapping a piece of furniture shows its compartments and tapping a compartment its contents; the house can be shown as
+a floor plan (2D) or in 3D, and "Where is …?" lights up the matches. Dimensions are stored in mm. Details are in the
+in-app Guide (More → Guide, "Plan the house") and in the [README](../README.md#1-set-up-your-house).
 
 ## MCP server (AI assistants)
 
 A separate port (default `3100`) runs an MCP server (transport "Streamable HTTP", endpoint `/mcp`) through which AI
 assistants like Claude can use the inventory: search, check in/take out, move, show locations, shopping list, recent
-transactions. Authentication via **API key** (`Authorization: Bearer hlk_…`), which admins create under "API keys":
+transactions. Authentication via **API key** (`Authorization: Bearer hlk_…`), which admins create under
+More → Administration → "API keys":
 each key belongs to one person (on whose behalf transactions are booked) and has the permission "Read and book" or
 "Read only". The key is shown only once; only a hash is stored.
 API keys also work for the REST API (`/api/...`), but not for administrative functions.
 Exception in the MCP server: with an admin's key ("Read and book") `lager_anlegen` is additionally available.
 
 ```bash
-claude mcp add --transport http heimlager http://localhost:3100/mcp --header "Authorization: Bearer hlk_…"
+claude mcp add --transport http zuhause http://localhost:3100/mcp --header "Authorization: Bearer hlk_…"
 ```
 
 For access from outside, publish the port through a reverse proxy (TLS) – the web app itself doesn't have to be
@@ -307,20 +299,25 @@ public for that. Turn off buffering in the proxy (Caddy `flush_interval -1`, ngi
 ## Workflow
 
 1. **Sign in** – tap your tile, enter your password.
-2. **What would you like to do?** – Scan, Check in, Take out or Search
-   (plus storage plan, locations and label printing).
+2. **Overview** – Scan, Check in, Take out or Search, plus the shopping list, tasks, what expires soon, how full the
+   floors are and what was recently moved. House, Search, Shopping and More are in the navigation (on the phone at
+   the bottom, with Scan in the middle).
 3. Every transaction records person, quantity, location and time.
    Search and the detail view show who last checked an item in or took it out – including the complete history.
 
 ## Managing people
 
-Under "Manage people" (in the menu and on the "Who are you?" page) you can add, rename and recolor people. For people
-who are no longer needed there are two options:
+Under **More → Administration → People** (admins only) you can add people ("Create person") and, with "Edit", change
+their name, colour, role, password and the "Plan the house" permission. For people who are no longer needed there are
+two options:
 
-- **Archive** – the person disappears from the selection, their history stays unchanged.
-  Archived people can't book and can be restored at any time.
-- **Delete** – immediately if they have no transactions. Otherwise their transactions are first transferred to
-  another person (handy for merging duplicate people).
+- **Archive** ("archived" in the edit dialog) – the person disappears from the selection, their history stays
+  unchanged. Archived people can't book and can be restored at any time.
+- **Delete** ("Delete …") – immediately if they have no transactions. Otherwise their transactions are first
+  transferred to another person (handy for merging duplicate people).
+
+Below the list, "Allow self-registration" and "New accounts must be approved" control sign-up with e-mail; waiting
+accounts are approved there with "Approve".
 
 ## Scanning with QR codes
 
@@ -330,9 +327,10 @@ In scan mode the camera runs continuously. Recognized codes trigger an action im
 |---------------|-----------------------------------------|-----------------------------------------------|
 | **Check in**  | 1. location, 2. item                    | The item is booked to this location. The location stays active, more items can be scanned right after. |
 | **Take out**  | The item **twice** in a row             | The item is taken out. Move the camera away briefly between the scans. |
-| **New item**  | Unknown (pre-printed) label             | A form for name and location opens, the code is permanently assigned to the item. |
+| **Pack in**   | 1. container, "Pack in", 2. the items   | Each scanned item goes straight into the container. |
+| **New**       | Unknown (pre-printed) label             | The "Check in" form opens with the code; enter name and compartment, the code is permanently assigned to the item. |
 
-The quantity per transaction (default 1) can be set in scan mode. A beep and a vibration confirm every transaction.
+The quantity per transaction ("Quantity per transaction", default 1) can be set in scan mode. A beep and a vibration confirm every transaction.
 The input field below the camera image also accepts handheld scanner input or codes typed by hand.
 
 ### Code format
@@ -354,32 +352,36 @@ The prefix can be omitted when typing.
 
 Items can be marked as **consumables** when created or under "Edit" (e.g. batteries, screws, cleaning supplies). When
 such an item is taken out, it counts as used up and the quantity taken out is added automatically to the
-**shopping list** (tile in the menu, with a count). If it is already on the list, the quantity is increased. Other
-items can be added by hand in the detail view with "Add to shopping list", free entries (e.g. "milk") directly on the
-list.
+**shopping list** ("Shopping" in the navigation, with a count). If it is already on the list, the quantity is
+increased. Other items can be added by hand in the detail view with "Add to shopping list", free entries (e.g. "milk")
+directly on the list ("Add").
 
 On the list:
 
-- **Tick off** (circle) – bought; moves to "Recently bought" and can be brought back from there.
-- **Bought + check in** – checks the quantity straight back into the previous location.
-- **Bought + store** (free entries that aren't an item yet) – opens "New item" with name, quantity and consumable
-  pre-filled; after saving, the entry is ticked off and linked to the item.
-- Change the quantity with −/+, add a note (brand, size …), remove the entry.
-- **Share:** "WhatsApp" opens WhatsApp with the finished list, "Share…" the phone's share menu (only available over
-  HTTPS), plus "Copy" and "Save as text".
+- **Tick off** (circle) – bought; moves to "Recently bought" and can be brought back from there ("Back onto the list").
+- **"check in"** – bought; checks the quantity straight back into the previous location.
+- **"store"** (free entries that aren't an item yet) – choose a compartment; the entry is created there as a new item
+  (as a consumable) and ticked off.
+- Change the quantity with −/+, remove the entry with ✕. A note (brand, size …) is shown below the name; it can be
+  added via the assistant or MCP.
+- **Share:** "WhatsApp" opens WhatsApp with the finished list, "Share …" the phone's share menu (only available over
+  HTTPS), plus "Copy".
+- **"Check prices"** looks up the cheapest offers online (see [price research](#ai-assistant-in-the-app)).
 
 ## Multiple storage areas
 
-Under "Manage storage areas" you can create any number of storage areas (e.g. basement, garage, attic).
+Every **room** of the house plan is automatically a storage area; its name and code are maintained on the room in the
+planner (changing the code renames all locations – printed labels then no longer match). Furniture outside a room
+belongs to the storage area of its floor. Additional storage areas without a plan (e.g. a garage that isn't planned
+yet) are created under **More → Administration → Storage** ("Create storage area").
 Each storage area has a **name**, a **code** (1–4 characters, e.g. `K`) and its own locations –
 B12 in the basement and B12 in the garage are different locations.
 
-- The **current storage area** is selected at the top of the header (appears once there are two storage areas) and is
-  remembered per device. Locations, storage plan and label printing refer to this storage area.
 - **Search** finds items in all storage areas; locations are then shown with their code (`K-B12`).
   Searching with a code (`K-B12`, `K-B`) searches only that storage area.
-- When checking in and editing, you choose storage area + location; this way you can also move things to another
-  storage area.
+- When checking in or moving ("Move" in the detail view), you choose a compartment in the house ("Choose compartment
+  in the house …") or enter a location of any storage area under "Other location" (e.g. `H-B12`); this way you can
+  also move things to another storage area.
 - A storage area can only be deleted when no items are left in it.
 
 On the first start after the update, all existing locations and items are assigned to the storage area
@@ -393,27 +395,29 @@ with different dates, enter the earliest or create separate items.
 - **New package:** when checking in an existing item, you can change the date at the same time.
 - **Display:** lists show an orange tag from 30 days before expiry and a red tag after expiry; the detail view always
   shows the date.
-- **Menu:** if something has expired or expires within the next 7 days, a notice appears at the top.
-- **"Expiry"** (menu) lists what has expired and what expires within 7 days, 30 days, 3 months or 1 year;
-  insights show both as key figures. Items with a stock of 0 don't count.
+- **Overview:** the "Expiring soon" card lists what expires within the next 30 days.
+- **"Expiry"** (More) lists what has expired and what expires within 7 days, 30 days, 3 months or 1 year;
+  "Show all in house" highlights the compartments. Insights show both as key figures. Items with a stock of 0 don't
+  count.
 - **Export/import:** column `Haltbar bis` (also `MHD`), e.g. `31.03.2027`, `2027-03-31`, Excel date cells or just
   the month `03/2027` (= end of month).
 - **MCP:** `einbuchen` with `haltbar_bis`, `haltbarkeit_setzen` (without changing the quantity) and `haltbarkeit_pruefen`.
 
 ## Containers (bag, box, crate)
 
-If a location holds a bag or box containing several things, create it as a **container** ("Container" checkbox when
-checking in or editing). A container is a regular item with its own code and label; other items are stored **inside**
-it – nested too (a bit bag inside the toolbox).
+If a location holds a bag or box containing several things, make it a **container** ("Edit" → "Container" checkbox).
+A container is a regular item with its own code and label; other items are stored **inside** it – nested too (a bit
+bag inside the toolbox).
 
-- **Put in:** in the container's detail view use "Put item inside" or "Check in new item inside", or choose the
-  container under "Inside" when checking in/editing (then no location is needed).
+- **Put in:** in the container's detail view use "Put item inside", "Check in new item inside" or "Pack in by
+  scanning", or choose "Or into a container …" when checking in (then no compartment is needed).
 - **Location:** the contents always have the container's location. When the container is moved, everything inside
   moves along.
-- **Take out of the container:** when editing choose "directly at the location" or check it in at another location.
-  Checking in at the same location leaves the item in the container.
-- **Display:** at the location, the contents are listed indented below their container; lists show "in …".
-- **Scanning:** scan a container → "Fill" → every further scanned item is checked into the container.
+- **Take out of the container:** use "Move" in the item's detail view and choose a compartment; checking it in to a
+  compartment in the app also takes it out. (Via MCP/API, checking in at the same location without a container leaves
+  the item in the container.)
+- **Display:** lists show "in …" after the location; the container's detail view lists its "Contents".
+- **Scanning:** scan a container → "Pack in" → every further scanned item is checked into the container.
 - **Undo** puts an item back into the container it came from. If a container is deleted, its contents stay at the
   location. A container with contents can't be turned back into a regular item.
 - Via MCP: `einbuchen` and `umlagern` with `behaelter`, new containers with `ist_behaelter`.
@@ -423,43 +427,41 @@ it – nested too (a bit bag inside the toolbox).
 ## Locations
 
 A location consists of a **column** (letters `A`–`Z`, also multi-letter like `AA`, `AB`, …) and a **row**
-(`0`–`99`), e.g. `B12` or `AC7`. Each location can have a **name**, a **category** and a **short description**.
-Under "Locations" you can create whole ranges at once (e.g. columns A–C, rows 0–9). Locations that don't exist yet
-when checking in are created automatically.
+(`0`–`99`), e.g. `B12` or `AC7`. In the house plan every piece of furniture with compartments gets a column letter and
+every compartment a row, counted from the top starting at 0: `KU-B2` = kitchen, furniture B, compartment 2. Name
+("furniture · compartment") and room come from the plan. Locations of storage areas without a plan that don't exist
+yet are created automatically when checking in ("Other location"); whole ranges can be created via the API
+(`POST /api/places/bulk`), names, categories and descriptions set via the API or MCP (`lagerplatz_benennen`).
 
-Search can look up a location directly (`B12` shows the location, `B` the whole column), as well as location names,
-categories and item codes.
+Search can look up a location directly (`B12` finds the items there, `B` the whole column), as well as location
+names, categories and item codes.
 
 ## Printing labels
 
-"Print labels" offers three kinds:
+More → "Labels" opens "Labels & QR signs" (also via "Label" in an item's detail view, and when planning via "Labels /
+QR tags for the compartments" on a piece of furniture). It offers three kinds:
 
-- **Locations** – choose a range or all created locations; label with QR, code, name, category.
-- **Items** – all or filtered items; label with QR, name, location and code.
-- **Blank item labels** – pre-printed codes to stick on. The item is created on the first scan.
+- **Compartments** – choose by floor, room and furniture; label with QR, address, furniture · compartment, room and
+  floor.
+- **Items** – all or filtered items ("Filter (empty = all)"); label with QR, name, location and code.
+- **Blank labels** – pre-printed codes to stick on. The item is created on the first scan.
 
-Printing uses the browser's print dialog. There is a large (approx. 7 × 3.6 cm) and a small variant
-(approx. 5 × 2.5 cm). Individual labels can be printed directly from the location or item view.
+"Print" uses the browser's print dialog. There is a large (approx. 7 × 3.6 cm) and, with "small labels", a small
+variant (approx. 5 × 2.5 cm).
 
 ## 3D printing
 
-In the location and item views, "3D print" opens a generator for QR signs.
-You can set width, margin, corner radius, plate and QR height, a text below the code, an eyelet for hanging, and
-the colors of the base plate and QR code. The preview shows dimensions and module size and warns about modules that
-are too small (under 0.8 mm) or insufficient contrast.
+On the same page, "3D signs (3MF)" downloads the selected labels as QR signs for multicolour printers (AMS/MMU): a 3MF
+file with base plate and QR code as two coloured parts, the signs spread over build plates (several plates are
+downloaded as a ZIP). Under "3D sign settings" you can set width, plate thickness, QR height, build plate size, the
+colours of plate and QR code, and an eyelet for hanging.
 
-| Download            | Intended for                                                            |
-|---------------------|-------------------------------------------------------------------------|
-| STL (one part)      | Single filament; insert a color change in the slicer at Z = plate thickness |
-| 3MF with colors     | Multicolor printers (AMS/MMU): base plate and QR code as two colored parts |
-| 2 STL parts (ZIP)   | Slicers without 3MF support: both parts separately                      |
-
-The models are generated entirely in the browser (`public/qr3d.js`).
+The models are generated entirely in the browser (`web/app/public/qr3d.js`).
 
 ## Data backup
 
-Everything is in `data/lager.db`. A copy of this file is a complete backup
-(stop the server first, or also copy `data/lager.db-wal`).
+Everything is in `data/zuhause.db`. A copy of this file is a complete backup
+(stop the server first, or also copy `data/zuhause.db-wal`).
 
 ## API (for custom extensions)
 
@@ -519,7 +521,7 @@ All endpoints except `/api/auth/*` require authentication: session cookie (brows
 | GET     | `/api/overview`             | All locations and recent transactions                        |
 | GET     | `/q/<code>`                 | QR link, redirects into the app                              |
 
-## Libraries used (in the `public/vendor` folder)
+## Libraries used (in the `web/app/public/vendor` folder)
 
 - [qrcode-generator](https://github.com/kazuhikoarase/qrcode-generator) (MIT) – generate QR codes
 - [jsQR](https://github.com/cozmo/jsQR) (Apache-2.0) – read QR codes from the camera image if the browser has no `BarcodeDetector`

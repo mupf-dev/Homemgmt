@@ -89,7 +89,7 @@ Say, type or photograph what happened – the assistant books it into the right 
 
 - **Check in, take out, move, undo** with a complete history per item
 - **QR scan** with the phone camera: compartment code + item = check in, the same item twice = take out
-- **Labels & QR signs** to print – or as a 3D print model (STL/3MF, multicolor too)
+- **Labels & QR signs** to print – or as multicolour 3D print models (3MF)
 - **Shopping list**: consumables land on it automatically when taken out, share via WhatsApp
 - **Household tasks**: recurring, assigned to people, attached to compartments ("replace filter"), can be ticked off
   on the wall terminal too
@@ -284,9 +284,9 @@ becomes **admin**. After that you sign in with a tile + password/PIN or with you
 
 ### 3. Print labels
 
-*More → Labels & QR signs*: labels for compartments, items or **blank labels** to stick on in advance (large
-7 × 3.6 cm or small 5 × 2.5 cm). In the location and item views, **3D print** creates a QR sign as STL or multicolor
-3MF – entirely in the browser.
+*More → Labels*: labels for compartments, items or **blank labels** to stick on in advance (large
+7 × 3.6 cm or small 5 × 2.5 cm). **3D signs (3MF)** creates multicolour QR signs for 3D printing, laid out on print
+plates – entirely in the browser.
 
 ### 4. Shopping list and expiry
 

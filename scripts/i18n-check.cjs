@@ -176,7 +176,9 @@ if (require.main === module) {
     console.log(`\n${list.length} mögliche deutsche Texte außerhalb von tr()`);
   } else if (args[0] === '--unused') {
     const { used, dict } = check();
-    const unused = Object.keys(dict).filter((k) => !used.has(k));
+    const { where } = loadDict();
+    // names.json: Vorgaben für gespeicherte Namen (shown() in i18n.ts), stehen nicht in tr()
+    const unused = Object.keys(dict).filter((k) => !used.has(k) && where[k] !== 'names.json');
     for (const k of unused) console.log(JSON.stringify(k));
     console.log(`\n${unused.length} ungenutzte Einträge`);
   } else {

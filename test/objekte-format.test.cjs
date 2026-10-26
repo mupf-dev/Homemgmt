@@ -193,3 +193,24 @@ test('Gerätefarbe: hell → hellgraue Blende, dunkel/metallisch → Schwarzglas
   assert.equal(M.isDarkSurface('#c9cacc'), false);
   assert.equal(M.isDarkSurface('kein-hex'), false);
 });
+
+test('Englischer Name und Beschreibung (en) bleiben erhalten, leere fallen weg', () => {
+  const t = M.validateObjectType({ ...wama(), en: { name: 'Washing machine under worktop', description: 'With drawers' } });
+  assert.deepEqual(t.en, { name: 'Washing machine under worktop', description: 'With drawers' });
+  assert.equal(M.validateObjectType({ ...wama(), en: { name: '', description: '' } }).en, undefined);
+  assert.throws(() => M.validateObjectType({ ...wama(), en: { name: 'x'.repeat(61) } }));
+});
+
+test('objText: Server ohne Anmeldung bleibt deutsch, App bei Englisch englisch', async () => {
+  const T = await import('../web/app/src/model/text.ts');
+  const o = { name: 'Waschmaschine unter Arbeitsplatte', en: { name: 'Washing machine under worktop' } };
+  assert.equal(T.objText(o).name, 'Waschmaschine unter Arbeitsplatte');
+  assert.equal(T.objectNames.get(o.name), 'Washing machine under worktop');
+  T.setModelLang(() => 'en');
+  try {
+    assert.equal(T.objText(o).name, 'Washing machine under worktop');
+    assert.equal(T.objText({ name: 'Nur deutsch' }).name, 'Nur deutsch');
+  } finally {
+    T.setModelLang(() => 'de');
+  }
+});

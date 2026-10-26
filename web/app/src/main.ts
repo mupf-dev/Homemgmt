@@ -29,7 +29,8 @@ import { idleNow, initIdle, setTermStorm, setTermWeather, terminal } from './ter
 import { clearTerminalChat } from './lager/assistant';
 import { sunPosition } from './sun';
 import { lookFromWeather, WeatherFx } from './weatherfx';
-import { locale, tr, trn } from './i18n';
+import { locale, shown, tr, trn } from './i18n';
+import { objText } from './model/text.ts';
 
 const $ = <T extends HTMLElement = HTMLElement>(sel: string, root: ParentNode = document) => root.querySelector(sel) as T;
 /** Zahl mit fester Nachkommastellenzahl im Format der Sprache */
@@ -299,7 +300,7 @@ document.querySelectorAll<HTMLElement>('[data-cam]').forEach((b) => b.addEventLi
 $('#walkBtn').addEventListener('click', () => view.startWalk());
 view.onWalkChange = (on) => $('#walkHint').classList.toggle('on', on);
 view.onWalkWhere = (f, room) => {
-  $('#walkWhere').textContent = `${f.name}${room ? ' · ' + room : ''}`;
+  $('#walkWhere').textContent = `${shown(f.name)}${room ? ' · ' + shown(room) : ''}`;
 };
 view.onModeChange = (mode) => document.querySelectorAll('#houseMode [data-h]').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.h === mode));
 // 3D-Knopf „Haus“ beim Ansehen: Seitenleiste zeigt das ganze Haus, „Etage“/„Bis hier“ die Räume der Etage
@@ -771,7 +772,7 @@ function renderCatalog() {
   const groups = [...new Set(all.map((c) => c.group))].filter((g) => !g.startsWith('_'));
   $('#catalog').innerHTML = groups
     .map(
-      (g) => `<div class="cat-group"><h3>${esc(g)}</h3><div class="catalog">${all.filter((c) => c.group === g)
+      (g) => `<div class="cat-group"><h3>${esc(shown(g))}</h3><div class="catalog">${all.filter((c) => c.group === g)
         .map((c) => `<button class="cat-item${c.object ? ' cat-obj' : ''}" data-type="${esc(c.id)}" title="${c.object ? esc(tr('{name} · Objektbibliothek, Version {version}', { name: c.object.name, version: c.object.version })) : ''}">${catalogIcon(c)}<span>${esc(c.name)}</span><small>${c.width} × ${c.depth} × ${c.height} cm</small></button>`)
         .join('')}</div></div>`,
     )
@@ -843,11 +844,11 @@ function openModelLibrary() {
     });
     if (my !== seq) return;
     const q = modelState.q.toLowerCase();
-    const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.group} ${o.description}`.toLowerCase().includes(q)));
+    const hits = community!.objects.filter((o) => (!modelState.cat || o.group === modelState.cat) && (!q || `${o.name} ${o.en?.name ?? ''} ${o.group} ${shown(o.group)} ${o.description} ${o.en?.description ?? ''}`.toLowerCase().includes(q)));
     const page = hits.slice(offset, offset + 48);
     $('#mlCount', m.el).textContent = trn(hits.length, '{n} Möbelart', '{n} Möbelarten');
-    const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(o.name)}</b>
-      <small>${o.size ? `${o.size[0]} × ${o.size[1]} × ${o.size[2]} cm` : esc(o.group)}</small>
+    const html = page.map((o) => `<button class="ml-card" data-id="${esc(o.id)}">${o.preview ? `<img src="${esc(o.preview)}" alt="" loading="lazy" />` : `<span class="ml-noimg">${ic('box')}</span>`}<b>${esc(objText(o).name)}</b>
+      <small>${o.size ? `${o.size[0]} × ${o.size[1]} × ${o.size[2]} cm` : esc(shown(o.group))}</small>
       <span class="ml-tags">${o.places ? `<span class="tag">${trn(o.places, '{n} Fach', '{n} Fächer')}</span>` : ''}${o.update ? `<span class="tag warn">${tr('neue Version {version}', { version: esc(o.version) })}</span>` : o.installed ? `<span class="tag ok">${tr('installiert')}</span>` : ''}</span></button>`).join('');
     res.innerHTML = append ? res.innerHTML + html : html || `<p class="hint">${tr('Nichts gefunden.')}</p>`;
     offset += page.length;
@@ -865,7 +866,7 @@ function openModelLibrary() {
           if ($('#main').classList.contains('v-3d')) ($('#viewMode button[data-v="split"]') as HTMLElement).click();
           document.querySelectorAll('.cat-item').forEach((x) => x.classList.toggle('on', (x as HTMLElement).dataset.type === OBJ_PREFIX + o.id));
           plan.setTool('place', OBJ_PREFIX + o.id);
-          toast(o.installed ? tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: o.name }) : tr('{name}: zum Platzieren in den Grundriss klicken (R dreht). Jetzt auch im Katalog unter „Möbel“.', { name: o.name }));
+          toast(o.installed ? tr('{name}: zum Platzieren in den Grundriss klicken (R dreht).', { name: objText(o).name }) : tr('{name}: zum Platzieren in den Grundriss klicken (R dreht). Jetzt auch im Katalog unter „Möbel“.', { name: objText(o).name }));
         } catch (e) {
           b.classList.remove('busy');
           toast((e as Error).message);
@@ -920,7 +921,7 @@ function openModelLibrary() {
   // Quelle: eigene Kategorien, „Ohne Filter“ nur bei Poly Haven
   const renderSource = () => {
     const groups = [...new Set((community?.objects ?? []).map((o) => String(o.group)))].sort((a, b) => a.localeCompare(b, 'de'));
-    const cats: [string, string][] = modelSource === 'community' ? [['', tr('Alle')], ...groups.map((g): [string, string] => [g, g])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
+    const cats: [string, string][] = modelSource === 'community' ? [['', tr('Alle')], ...groups.map((g): [string, string] => [g, shown(g)])] : modelSource === 'furnimesh' ? FM_CATS : MODEL_CATS;
     // Community-Gruppen sind erst nach dem Laden bekannt
     if ((modelSource !== 'community' || community) && !cats.some(([k]) => k === modelState.cat)) modelState.cat = '';
     m.el.querySelectorAll<HTMLElement>('#mlSource [data-src]').forEach((x) => x.classList.toggle('on', x.dataset.src === modelSource));
@@ -2014,7 +2015,7 @@ function renderProps() {
     const withComps = all.filter(({ it }) => compartments(it, h.settings).length);
     const fachCount = withComps.reduce((n, { it }) => n + compartments(it, h.settings).length, 0);
     const filled = [...sync.storage.values()].filter((pl) => pl.items.length).length;
-    el.innerHTML = `<h2>${esc(h.name || tr('Haus'))}</h2><div class="sub">${tr('Nichts ausgewählt')}</div>
+    el.innerHTML = `<h2>${esc(shown(h.name) || tr('Haus'))}</h2><div class="sub">${tr('Nichts ausgewählt')}</div>
       <div class="stats">
         <span>${tr('Etagen')}</span><span>${h.floors.length}</span>
         <span>${tr('Räume')}</span><span>${h.floors.reduce((n, f) => n + f.rooms.length, 0)}</span>
@@ -2037,7 +2038,7 @@ function renderProps() {
     const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
     const furniture = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1));
     const floorDef = slotMaterialDef(p, 'floor', r.floorMaterial);
-    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">${tr('Raum auf {floor} · {area} m²', { floor: esc(f.name), area: fixed(area, 1) })}</div>
+    el.innerHTML = `<h2>${esc(shown(r.name))}</h2><div class="sub">${tr('Raum auf {floor} · {area} m²', { floor: esc(shown(f.name)), area: fixed(area, 1) })}</div>
       <div class="row"><label>${tr('Name')}</label><input type="text" data-rk="name" value="${esc(r.name)}" maxlength="40" style="width:160px" /></div>
       <div class="row"><label title="${tr('Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.')}">${tr('Lager-Kürzel')}</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
       ${r.manual ? `<p class="hint">${tr('Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.')}${f.walls.length ? ` <button class="btn mini" data-rk="detect">${tr('Aus Wänden erkennen')}</button>` : ''}</p>` : ''}
@@ -2131,7 +2132,7 @@ function renderProps() {
       ? `<div class="obj-info">${ic('box')}<div><b>${esc(obj.name)}</b><small>${tr('Objektbibliothek · Version {version}', { version: esc(obj.version) })}${obj.author ? ` · ${esc(obj.author)}` : ''}</small>
         ${newer ? `<button class="btn mini primary" data-act="objUpdate" title="${tr('Die Bibliothek hat eine neuere Version dieser Möbelart')}">${tr('Version {version} übernehmen', { version: esc(libObj!.version) })}</button>` : ''}</div></div>`
       : '';
-    el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? tr('Möbel &amp; Deko (3D-Modell)') : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
+    el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? tr('Möbel &amp; Deko (3D-Modell)') : esc(shown(e.group))}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
       ${comps.length ? `<div class="row"><label title="${tr('Name im Lager, z. B. „Vorratsschrank“ oder „Besteckschublade“')}">${tr('Eigener Name')}</label><input type="text" data-key="label" value="${esc(it.label ?? '')}" placeholder="${esc(e.name)}" maxlength="40" style="width:160px" /></div>` : ''}
       ${lv ? `<div class="row"><label>${lv.label}</label><select data-key="levels" style="width:160px">${Array.from({ length: lv.max - lv.min + 1 }, (_, i) => lv.min + i).map((n) => `<option value="${n}" ${levelsOf(it, e.kind) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
       ${objInfo}
@@ -2220,8 +2221,8 @@ function renderProps() {
       const warn = before !== after ? '\n\n' + tr('Achtung: Die Fächerzahl ändert sich von {before} auf {after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.', { before, after }) : '';
       const question =
         users === 1
-          ? tr('„{name}“ auf Version {version} bringen? Das betrifft dieses Möbel im Haus.', { name: obj.name, version: libObj.version })
-          : tr('„{name}“ auf Version {version} bringen? Das betrifft alle {n} Möbel dieser Art im Haus.', { name: obj.name, version: libObj.version, n: users });
+          ? tr('„{name}“ auf Version {version} bringen? Das betrifft dieses Möbel im Haus.', { name: objText(obj).name, version: libObj.version })
+          : tr('„{name}“ auf Version {version} bringen? Das betrifft alle {n} Möbel dieser Art im Haus.', { name: objText(obj).name, version: libObj.version, n: users });
       if (!confirm(question + warn)) return;
       store.house.objectTypes = { ...(store.house.objectTypes ?? {}), [obj.id]: structuredClone(libObj) };
       store.commit();
@@ -2608,7 +2609,7 @@ function renderFloorTabs() {
   // Etagen mit Suchtreffern bekommen einen Punkt
   const hl = new Set([...view.highlight].map((k) => findItem(k.split(':')[0])?.floor.id));
   $('#floorTabs').innerHTML =
-    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${fixed(f.elevation / 100, 2)} m">${esc(f.name)}${hl.has(f.id) && f.id !== store.floorId ? `<span class="hl-dot" title="${tr('Treffer auf dieser Etage')}"></span>` : ''}</button>`).join('') +
+    floors.map((f) => `<button class="floor-tab ${f.id === store.floorId ? 'on' : ''}" data-f="${f.id}" role="tab" title="${esc(FLOOR_KINDS[f.kind])} · ${f.elevation >= 0 ? '+' : ''}${fixed(f.elevation / 100, 2)} m">${esc(shown(f.name))}${hl.has(f.id) && f.id !== store.floorId ? `<span class="hl-dot" title="${tr('Treffer auf dieser Etage')}"></span>` : ''}</button>`).join('') +
     `<button class="floor-tab add plan-only" data-add title="${tr('Etage hinzufügen')}">${ic('plus')}</button>`;
   $('#floorTabs').querySelectorAll<HTMLElement>('[data-f]').forEach((b) => b.addEventListener('click', () => store.setFloor(b.dataset.f!)));
   $('#floorTabs').querySelector('[data-add]')!.addEventListener('click', () => openAddFloor());
@@ -2732,7 +2733,7 @@ function renderRoomList() {
     .map((r, i) => {
       const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
       const n = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).length;
-      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(r.name)}</b><code>${esc(r.code)}</code><small>${fixed(area, 1)} m²${n ? ` · ${trn(n, '{n} Möbelstück', '{n} Möbel')}` : ''}</small></button>`;
+      return `<button class="room-row ${sel?.kind === 'room' && sel.id === r.id ? 'on' : ''}" data-r="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><b>${r.locked ? ic('lock') + ' ' : ''}${esc(shown(r.name))}</b><code>${esc(r.code)}</code><small>${fixed(area, 1)} m²${n ? ` · ${trn(n, '{n} Möbelstück', '{n} Möbel')}` : ''}</small></button>`;
     })
     .join('')}</div>`;
   el.querySelectorAll<HTMLElement>('[data-r]').forEach((b) =>
@@ -2887,7 +2888,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
   const draw = () => {
     if (!body.isConnected) return;
     const pl = sync.fach(itemId, row);
-    const roomName = roomOf(found.floor, found.item)?.name ?? found.floor.name;
+    const roomName = shown(roomOf(found.floor, found.item)?.name ?? found.floor.name);
     if (!pl) {
       head.textContent = comp.label;
       body.innerHTML = `<p class="hint">${tr('Dieses Fach ist noch nicht im Lager angelegt – der Hausplan wird gerade gespeichert.')} ${sync.canEdit ? '' : tr('Den Hausplan speichern nur Personen mit dem Recht „Haus planen“.')}</p>`;
@@ -2895,7 +2896,7 @@ function fachView(head: Element, body: Element, itemId: string, row: number) {
     }
     head.textContent = `${pl.address} · ${comp.label}`;
     body.innerHTML = `
-      <p class="hint">${esc(roomName)} · ${esc(itemName(found.item))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">${tr('als Liste öffnen')}</a></p>
+      <p class="hint">${esc(roomName)} · ${esc(shown(itemName(found.item)))} · <a class="link" href="#/platz?wh=${pl.warehouse_id}&p=${pl.col}${pl.row}">${tr('als Liste öffnen')}</a></p>
       ${pl.items.length ? `<div class="fach-items">${pl.items
         .map((i) => `<div class="fach-item" data-id="${i.id}">
           ${i.photo_at ? `<img src="/api/items/${i.id}/photo?size=thumb&v=${encodeURIComponent(i.photo_at)}" alt="">` : `<span class="ph">${ic(i.container ? 'box' : 'tag')}</span>`}
@@ -3027,7 +3028,7 @@ async function runSearch() {
     ? hits
         .map(({ i, pl }) => {
           const f = pl && findItem(pl.plan_item);
-          const where = pl && f ? `${esc(f.floor.name)} · ${esc(roomOf(f.floor, f.item)?.name ?? '')} · ${esc(pl.name)}` : tr('{area} – nicht im Hausplan', { area: esc(i.wh_name ?? '') });
+          const where = pl && f ? `${esc(shown(f.floor.name))} · ${esc(shown(roomOf(f.floor, f.item)?.name))} · ${esc(shown(pl.name))}` : tr('{area} – nicht im Hausplan', { area: esc(shown(i.wh_name)) });
           return `<button class="search-hit" data-plan="${pl ? `${pl.plan_item}:${pl.plan_slot}` : ''}" data-id="${i.id}"><b>${esc(i.name)}</b> <code>${esc(i.wh_code)}-${esc(i.col)}${i.row}</code><small>${i.quantity}× · ${where}</small></button>`;
         })
         .join('')
@@ -3280,9 +3281,9 @@ function renderViewPanelContent() {
       const comps = compartments(it, S);
       const room = roomOf(f, it);
       const code = it.storageCol ? `${storageCode(f, it)}-${it.storageCol}` : '';
-      el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(room?.name ?? f.name)}</button>${close}</div>
+      el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(shown(room?.name ?? f.name))}</button>${close}</div>
         <h2 class="vp-title">${code ? `<code>${esc(code)}</code>` : ''}${esc(itemName(it))}</h2>
-        <p class="vp-sub">${esc(room?.name ?? f.name)} · ${esc(f.name)}${comps.length ? ` · ${trn(comps.length, '{n} Fach', '{n} Fächer')}` : ''}</p>
+        <p class="vp-sub">${esc(shown(room?.name ?? f.name))} · ${esc(shown(f.name))}${comps.length ? ` · ${trn(comps.length, '{n} Fach', '{n} Fächer')}` : ''}</p>
         ${comps.length
           ? `<div class="vp-list">${comps.map((c, r) => {
               const pl = sync.fach(it.id, r);
@@ -3303,8 +3304,8 @@ function renderViewPanelContent() {
     const r = store.room(sel.id);
     if (r) {
       const list = roomItems(r.id);
-      el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(f.name)}</button>${close}</div>
-        <h2 class="vp-title"><code>${esc(r.code)}</code>${esc(r.name)}</h2>
+      el.innerHTML = `<div class="vp-head"><button class="vp-back" data-up>${ic('back')}${esc(shown(f.name))}</button>${close}</div>
+        <h2 class="vp-title"><code>${esc(r.code)}</code>${esc(shown(r.name))}</h2>
         <p class="vp-sub">${list.length ? trn(list.length, '{n} Möbelstück mit Fächern', '{n} Möbel mit Fächern') : tr('Keine Möbel mit Fächern')}</p>
         <div class="vp-list">${list.map((it) => {
           const fl = itemFill(it);
@@ -3332,7 +3333,7 @@ function renderViewPanelContent() {
       return { fl, all, used, count };
     });
     el.innerHTML = `<h2 class="vp-title">${esc(store.house.name || tr('Haus'))}</h2><p class="vp-sub">${tr('Etage antippen, um ihre Räume zu sehen.')}</p>
-      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(fl.name)}</b><small>${trn(fl.rooms.length, '{n} Raum', '{n} Räume')}${all ? ` · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
+      <div class="vp-list">${floors.map(({ fl, all, used, count }) => `<button class="vp-row" data-floor="${fl.id}">${ic('layers')}<span class="grow"><b>${esc(shown(fl.name))}</b><small>${trn(fl.rooms.length, '{n} Raum', '{n} Räume')}${all ? ` · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : ''}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>
       <p class="vp-legend"><span><i class="lv lv0"></i>${tr('leer')}</span><span><i class="lv lv1"></i>${tr('teils')}</span><span><i class="lv lv2"></i>${tr('voll')}</span></p>`;
     el.querySelectorAll<HTMLElement>('[data-floor]').forEach((b) =>
       b.addEventListener('click', () => {
@@ -3362,7 +3363,7 @@ function renderViewPanelContent() {
     }
     return { r, i, list, all, used, count };
   });
-  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}${tr('Haus')}</button></div><h2 class="vp-title">${esc(f.name)}</h2><p class="vp-sub">${tr('Möbel antippen, um Fächer und Inhalt zu sehen.')}</p>
+  el.innerHTML = `<div class="vp-head"><button class="vp-back" data-house>${ic('back')}${tr('Haus')}</button></div><h2 class="vp-title">${esc(shown(f.name))}</h2><p class="vp-sub">${tr('Möbel antippen, um Fächer und Inhalt zu sehen.')}</p>
     ${rows.length ? `<div class="vp-list">${rows.map(({ r, i, list, all, used, count }) => `<button class="vp-row" data-room="${r.id}"><span class="dot" style="background:${roomColor(i)}"></span><span class="grow"><b>${esc(r.name)} <code>${esc(r.code)}</code></b><small>${list.length ? `${trn(list.length, '{n} Möbelstück', '{n} Möbel')} · ${trn(count, '{n} Gegenstand', '{n} Gegenstände')}` : tr('keine Fächer')}</small></span>${all ? bar(used, all) : ''}</button>`).join('')}</div>` : `<p class="hint">${tr('Auf dieser Etage sind noch keine Räume festgelegt.')}</p>`}
     <p class="vp-legend"><span><i class="lv lv0"></i>${tr('leer')}</span><span><i class="lv lv1"></i>${tr('teils')}</span><span><i class="lv lv2"></i>${tr('voll')}</span></p>`;
   el.querySelectorAll<HTMLElement>('[data-room]').forEach((b) => b.addEventListener('click', () => store.select({ kind: 'room', id: b.dataset.room! })));
