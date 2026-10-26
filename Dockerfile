@@ -29,6 +29,7 @@ RUN npm ci --omit=dev && npm cache clean --force
 COPY --chown=node:node server ./server
 # der Server teilt sich das Hausmodell (Typen, Katalog, Geometrie, Räume, Fächer) mit der App
 COPY --chown=node:node web/app/src/model ./web/app/src/model
+COPY --chown=node:node web/app/src/i18n ./web/app/src/i18n
 COPY --chown=node:node scripts ./scripts
 COPY --from=build --chown=node:node /app/dist ./dist
 

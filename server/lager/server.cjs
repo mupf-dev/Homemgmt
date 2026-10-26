@@ -875,6 +875,7 @@ const PREFS = {
   houseView: ['2d', '3d'],
   theme: ['auto', 'light', 'dark'],
   fontSize: ['normal', 'large', 'xlarge'],
+  lang: ['auto', 'de', 'en'],
 };
 function readPrefs(raw) {
   let o = {};
@@ -897,7 +898,7 @@ route('GET', '/api/auth/me', (_p, _b, _qs, ctx) => {
   };
 }, { auth: 'public' });
 
-// Eigene Einstellungen ändern {start?, houseView?, theme?, fontSize?}
+// Eigene Einstellungen ändern {start?, houseView?, theme?, fontSize?, lang?}
 route('PATCH', '/api/auth/me/prefs', (_p, body, _qs, ctx) => {
   if (ctx.via !== 'session') throw new HttpError(403, 'Nur mit Anmeldung.');
   const prefs = readPrefs(ctx.person.prefs);

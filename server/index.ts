@@ -18,6 +18,7 @@ import { createHouse } from './haus/index.ts';
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
 const require = createRequire(import.meta.url);
 const lager = require('./lager/server.cjs');
+const i18n = require('./i18n.cjs'); // Sprache der Servermeldungen je Anfrage (Cookie zh_lang / Accept-Language)
 
 const PORT = Number(process.env.PORT ?? 3000);
 const HTTPS_PORT = Number(process.env.HTTPS_PORT ?? 3443);
@@ -31,6 +32,7 @@ const APP_DIST = join(ROOT, 'dist', 'app');
 const app = express();
 app.disable('x-powered-by');
 if (TRUST_PROXY) app.set('trust proxy', 1);
+app.use(i18n.middleware);
 app.use((_req, res, next) => {
   res.setHeader('X-Content-Type-Options', 'nosniff');
   res.setHeader('Referrer-Policy', 'same-origin');

@@ -3,7 +3,7 @@
 // Bedienung kehrt das Terminal zum Haus zurück und zeigt den Ruhezustand.
 
 import { ic } from './icons';
-import { setPrefs } from './prefs';
+import { prefs, setPrefs } from './prefs';
 
 export interface TerminalSettings {
   orientation: 'portrait' | 'landscape';
@@ -34,7 +34,7 @@ export function setTerminal(t: TerminalInfo | null) {
   document.body.classList.toggle('orient-portrait', t?.settings.orientation === 'portrait');
   document.body.classList.toggle('orient-landscape', t?.settings.orientation === 'landscape');
   if (!t) return;
-  setPrefs({ start: 'house', houseView: t.settings.houseView, theme: t.settings.theme, fontSize: t.settings.fontSize });
+  setPrefs({ start: 'house', houseView: t.settings.houseView, theme: t.settings.theme, fontSize: t.settings.fontSize, lang: prefs().lang });
   renderHead();
 }
 

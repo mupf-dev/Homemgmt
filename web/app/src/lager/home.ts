@@ -3,6 +3,7 @@
 
 import { ic, type IconName } from '../icons';
 import { prefs, savePrefs, type Prefs } from '../prefs';
+import { tr } from '../i18n';
 import { compartments } from '../model/storage.ts';
 import { api, esc, expiryTag, relDate, type ApiItem, type LagerCtx } from './core';
 import type { View } from './views';
@@ -128,6 +129,7 @@ export const viewSettings: View = (el, ctx) => {
     <section class="l-card"><h2>Haus zuerst zeigen als</h2>${choice('houseView', [['2d', 'Grundriss (2D)', 'Übersichtlich, schnell'], ['3d', '3D', 'Räumlich, Fächer in Farbe']])}</section>
     <section class="l-card"><h2>Darstellung</h2>${choice('theme', [['auto', 'Automatisch', 'Wie das Gerät'], ['light', 'Hell', 'Immer hell'], ['dark', 'Dunkel', 'Immer dunkel']])}</section>
     <section class="l-card"><h2>Schriftgröße</h2>${choice('fontSize', [['normal', 'Normal', 'Standard'], ['large', 'Groß', 'Etwa 15 % größer'], ['xlarge', 'Sehr groß', 'Etwa 30 % größer']])}</section>
+    <section class="l-card"><h2>${tr('Sprache')} · Language</h2>${choice('lang', [['auto', tr('Automatisch'), tr('Wie der Browser')], ['de', 'Deutsch', 'Deutsch'], ['en', 'English', 'English']])}</section>
     <section class="l-card"><h2>Rechte</h2><div class="set-right">${ic(u.canPlan ? 'check' : 'lock')}<span><b>Haus planen</b><small>${u.role === 'admin' ? 'Als Admin darfst du immer planen.' : u.canPlan ? 'Du darfst Wände, Möbel und Etagen ändern.' : 'Du kannst das Haus ansehen. Planen schaltet ein Admin unter Verwaltung → Personen frei.'}</small></span></div></section>`;
   el.querySelectorAll<HTMLElement>('.set-choice').forEach((g) =>
     g.querySelectorAll<HTMLElement>('button').forEach((b) =>
