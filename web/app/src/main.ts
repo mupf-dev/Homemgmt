@@ -2012,19 +2012,19 @@ function renderProps() {
     const withComps = all.filter(({ it }) => compartments(it, h.settings).length);
     const fachCount = withComps.reduce((n, { it }) => n + compartments(it, h.settings).length, 0);
     const filled = [...sync.storage.values()].filter((pl) => pl.items.length).length;
-    el.innerHTML = `<h2>${esc(h.name || 'Haus')}</h2><div class="sub">Nichts ausgewählt</div>
+    el.innerHTML = `<h2>${esc(h.name || tr('Haus'))}</h2><div class="sub">${tr('Nichts ausgewählt')}</div>
       <div class="stats">
-        <span>Etagen</span><span>${h.floors.length}</span>
-        <span>Räume</span><span>${h.floors.reduce((n, f) => n + f.rooms.length, 0)}</span>
-        <span>Möbel</span><span>${all.length}</span>
-        <span>Möbel mit Fächern</span><span>${withComps.length}</span>
-        <span>Fächer (Lagerplätze)</span><span>${fachCount}</span>
-        ${sync.online ? `<span>davon belegt</span><span>${filled}</span>` : ''}
+        <span>${tr('Etagen')}</span><span>${h.floors.length}</span>
+        <span>${tr('Räume')}</span><span>${h.floors.reduce((n, f) => n + f.rooms.length, 0)}</span>
+        <span>${tr('Möbel')}</span><span>${all.length}</span>
+        <span>${tr('Möbel mit Fächern')}</span><span>${withComps.length}</span>
+        <span>${tr('Fächer (Lagerplätze)')}</span><span>${fachCount}</span>
+        ${sync.online ? `<span>${tr('davon belegt')}</span><span>${filled}</span>` : ''}
       </div>
-      <h3>So geht's</h3>
-      <p class="hint">1. Etage anlegen und Wände zeichnen (oder Grundriss hochladen und nachzeichnen).<br>2. Mit <b>Raum festlegen</b> die Räume benennen – jeder Raum wird ein Lager.<br>3. Im Katalog Schränke, Regale und Küchenmöbel setzen – ihre Fächer werden Lagerplätze (Buchstabe am Möbel = Spalte).<br>4. In 3D <b>Lager</b> einschalten: Fach anklicken, einbuchen, entnehmen. Oben „Wo liegt …?“ sucht im ganzen Haus.</p>
-      <h3>Tastenkürzel</h3>
-      <p class="hint"><kbd>Entf</kbd> löschen · <kbd>R</kbd> drehen · <kbd>L</kbd> sperren · <kbd>Strg</kbd>+<kbd>D</kbd> duplizieren · <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig · <kbd>Esc</kbd> Werkzeug beenden · <kbd>Alt</kbd> beim Ziehen: frei platzieren</p>`;
+      <h3>${tr("So geht's")}</h3>
+      <p class="hint">${tr('1. Etage anlegen und Wände zeichnen (oder Grundriss hochladen und nachzeichnen).<br>2. Mit <b>Raum festlegen</b> die Räume benennen – jeder Raum wird ein Lager.<br>3. Im Katalog Schränke, Regale und Küchenmöbel setzen – ihre Fächer werden Lagerplätze (Buchstabe am Möbel = Spalte).<br>4. In 3D <b>Lager</b> einschalten: Fach anklicken, einbuchen, entnehmen. Oben „Wo liegt …?“ sucht im ganzen Haus.')}</p>
+      <h3>${tr('Tastenkürzel')}</h3>
+      <p class="hint">${tr('<kbd>Entf</kbd> löschen · <kbd>R</kbd> drehen · <kbd>L</kbd> sperren · <kbd>Strg</kbd>+<kbd>D</kbd> duplizieren · <kbd>Strg</kbd>+<kbd>Z</kbd> rückgängig · <kbd>Esc</kbd> Werkzeug beenden · <kbd>Alt</kbd> beim Ziehen: frei platzieren')}</p>`;
     return;
   }
 
@@ -2035,25 +2035,25 @@ function renderProps() {
     const area = r.polygon ? Math.abs(polygonArea(r.polygon)) / 10000 : 0;
     const furniture = f.items.filter((it) => it.storageCol && roomOf(f, it)?.id === r.id).sort((a, b) => (a.storageCol! < b.storageCol! ? -1 : 1));
     const floorDef = slotMaterialDef(p, 'floor', r.floorMaterial);
-    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">Raum auf ${esc(f.name)} · ${area.toFixed(1).replace('.', ',')} m²</div>
-      <div class="row"><label>Name</label><input type="text" data-rk="name" value="${esc(r.name)}" maxlength="40" style="width:160px" /></div>
-      <div class="row"><label title="Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.">Lager-Kürzel</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
-      ${r.manual ? `<p class="hint">Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.${f.walls.length ? ' <button class="btn mini" data-rk="detect">Aus Wänden erkennen</button>' : ''}</p>` : ''}
-      <h3>Bodenbelag</h3>
-      <div class="mat-row" data-floormat><span class="sw" style="${swatchStyle(floorDef)}"></span><div><span>Boden</span><small>${esc(floorDef.name)}${r.floorMaterial ? '' : ' (wie im ganzen Haus)'}</small></div></div>
-      <h3>Lager ${esc(r.code)}</h3>
+    el.innerHTML = `<h2>${esc(r.name)}</h2><div class="sub">${tr('Raum auf {floor} · {area} m²', { floor: esc(f.name), area: area.toLocaleString(locale(), { minimumFractionDigits: 1, maximumFractionDigits: 1 }) })}</div>
+      <div class="row"><label>${tr('Name')}</label><input type="text" data-rk="name" value="${esc(r.name)}" maxlength="40" style="width:160px" /></div>
+      <div class="row"><label title="${tr('Kürzel des Lagers (1–4 Zeichen). Ändern benennt alle Plätze um – gedruckte Etiketten passen dann nicht mehr.')}">${tr('Lager-Kürzel')}</label><input type="text" data-rk="code" value="${esc(r.code)}" maxlength="4" style="width:80px;text-transform:uppercase" /></div>
+      ${r.manual ? `<p class="hint">${tr('Fester Umriss (offener Grundriss bzw. übernommen) – folgt nicht den Wänden.')}${f.walls.length ? ` <button class="btn mini" data-rk="detect">${tr('Aus Wänden erkennen')}</button>` : ''}</p>` : ''}
+      <h3>${tr('Bodenbelag')}</h3>
+      <div class="mat-row" data-floormat><span class="sw" style="${swatchStyle(floorDef)}"></span><div><span>${tr('Boden')}</span><small>${esc(floorDef.name)}${r.floorMaterial ? '' : ` ${tr('(wie im ganzen Haus)')}`}</small></div></div>
+      <h3>${tr('Lager {code}', { code: esc(r.code) })}</h3>
       ${furniture.length ? `<div class="room-furniture">${furniture
         .map((it) => {
           const n = compartments(it, p.settings).length;
           const filled = Array.from({ length: n }, (_, i) => sync.fach(it.id, i)).filter((pl) => pl?.items.length).length;
-          return `<button class="room-row" data-it="${it.id}"><code>${esc(r.code)}-${it.storageCol}</code><b>${esc(itemName(it))}</b><small>${n} Fächer${sync.online ? ` · ${filled} belegt` : ''}</small></button>`;
+          return `<button class="room-row" data-it="${it.id}"><code>${esc(r.code)}-${it.storageCol}</code><b>${esc(itemName(it))}</b><small>${trn(n, '{n} Fach', '{n} Fächer')}${sync.online ? ` · ${tr('{n} belegt', { n: filled })}` : ''}</small></button>`;
         })
-        .join('')}</div>` : '<p class="hint">Noch keine Möbel mit Fächern in diesem Raum.</p>'}
-      <div class="actions"><button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button><button class="btn danger" data-act="del">${ICON.trash}Raum löschen</button></div>`;
+        .join('')}</div>` : `<p class="hint">${tr('Noch keine Möbel mit Fächern in diesem Raum.')}</p>`}
+      <div class="actions"><button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button><button class="btn danger" data-act="del">${ICON.trash}${tr('Raum löschen')}</button></div>`;
     el.querySelector('button[data-rk="detect"]')?.addEventListener('click', () => {
       delete r.manual;
       store.commit();
-      if (!r.polygon) toast('Kein geschlossener Bereich um den Raum – Umriss bleibt.');
+      if (!r.polygon) toast(tr('Kein geschlossener Bereich um den Raum – Umriss bleibt.'));
     });
     el.querySelectorAll<HTMLInputElement>('input[data-rk]').forEach((inp) =>
       inp.addEventListener('change', () => {
@@ -2061,7 +2061,7 @@ function renderProps() {
         else {
           const c = inp.value.trim().toUpperCase();
           if (!CODE_RE.test(c)) {
-            toast('Kürzel: 1–4 Zeichen, A–Z und 0–9, beginnt mit einem Buchstaben.');
+            toast(tr('Kürzel: 1–4 Zeichen, A–Z und 0–9, beginnt mit einem Buchstaben.'));
             inp.value = r.code;
             return;
           }
@@ -2071,7 +2071,7 @@ function renderProps() {
       }),
     );
     el.querySelector('[data-floormat]')!.addEventListener('click', () =>
-      openMaterialPicker(`Boden – ${r.name}`, r.floorMaterial, true, (id) => {
+      openMaterialPicker(tr('Boden – {name}', { name: r.name }), r.floorMaterial, true, (id) => {
         if (id) r.floorMaterial = id;
         else delete r.floorMaterial;
         store.commit();
@@ -2090,18 +2090,18 @@ function renderProps() {
     const hasFront = (['base', 'wall', 'island'].includes(e.kind) && it.front) || tallKind;
     const frontOptions: [string, string][] =
       e.kind === 'wall'
-        ? [['doors', 'Türen'], ['single', 'Eine Klappe / Tür'], ['open', 'Offen']]
+        ? [['doors', tr('Türen')], ['single', tr('Eine Klappe / Tür')], ['open', tr('Offen')]]
         : e.kind === 'tallOven'
-          ? [['drawers', 'Auszüge + Mikrowelle'], ['doors', 'Türen + Lifttür']]
+          ? [['drawers', tr('Auszüge + Mikrowelle')], ['doors', tr('Türen + Lifttür')]]
           : tallKind
-            ? [['doors', 'Zwei Türen'], ['single', 'Eine durchgehende Tür']]
-            : [['doors', 'Türen'], ['single', 'Eine Tür'], ['drawers', 'Auszüge'], ['mixed', 'Schublade + Tür']];
+            ? [['doors', tr('Zwei Türen')], ['single', tr('Eine durchgehende Tür')]]
+            : [['doors', tr('Türen')], ['single', tr('Eine Tür')], ['drawers', tr('Auszüge')], ['mixed', tr('Schublade + Tür')]];
     const curFront = it.front ?? (e.kind === 'tallOven' ? 'drawers' : 'doors');
     const matRow = (slot: MaterialSlot) => {
       const ov = it.materials?.[slot];
       const { m, name } = slotLabel(p, slot, ov, it.materials?.front);
       const uvSet = it.uv?.[slot] && Object.keys(it.uv[slot]!).length;
-      return `<div class="mat-row" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><span>${SLOT_LABELS[slot]}</span><small>${esc(name)}${ov ? '' : ' (Standard)'}</small></div><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-adj="${slot}" title="Farbe anpassen">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvSet ? 'on' : ''}" data-uv="${slot}" title="Textur ausrichten: strecken, skalieren, drehen, verschieben">${ICON.move}</button>` : ''}</div>`;
+      return `<div class="mat-row" data-slot="${slot}"><span class="sw" style="${swatchStyle(m)}"></span><div><span>${SLOT_LABELS[slot]}</span><small>${esc(name)}${ov ? '' : ` ${tr('(Standard)')}`}</small></div><button class="btn mini ${hasAdjust(m.adjust) ? 'on' : ''}" data-adj="${slot}" title="${tr('Farbe anpassen')}">${ICON.palette}</button>${isTextured(m) ? `<button class="btn mini ${uvSet ? 'on' : ''}" data-uv="${slot}" title="${tr('Textur ausrichten: strecken, skalieren, drehen, verschieben')}">${ICON.move}</button>` : ''}</div>`;
     };
     const grip: MaterialSlot = p.settings.handleless ? 'channel' : 'handle';
     const slots: MaterialSlot[] = e.kind === 'model' ? [] : e.kind === 'rack' ? ['carcass'] : e.kind === 'heavyRack' ? [] : ['cupboard', 'wardrobe', 'sideboard', 'dresser'].includes(e.kind) ? ['front', grip, 'carcass'] : ['table', 'stool', 'shelf', 'workbench'].includes(e.kind) ? ['countertop'] : e.kind === 'pendant' || e.kind === 'fridgeFree' || e.kind === 'hood' ? [] : e.kind === 'sink' ? ['front', 'countertop', 'sink', grip, 'carcass'] : e.countertop || (e.object?.build.type === 'korpus' && e.object.build.countertop) ? ['front', 'countertop', grip, 'carcass'] : ['front', grip, 'carcass'];
@@ -2110,57 +2110,57 @@ function renderProps() {
     const lv = LEVEL_KINDS[e.kind];
     const code = storageCode(store.floor, it);
     const storageHtml = comps.length
-      ? `<h3>Lager ${code && it.storageCol ? `<code>${esc(code)}-${it.storageCol}</code>` : ''}</h3>
+      ? `<h3>${tr('Lager')} ${code && it.storageCol ? `<code>${esc(code)}-${it.storageCol}</code>` : ''}</h3>
         <div class="fach-list">${comps
           .map((c) => {
             const pl = sync.fach(it.id, c.row);
             const n = pl?.items.length ?? 0;
-            return `<button class="fach-row ${n ? 'full' : ''}" data-fach="${c.row}"><code>${pl ? esc(pl.address) : `${esc(code)}-${it.storageCol ?? '?'}${c.row}`}</code><span>${esc(c.label)}</span><small>${sync.online ? (n ? `${n} ${n === 1 ? 'Gegenstand' : 'Gegenstände'}` : 'leer') : ''}</small></button>`;
+            return `<button class="fach-row ${n ? 'full' : ''}" data-fach="${c.row}"><code>${pl ? esc(pl.address) : `${esc(code)}-${it.storageCol ?? '?'}${c.row}`}</code><span>${esc(c.label)}</span><small>${sync.online ? (n ? trn(n, '{n} Gegenstand', '{n} Gegenstände') : tr('leer')) : ''}</small></button>`;
           })
           .join('')}</div>
-        <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">${ic('tag')}Etiketten / QR-Schilder für die Fächer</a>
-        ${roomOf(store.floor, it) ? '' : '<p class="hint">Steht in keinem Raum – die Plätze gehören zum Lager der Etage. Mit „Raum festlegen“ einen Raum anlegen.</p>'}`
+        <a class="btn" href="#/etiketten?moebel=${it.id}" style="margin-top:6px">${ic('tag')}${tr('Etiketten / QR-Schilder für die Fächer')}</a>
+        ${roomOf(store.floor, it) ? '' : `<p class="hint">${tr('Steht in keinem Raum – die Plätze gehören zum Lager der Etage. Mit „Raum festlegen“ einen Raum anlegen.')}</p>`}`
       : '';
     // Möbelart aus der Objektbibliothek: Kopie im Haus; neuere Version in der Bibliothek nur auf Wunsch übernehmen
     const obj = e.object;
     const libObj = obj && libraryObject(obj.id);
     const newer = !!(obj && libObj && compareVersions(libObj.version, obj.version) > 0);
     const objInfo = obj
-      ? `<div class="obj-info">${ic('box')}<div><b>${esc(obj.name)}</b><small>Objektbibliothek · Version ${esc(obj.version)}${obj.author ? ` · ${esc(obj.author)}` : ''}</small>
-        ${newer ? `<button class="btn mini primary" data-act="objUpdate" title="Die Bibliothek hat eine neuere Version dieser Möbelart">Version ${esc(libObj!.version)} übernehmen</button>` : ''}</div></div>`
+      ? `<div class="obj-info">${ic('box')}<div><b>${esc(obj.name)}</b><small>${tr('Objektbibliothek · Version {version}', { version: esc(obj.version) })}${obj.author ? ` · ${esc(obj.author)}` : ''}</small>
+        ${newer ? `<button class="btn mini primary" data-act="objUpdate" title="${tr('Die Bibliothek hat eine neuere Version dieser Möbelart')}">${tr('Version {version} übernehmen', { version: esc(libObj!.version) })}</button>` : ''}</div></div>`
       : '';
-    el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? 'Möbel &amp; Deko (3D-Modell)' : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
-      ${comps.length ? `<div class="row"><label title="Name im Lager, z. B. „Vorratsschrank“ oder „Besteckschublade“">Eigener Name</label><input type="text" data-key="label" value="${esc(it.label ?? '')}" placeholder="${esc(e.name)}" maxlength="40" style="width:160px" /></div>` : ''}
+    el.innerHTML = `<h2>${esc(it.label?.trim() || it.model?.name || e.name)}</h2><div class="sub">${e.kind === 'model' ? tr('Möbel &amp; Deko (3D-Modell)') : e.group}${it.label?.trim() && e.kind !== 'model' ? ` · ${e.name}` : ''}</div>
+      ${comps.length ? `<div class="row"><label title="${tr('Name im Lager, z. B. „Vorratsschrank“ oder „Besteckschublade“')}">${tr('Eigener Name')}</label><input type="text" data-key="label" value="${esc(it.label ?? '')}" placeholder="${esc(e.name)}" maxlength="40" style="width:160px" /></div>` : ''}
       ${lv ? `<div class="row"><label>${lv.label}</label><select data-key="levels" style="width:160px">${Array.from({ length: lv.max - lv.min + 1 }, (_, i) => lv.min + i).map((n) => `<option value="${n}" ${levelsOf(it, e.kind) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
       ${objInfo}
-      ${e.kind === 'model' && it.model ? `<div class="model-info">${it.model.thumb ? `<img src="${esc(it.model.thumb)}" alt="" />` : ''}<div><b>${esc(it.model.name)}</b><small>${esc(it.model.license ?? '')}</small>${it.model.size ? `<button class="btn mini" data-act="modelSize" title="Auf die Originalmaße zurücksetzen">Originalmaße ${it.model.size.join(' × ')} cm</button>` : ''}</div></div>
-        <div class="row"><label for="mprop">Seitenverhältnis beibehalten</label><input type="checkbox" id="mprop" checked /></div>` : ''}
-      ${num('Breite', 'width', it.width)}
+      ${e.kind === 'model' && it.model ? `<div class="model-info">${it.model.thumb ? `<img src="${esc(it.model.thumb)}" alt="" />` : ''}<div><b>${esc(it.model.name)}</b><small>${esc(it.model.license ?? '')}</small>${it.model.size ? `<button class="btn mini" data-act="modelSize" title="${tr('Auf die Originalmaße zurücksetzen')}">${tr('Originalmaße {size} cm', { size: it.model.size.join(' × ') })}</button>` : ''}</div></div>
+        <div class="row"><label for="mprop">${tr('Seitenverhältnis beibehalten')}</label><input type="checkbox" id="mprop" checked /></div>` : ''}
+      ${num(tr('Breite'), 'width', it.width)}
       ${e.widths ? `<div class="chips">${e.widths.map((w) => `<button data-w="${w}" class="${w === it.width ? 'on' : ''}">${w}</button>`).join('')}</div>` : ''}
-      ${num('Tiefe', 'depth', it.depth)}
-      ${num('Höhe', 'height', it.height)}
-      ${num('Abstand Boden', 'elevation', it.elevation)}
-      ${num('Drehung', 'rotation', ((((it.rotation * 180) / Math.PI) % 360) + 360) % 360, '°', 15)}
-      ${hasFront ? `<div class="row"><label>Front</label><select data-key="front" style="width:160px">${frontOptions.map(([v, l]) => `<option value="${v}" ${curFront === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
-      ${e.kind === 'base' && it.front === 'drawers' ? `<div class="row"><label>Anzahl Auszüge</label><select data-key="drawers" style="width:160px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
-      ${e.kind === 'sink' ? `<div class="row"><label>Becken-Modell</label><select data-key="sinkModel" style="width:160px"><option value="standard" ${it.sinkModel !== 'subline500u' ? 'selected' : ''}>Standard</option><option value="subline500u" ${it.sinkModel === 'subline500u' ? 'selected' : ''}>BLANCO SUBLINE 500-U</option></select></div>
-        <div class="row"><label>Armatur</label><select data-key="faucet" style="width:160px"><option value="standard" ${it.faucet !== 'kano-s' ? 'selected' : ''}>Bogen (Standard)</option><option value="kano-s" ${it.faucet === 'kano-s' ? 'selected' : ''}>BLANCO KANO-S Vario</option></select></div>` : ''}
-      ${tallKind || ['cupboard', 'wardrobe'].includes(e.kind) ? `<div class="row"><label for="psg" title="Tür in Schrankoptik, z. B. zu einem Raum dahinter: kein Korpus, keine Fächer, Öffnung in der Wand dahinter">Durchgang (Tür in Schrankoptik)</label><input type="checkbox" id="psg" data-key="passage" ${it.passage ? 'checked' : ''} /></div>` : ''}
-      ${tallKind && p.settings.handleless ? `<div class="row"><label>Griffmulde</label><select data-key="grip" style="width:160px"><option value="horizontal" ${it.grip !== 'vertical' ? 'selected' : ''}>Waagerecht (in der Front)</option><option value="vertical" ${it.grip === 'vertical' ? 'selected' : ''}>Senkrechte Griffleiste daneben</option></select></div>` : ''}
+      ${num(tr('Tiefe'), 'depth', it.depth)}
+      ${num(tr('Höhe'), 'height', it.height)}
+      ${num(tr('Abstand Boden'), 'elevation', it.elevation)}
+      ${num(tr('Drehung'), 'rotation', ((((it.rotation * 180) / Math.PI) % 360) + 360) % 360, '°', 15)}
+      ${hasFront ? `<div class="row"><label>${tr('Front')}</label><select data-key="front" style="width:160px">${frontOptions.map(([v, l]) => `<option value="${v}" ${curFront === v ? 'selected' : ''}>${l}</option>`).join('')}</select></div>` : ''}
+      ${e.kind === 'base' && it.front === 'drawers' ? `<div class="row"><label>${tr('Anzahl Auszüge')}</label><select data-key="drawers" style="width:160px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>` : ''}
+      ${e.kind === 'sink' ? `<div class="row"><label>${tr('Becken-Modell')}</label><select data-key="sinkModel" style="width:160px"><option value="standard" ${it.sinkModel !== 'subline500u' ? 'selected' : ''}>${tr('Standard')}</option><option value="subline500u" ${it.sinkModel === 'subline500u' ? 'selected' : ''}>BLANCO SUBLINE 500-U</option></select></div>
+        <div class="row"><label>${tr('Armatur')}</label><select data-key="faucet" style="width:160px"><option value="standard" ${it.faucet !== 'kano-s' ? 'selected' : ''}>${tr('Bogen (Standard)')}</option><option value="kano-s" ${it.faucet === 'kano-s' ? 'selected' : ''}>BLANCO KANO-S Vario</option></select></div>` : ''}
+      ${tallKind || ['cupboard', 'wardrobe'].includes(e.kind) ? `<div class="row"><label for="psg" title="${tr('Tür in Schrankoptik, z. B. zu einem Raum dahinter: kein Korpus, keine Fächer, Öffnung in der Wand dahinter')}">${tr('Durchgang (Tür in Schrankoptik)')}</label><input type="checkbox" id="psg" data-key="passage" ${it.passage ? 'checked' : ''} /></div>` : ''}
+      ${tallKind && p.settings.handleless ? `<div class="row"><label>${tr('Griffmulde')}</label><select data-key="grip" style="width:160px"><option value="horizontal" ${it.grip !== 'vertical' ? 'selected' : ''}>${tr('Waagerecht (in der Front)')}</option><option value="vertical" ${it.grip === 'vertical' ? 'selected' : ''}>${tr('Senkrechte Griffleiste daneben')}</option></select></div>` : ''}
       ${e.kind === 'island' ? `
-        <div class="row"><label>Rückseite</label><select data-key="islandBack" style="width:150px"><option value="seating" ${it.islandBack !== 'doors' ? 'selected' : ''}>Theke (Sitzplatz)</option><option value="doors" ${it.islandBack === 'doors' ? 'selected' : ''}>Schranktüren</option></select></div>
-        <div class="row"><label>Spaltenbreiten</label><input type="text" data-key="columnWidths" style="width:150px" placeholder="z. B. 90/100/90" value="${it.columnWidths?.join('/') ?? ''}" title="Breiten in cm, mit / getrennt – leer = gleich breite Spalten" /></div>
-        <div class="row"><label>Spalten</label><select data-key="columns" style="width:150px" ${it.columnWidths?.length ? 'disabled title="durch Spaltenbreiten festgelegt"' : ''}><option value="">Automatisch (${Math.max(1, Math.round(it.width / 80))})</option>${[1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}" ${it.columns === n ? 'selected' : ''}>${n} × ${Math.round((it.width / n) * 10) / 10} cm</option>`).join('')}</select></div>
-        <div class="row"><label>Auszüge je Spalte</label><select data-key="drawers" style="width:150px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
-        ${it.islandBack === 'doors' ? `<div class="row"><label>Türen je Spalte (Rückseite)</label><select data-key="doorsPerColumn" style="width:150px"><option value="">Automatisch</option><option value="1" ${it.doorsPerColumn === 1 ? 'selected' : ''}>1 Tür</option><option value="2" ${it.doorsPerColumn === 2 ? 'selected' : ''}>2 Türen</option></select></div>` : ''}
-        <div class="row"><label for="wf">Arbeitsplatte seitlich herunter</label><input type="checkbox" id="wf" data-key="waterfall" ${(it.waterfall ?? it.islandBack !== 'doors') ? 'checked' : ''} /></div>` : ''}
+        <div class="row"><label>${tr('Rückseite')}</label><select data-key="islandBack" style="width:150px"><option value="seating" ${it.islandBack !== 'doors' ? 'selected' : ''}>${tr('Theke (Sitzplatz)')}</option><option value="doors" ${it.islandBack === 'doors' ? 'selected' : ''}>${tr('Schranktüren')}</option></select></div>
+        <div class="row"><label>${tr('Spaltenbreiten')}</label><input type="text" data-key="columnWidths" style="width:150px" placeholder="${tr('z. B. 90/100/90')}" value="${it.columnWidths?.join('/') ?? ''}" title="${tr('Breiten in cm, mit / getrennt – leer = gleich breite Spalten')}" /></div>
+        <div class="row"><label>${tr('Spalten')}</label><select data-key="columns" style="width:150px" ${it.columnWidths?.length ? `disabled title="${tr('durch Spaltenbreiten festgelegt')}"` : ''}><option value="">${tr('Automatisch ({n})', { n: Math.max(1, Math.round(it.width / 80)) })}</option>${[1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}" ${it.columns === n ? 'selected' : ''}>${n} × ${Math.round((it.width / n) * 10) / 10} cm</option>`).join('')}</select></div>
+        <div class="row"><label>${tr('Auszüge je Spalte')}</label><select data-key="drawers" style="width:150px">${[1, 2, 3, 4].map((n) => `<option value="${n}" ${(it.drawers ?? 3) === n ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        ${it.islandBack === 'doors' ? `<div class="row"><label>${tr('Türen je Spalte (Rückseite)')}</label><select data-key="doorsPerColumn" style="width:150px"><option value="">${tr('Automatisch')}</option><option value="1" ${it.doorsPerColumn === 1 ? 'selected' : ''}>${trn(1, '{n} Tür', '{n} Türen')}</option><option value="2" ${it.doorsPerColumn === 2 ? 'selected' : ''}>${trn(2, '{n} Tür', '{n} Türen')}</option></select></div>` : ''}
+        <div class="row"><label for="wf">${tr('Arbeitsplatte seitlich herunter')}</label><input type="checkbox" id="wf" data-key="waterfall" ${(it.waterfall ?? it.islandBack !== 'doors') ? 'checked' : ''} /></div>` : ''}
       ${storageHtml}
-      ${slots.length ? `<h3>Material dieses Elements</h3>${slots.map(matRow).join('')}` : ''}
+      ${slots.length ? `<h3>${tr('Material dieses Elements')}</h3>${slots.map(matRow).join('')}` : ''}
       <div class="actions">
-        <button class="btn" data-act="rotate">${ICON.rotate}Drehen</button>
-        <button class="btn" data-act="dup">${ICON.copy}Duplizieren</button>
-        <button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button>
-        <button class="btn danger" data-act="del">${ICON.trash}Löschen</button>
+        <button class="btn" data-act="rotate">${ICON.rotate}${tr('Drehen')}</button>
+        <button class="btn" data-act="dup">${ICON.copy}${tr('Duplizieren')}</button>
+        <button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button>
+        <button class="btn danger" data-act="del">${ICON.trash}${tr('Löschen')}</button>
       </div>`;
     el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-key]').forEach((inp) =>
       inp.addEventListener('change', () => {
@@ -2215,11 +2215,15 @@ function renderProps() {
       const users = store.house.floors.flatMap((f) => f.items).filter((x) => x.type === OBJ_PREFIX + obj.id).length;
       const before = objectCompartmentCount(obj);
       const after = objectCompartmentCount(libObj);
-      const warn = before !== after ? `\n\nAchtung: Die Fächerzahl ändert sich von ${before} auf ${after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.` : '';
-      if (!confirm(`„${obj.name}“ auf Version ${libObj.version} bringen? Das betrifft ${users === 1 ? 'dieses Möbel' : `alle ${users} Möbel dieser Art`} im Haus.${warn}`)) return;
+      const warn = before !== after ? '\n\n' + tr('Achtung: Die Fächerzahl ändert sich von {before} auf {after}. Gegenstände in wegfallenden Fächern müssen danach umgebucht werden.', { before, after }) : '';
+      const question =
+        users === 1
+          ? tr('„{name}“ auf Version {version} bringen? Das betrifft dieses Möbel im Haus.', { name: obj.name, version: libObj.version })
+          : tr('„{name}“ auf Version {version} bringen? Das betrifft alle {n} Möbel dieser Art im Haus.', { name: obj.name, version: libObj.version, n: users });
+      if (!confirm(question + warn)) return;
       store.house.objectTypes = { ...(store.house.objectTypes ?? {}), [obj.id]: structuredClone(libObj) };
       store.commit();
-      toast(`Version ${libObj.version} übernommen.`);
+      toast(tr('Version {version} übernommen.', { version: libObj.version }));
     });
     el.querySelector('[data-act="modelSize"]')?.addEventListener('click', () => {
       const s = it.model!.size!;
@@ -2248,16 +2252,16 @@ function renderProps() {
     el.querySelectorAll<HTMLElement>('.mat-row').forEach((row) =>
       row.addEventListener('click', () => {
         const slot = row.dataset.slot as MaterialSlot;
-        openMaterialPicker(`${SLOT_LABELS[slot]} – ${e.name}`, it.materials?.[slot], true, async (id) => {
+        openMaterialPicker(tr('{slot} – {name}', { slot: SLOT_LABELS[slot], name: e.name }), it.materials?.[slot], true, async (id) => {
           // Bei Fronten immer nachfragen: nur dieses Element oder alle Fronten?
           if (slot === 'front' && id) {
             const name = esc(findMaterialName(id));
             const choice = await askChoice(
-              'Front ändern',
-              `<p>Soll „${name}“ nur für <b>${esc(e.name)}</b> oder für <b>alle Fronten</b> der Küche verwendet werden?</p>`,
+              tr('Front ändern'),
+              `<p>${tr('Soll „{name}“ nur für <b>{item}</b> oder für <b>alle Fronten</b> der Küche verwendet werden?', { name, item: esc(e.name) })}</p>`,
               [
-                { id: 'one', label: 'Nur dieses Element' },
-                { id: 'all', label: 'Alle Fronten', primary: true },
+                { id: 'one', label: tr('Nur dieses Element') },
+                { id: 'all', label: tr('Alle Fronten'), primary: true },
               ],
             );
             if (!choice) return;
@@ -2283,11 +2287,11 @@ function renderProps() {
   if (s.kind === 'wall') {
     const w = store.wall(s.id);
     if (!w) return;
-    el.innerHTML = `<h2>Wand</h2><div class="sub">Endpunkte im Grundriss ziehen</div>
-      ${num('Länge', 'length', wallLength(w))}
-      ${num('Stärke', 'thickness', w.thickness)}
-      ${num('Höhe', 'height', w.height)}
-      <div class="actions"><button class="btn" data-act="allHeight">Höhe für alle Wände</button><button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button><button class="btn danger" data-act="del">${ICON.trash}Löschen</button></div>`;
+    el.innerHTML = `<h2>${tr('Wand')}</h2><div class="sub">${tr('Endpunkte im Grundriss ziehen')}</div>
+      ${num(tr('Länge'), 'length', wallLength(w))}
+      ${num(tr('Stärke'), 'thickness', w.thickness)}
+      ${num(tr('Höhe'), 'height', w.height)}
+      <div class="actions"><button class="btn" data-act="allHeight">${tr('Höhe für alle Wände')}</button><button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button><button class="btn danger" data-act="del">${ICON.trash}${tr('Löschen')}</button></div>`;
     el.querySelectorAll<HTMLInputElement>('[data-key]').forEach((inp) =>
       inp.addEventListener('change', () => {
         const v = Math.max(1, +inp.value || 1);
@@ -2307,13 +2311,13 @@ function renderProps() {
   if (s.kind === 'opening') {
     const o = store.opening(s.id);
     if (!o) return;
-    el.innerHTML = `<h2>${o.type === 'door' ? 'Tür' : o.type === 'passage' ? 'Durchgang' : 'Fenster'}</h2><div class="sub">Entlang der Wand ziehen</div>
-      <div class="row"><label>Typ</label><select data-key="type" style="width:120px"><option value="window" ${o.type === 'window' ? 'selected' : ''}>Fenster</option><option value="door" ${o.type === 'door' ? 'selected' : ''}>Tür</option><option value="passage" ${o.type === 'passage' ? 'selected' : ''}>Durchgang</option></select></div>
-      ${num('Breite', 'width', o.width)}
-      ${num('Höhe', 'height', o.height)}
-      ${num('Brüstung', 'sill', o.sill)}
-      ${num('Abstand Mitte', 'offset', o.offset)}
-      <div class="actions"><button class="btn" data-act="lock" title="Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“">${ICON.lock}Sperren</button><button class="btn danger" data-act="del">${ICON.trash}Löschen</button></div>`;
+    el.innerHTML = `<h2>${o.type === 'door' ? tr('Tür') : o.type === 'passage' ? tr('Durchgang') : tr('Fenster')}</h2><div class="sub">${tr('Entlang der Wand ziehen')}</div>
+      <div class="row"><label>${tr('Typ')}</label><select data-key="type" style="width:120px"><option value="window" ${o.type === 'window' ? 'selected' : ''}>${tr('Fenster')}</option><option value="door" ${o.type === 'door' ? 'selected' : ''}>${tr('Tür')}</option><option value="passage" ${o.type === 'passage' ? 'selected' : ''}>${tr('Durchgang')}</option></select></div>
+      ${num(tr('Breite'), 'width', o.width)}
+      ${num(tr('Höhe'), 'height', o.height)}
+      ${num(tr('Brüstung'), 'sill', o.sill)}
+      ${num(tr('Abstand Mitte'), 'offset', o.offset)}
+      <div class="actions"><button class="btn" data-act="lock" title="${tr('Sperren (Taste L): danach im Editor nicht mehr auswählbar oder veränderbar – entsperren unter „Etage“')}">${ICON.lock}${tr('Sperren')}</button><button class="btn danger" data-act="del">${ICON.trash}${tr('Löschen')}</button></div>`;
     el.querySelectorAll<HTMLInputElement | HTMLSelectElement>('[data-key]').forEach((inp) =>
       inp.addEventListener('change', () => {
         const k = inp.dataset.key!;
@@ -2347,7 +2351,7 @@ function setPassage(it: Item, on: boolean) {
   const back = { x: it.x + Math.sin(it.rotation) * (it.depth / 2 + 5), y: it.y - Math.cos(it.rotation) * (it.depth / 2 + 5) };
   const w = (it.wallId && store.wall(it.wallId)) || [...proj.walls].map((x) => ({ x, pr: projectOnWall(x, back) })).filter((c) => c.pr.t > 0 && c.pr.t < c.pr.L && c.pr.distance < c.x.thickness / 2 + 30).sort((a, b) => a.pr.distance - b.pr.distance)[0]?.x;
   if (!w) {
-    toast('Hinter dem Schrank ist keine Wand – die Öffnung bitte selbst als Durchgang setzen.');
+    toast(tr('Hinter dem Schrank ist keine Wand – die Öffnung bitte selbst als Durchgang setzen.'));
     return;
   }
   const t = projectOnWall(w, { x: it.x, y: it.y }).t;
@@ -2377,7 +2381,7 @@ function bindActions(el: HTMLElement, it?: Item) {
   el.querySelector('[data-act="lock"]')?.addEventListener('click', () => {
     if (!store.selection) return;
     store.setLocked(store.selection, true);
-    toast('Gesperrt – entsperren unter „Etage“ → „Gesperrt“.');
+    toast(tr('Gesperrt – entsperren unter „Etage“ → „Gesperrt“.'));
   });
   el.querySelector('[data-act="dup"]')?.addEventListener('click', () => duplicateSelection());
   el.querySelector('[data-act="rotate"]')?.addEventListener('click', () => {
